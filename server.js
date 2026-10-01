@@ -1,0 +1,7543 @@
+"use strict";
+
+require("dotenv").config();
+
+const express = require("express");
+const cors = require("cors");
+const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
+const multer = require("multer");
+const path = require("path");
+
+const {
+    createClient
+} = require("@supabase/supabase-js");
+
+
+/* ============================================================
+   APP
+============================================================ */
+
+const app =
+    express();
+
+
+/* ============================================================
+   CONFIG
+============================================================ */
+
+const PORT =
+    Number(
+        process.env.PORT || 3000
+    );
+
+const SUPABASE_URL =
+    process.env.SUPABASE_URL;
+
+const SUPABASE_ANON_KEY =
+    process.env.SUPABASE_ANON_KEY;
+
+const SUPABASE_SERVICE_ROLE_KEY =
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const BASE_URL =
+    process.env.SQUASHBERRYPAY_URL ||
+    `http://localhost:${PORT}`;
+
+const PAYMENT_SESSION_MINUTES =
+    Number(
+        process.env.PAYMENT_SESSION_MINUTES || 60
+    );
+
+const PAYMENT_ATTEMPT_MINUTES =
+    Number(
+        process.env.PAYMENT_ATTEMPT_MINUTES || 20
+    );
+
+const PAYMENT_TOKEN_HOURS =
+    Number(
+        process.env.PAYMENT_TOKEN_HOURS || 24
+    );
+
+const ADMIN_SECRET =
+    process.env.ADMIN_SESSION_SECRET;
+
+
+/* ============================================================
+   CUSTOM AUTH OTP CONFIG
+============================================================ */
+
+const AUTH_OTP_MINUTES =
+    Number(
+        process.env.AUTH_OTP_MINUTES || 10
+    );
+
+const AUTH_OTP_RESEND_SECONDS =
+    Number(
+        process.env.AUTH_OTP_RESEND_SECONDS || 60
+    );
+
+const AUTH_OTP_MAX_ATTEMPTS =
+    Number(
+        process.env.AUTH_OTP_MAX_ATTEMPTS || 5
+    );
+
+const RESEND_API_KEY =
+    process.env.RESEND_API_KEY ||
+    "";
+
+const RESEND_FROM_EMAIL =
+    process.env.RESEND_FROM_EMAIL ||
+    "SquashberryPay <onboarding@resend.dev>";
+
+
+/* ============================================================
+   VALIDATE ENV
+============================================================ */
+
+if (
+    !SUPABASE_URL ||
+    !SUPABASE_ANON_KEY ||
+    !SUPABASE_SERVICE_ROLE_KEY ||
+    !ADMIN_SECRET
+) {
+
+    console.error(
+        "\nFATAL: Missing required environment variables.\n"
+    );
+
+    process.exit(1);
+}
+
+
+/* ============================================================
+   SUPABASE CLIENTS
+============================================================ */
+
+const supabase =
+    createClient(
+        SUPABASE_URL,
+        SUPABASE_SERVICE_ROLE_KEY,
+        {
+            auth: {
+                autoRefreshToken:
+                    false,
+
+                persistSession:
+                    false
+            }
+        }
+    );
+
+
+const authClient =
+    createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+        {
+            auth: {
+                autoRefreshToken:
+                    false,
+
+                persistSession:
+                    false
+            }
+        }
+    );
+
+
+/* ============================================================
+   MIDDLEWARE
+============================================================ */
+
+app.use(
+    cors({
+        origin:
+            true,
+
+        credentials:
+            true
+    })
+);
+
+app.use(
+    express.json({
+        limit:
+            "2mb"
+    })
+);
+
+app.use(
+    express.urlencoded({
+        extended:
+            true
+    })
+);
+
+app.use(
+    express.static(
+        path.join(
+            __dirname,
+            "public"
+        )
+    )
+);
+
+
+/* ============================================================
+   RECEIPT UPLOAD
+============================================================ */
+
+const upload =
+    multer({
+
+        storage:
+            multer.memoryStorage(),
+
+        limits: {
+            fileSize:
+                8 *
+                1024 *
+                1024
+        },
+
+        fileFilter(
+            req,
+            file,
+            callback
+        ) {
+
+            const allowed = [
+                "image/jpeg",
+                "image/png",
+                "image/webp",
+                "image/jpg",
+                "application/pdf"
+            ];
+
+            if (
+                !allowed.includes(
+                    file.mimetype
+                )
+            ) {
+
+                return callback(
+                    new Error(
+                        "Only JPG, PNG, WEBP and PDF files are allowed."
+                    )
+                );
+            }
+
+            callback(
+                null,
+                true
+            );
+        }
+    });
+
+
+/* ============================================================
+   GENERAL HELPERS
+============================================================ */
+
+function randomHex(
+    bytes = 32
+) {
+
+    return crypto
+        .randomBytes(
+            bytes
+        )
+        .toString(
+            "hex"
+        );
+}
+
+
+function randomToken() {
+
+    return crypto
+        .randomBytes(
+            32
+        )
+        .toString(
+            "base64url"
+        );
+}
+
+
+function hash(
+    value
+) {
+
+    return crypto
+        .createHash(
+            "sha256"
+        )
+        .update(
+            String(
+                value
+            )
+        )
+        .digest(
+            "hex"
+        );
+}
+
+
+function generateReference() {
+
+    return (
+        "SBP-" +
+        crypto
+            .randomBytes(
+                6
+            )
+            .toString(
+                "hex"
+            )
+            .toUpperCase()
+    );
+}
+
+
+function generatePaymentCode() {
+
+    const parts =
+        [];
+
+    for (
+        let i = 0;
+        i < 4;
+        i++
+    ) {
+
+        parts.push(
+            crypto
+                .randomBytes(
+                    2
+                )
+                .toString(
+                    "hex"
+                )
+                .toUpperCase()
+        );
+    }
+
+    return (
+        `SBP-${parts.join("-")}`
+    );
+}
+
+
+function addMinutes(
+    minutes
+) {
+
+    return new Date(
+        Date.now() +
+        minutes *
+        60 *
+        1000
+    ).toISOString();
+}
+
+
+function addHours(
+    hours
+) {
+
+    return new Date(
+        Date.now() +
+        hours *
+        60 *
+        60 *
+        1000
+    ).toISOString();
+}
+
+
+function cleanSlug(
+    value
+) {
+
+    return String(
+        value
+    )
+        .trim()
+        .toLowerCase()
+        .replace(
+            /[^a-z0-9]+/g,
+            "-"
+        )
+        .replace(
+            /-+/g,
+            "-"
+        )
+        .replace(
+            /^-|-$/g,
+            ""
+        )
+        .slice(
+            0,
+            50
+        );
+}
+
+
+function escapeHtml(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+}
+
+
+function normalizeEmail(
+    email
+) {
+
+    return String(
+        email || ""
+    )
+        .trim()
+        .toLowerCase();
+}
+
+
+function isValidEmail(
+    email
+) {
+
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        .test(
+            email
+        );
+}
+
+
+/* ============================================================
+   SAFE PUBLIC ERROR
+============================================================ */
+
+/*
+ * Internal errors stay in the terminal.
+ *
+ * Only the safe message reaches the browser.
+ */
+
+function publicError(
+    message
+) {
+
+    const error =
+        new Error(
+            message
+        );
+
+    error.publicMessage =
+        message;
+
+    return error;
+}
+
+
+/* ============================================================
+   AUTH OTP STORES
+============================================================ */
+
+const authOtpStore =
+    new Map();
+
+const pendingSignupStore =
+    new Map();
+
+const passwordResetTickets =
+    new Map();
+
+
+/* ============================================================
+   CUSTOM AUTH OTP
+============================================================ */
+
+function generateAuthOtp() {
+
+    return String(
+        crypto.randomInt(
+            100000,
+            1000000
+        )
+    );
+}
+
+
+function hashAuthOtp(
+    otp
+) {
+
+    return crypto
+        .createHash(
+            "sha256"
+        )
+        .update(
+            String(
+                otp
+            )
+        )
+        .digest(
+            "hex"
+        );
+}
+
+
+/* ============================================================
+   RESEND EMAIL
+============================================================ */
+
+async function sendResendEmail({
+    to,
+    subject,
+    html,
+    text
+}) {
+
+    if (
+        !RESEND_API_KEY
+    ) {
+
+        console.error(
+            "RESEND ERROR: RESEND_API_KEY is missing."
+        );
+
+        throw publicError(
+            "We couldn't send your verification code right now. Please try again in a moment."
+        );
+    }
+
+
+    if (
+        !RESEND_FROM_EMAIL
+    ) {
+
+        console.error(
+            "RESEND ERROR: RESEND_FROM_EMAIL is missing."
+        );
+
+        throw publicError(
+            "We couldn't send your verification code right now. Please try again in a moment."
+        );
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "https://api.resend.com/emails",
+                {
+
+                    method:
+                        "POST",
+
+                    headers: {
+
+                        Authorization:
+                            `Bearer ${RESEND_API_KEY}`,
+
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            from:
+                                RESEND_FROM_EMAIL,
+
+                            to: [
+                                to
+                            ],
+
+                            subject,
+
+                            html,
+
+                            text
+                        })
+                }
+            );
+
+
+        let data =
+            {};
+
+        try {
+
+            data =
+                await response.json();
+
+        } catch {
+
+            data =
+                {};
+        }
+
+
+        if (
+            !response.ok
+        ) {
+
+            /*
+             * REAL PROVIDER ERROR:
+             * terminal only.
+             */
+
+            console.error(
+                "\n========== RESEND DELIVERY ERROR =========="
+            );
+
+            console.error(
+                "HTTP:",
+                response.status
+            );
+
+            console.error(
+                "DATA:",
+                data
+            );
+
+            console.error(
+                "============================================\n"
+            );
+
+
+            /*
+             * SAFE USER ERROR.
+             */
+
+            throw publicError(
+                "We couldn't send your verification code right now. Please try again in a moment."
+            );
+        }
+
+
+        return data;
+
+    } catch (error) {
+
+        /*
+         * Preserve our safe public error.
+         */
+
+        if (
+            error.publicMessage
+        ) {
+
+            throw error;
+        }
+
+
+        console.error(
+            "\n========== RESEND NETWORK ERROR =========="
+        );
+
+        console.error(
+            error
+        );
+
+        console.error(
+            "===========================================\n"
+        );
+
+
+        throw publicError(
+            "We couldn't send your verification code right now. Please try again in a moment."
+        );
+    }
+}
+
+
+/* ============================================================
+   OTP EMAIL TEMPLATE
+============================================================ */
+
+function buildAuthOtpEmail({
+    otp,
+    title,
+    description,
+    purpose
+}) {
+
+    return `
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+>
+
+<title>
+    ${escapeHtml(title)}
+</title>
+
+</head>
+
+
+<body
+style="
+    margin:0;
+    padding:0;
+    background:#f5f5f2;
+    font-family:Arial,Helvetica,sans-serif;
+    color:#111111;
+"
+>
+
+
+<div
+style="
+    width:100%;
+    padding:45px 18px;
+    box-sizing:border-box;
+"
+>
+
+
+    <div
+    style="
+        max-width:560px;
+        margin:0 auto;
+        background:#ffffff;
+        border:1px solid #e6e6e1;
+        border-radius:20px;
+        padding:34px;
+        box-sizing:border-box;
+    "
+    >
+
+
+        <div
+        style="
+            width:42px;
+            height:42px;
+            background:#111111;
+            color:#ffffff;
+            border-radius:11px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:17px;
+            font-weight:800;
+            margin-bottom:24px;
+        "
+        >
+            S
+        </div>
+
+
+        <div
+        style="
+            font-size:10px;
+            font-weight:800;
+            letter-spacing:2px;
+            color:#777777;
+            margin-bottom:10px;
+        "
+        >
+            ${escapeHtml(purpose)}
+        </div>
+
+
+        <h1
+        style="
+            margin:0 0 12px;
+            font-size:27px;
+            line-height:1.15;
+            letter-spacing:-0.8px;
+        "
+        >
+            ${escapeHtml(title)}
+        </h1>
+
+
+        <p
+        style="
+            margin:0;
+            color:#666666;
+            font-size:15px;
+            line-height:1.7;
+        "
+        >
+            ${escapeHtml(description)}
+        </p>
+
+
+        <div
+        style="
+            margin:28px 0;
+            background:#f7f7f4;
+            border:1px solid #e7e7e1;
+            border-radius:17px;
+            padding:28px 20px;
+            text-align:center;
+        "
+        >
+
+
+            <div
+            style="
+                color:#777777;
+                font-size:10px;
+                font-weight:800;
+                letter-spacing:2px;
+                margin-bottom:12px;
+            "
+            >
+                VERIFICATION CODE
+            </div>
+
+
+            <div
+            style="
+                font-family:Consolas,Monaco,monospace;
+                font-size:34px;
+                font-weight:800;
+                letter-spacing:8px;
+                color:#111111;
+            "
+            >
+                ${escapeHtml(otp)}
+            </div>
+
+
+        </div>
+
+
+        <p
+        style="
+            margin:0;
+            color:#666666;
+            font-size:13px;
+            line-height:1.65;
+        "
+        >
+            This code expires in
+            <strong>
+                ${AUTH_OTP_MINUTES} minutes
+            </strong>.
+            Never share it with anyone.
+        </p>
+
+
+        <div
+        style="
+            margin-top:28px;
+            padding-top:18px;
+            border-top:1px solid #eeeeea;
+            color:#999999;
+            font-size:11px;
+            line-height:1.6;
+        "
+        >
+            SquashberryPay Secure Authentication
+        </div>
+
+
+    </div>
+
+</div>
+
+</body>
+
+</html>
+`;
+}
+
+
+/* ============================================================
+   ISSUE AUTH OTP
+============================================================ */
+
+async function issueAuthOtp({
+    email,
+    purpose
+}) {
+
+    const normalizedEmail =
+        normalizeEmail(
+            email
+        );
+
+
+    const key =
+        `${purpose}:${normalizedEmail}`;
+
+
+    const existing =
+        authOtpStore.get(
+            key
+        );
+
+
+    if (
+        existing &&
+        (
+            Date.now() -
+            existing.last_sent_at
+        ) <
+        (
+            AUTH_OTP_RESEND_SECONDS *
+            1000
+        )
+    ) {
+
+        const seconds =
+            Math.ceil(
+
+                (
+                    (
+                        AUTH_OTP_RESEND_SECONDS *
+                        1000
+                    ) -
+
+                    (
+                        Date.now() -
+                        existing.last_sent_at
+                    )
+                ) / 1000
+            );
+
+
+        const error =
+            publicError(
+                `Please wait ${seconds} seconds before requesting another code.`
+            );
+
+
+        error.code =
+            "OTP_COOLDOWN";
+
+
+        throw error;
+    }
+
+
+    const otp =
+        generateAuthOtp();
+
+
+    const record = {
+
+        email:
+            normalizedEmail,
+
+        otp_hash:
+            hashAuthOtp(
+                otp
+            ),
+
+        expires_at:
+            Date.now() +
+            (
+                AUTH_OTP_MINUTES *
+                60 *
+                1000
+            ),
+
+        attempts:
+            0,
+
+        last_sent_at:
+            Date.now(),
+
+        purpose
+    };
+
+
+    authOtpStore.set(
+        key,
+        record
+    );
+
+
+    let title =
+        "Verify your email";
+
+
+    let description =
+        "Enter this code in SquashberryPay to continue.";
+
+
+    let purposeLabel =
+        "SECURE AUTHENTICATION";
+
+
+    if (
+        purpose ===
+        "signup"
+    ) {
+
+        title =
+            "Verify your business email";
+
+
+        description =
+            "Enter this code in SquashberryPay to verify your business email and complete your account setup.";
+
+
+        purposeLabel =
+            "BUSINESS ACCOUNT";
+    }
+
+
+    if (
+        purpose ===
+        "password_reset"
+    ) {
+
+        title =
+            "Reset your password";
+
+
+        description =
+            "Enter this code in SquashberryPay to verify your identity before setting a new password.";
+
+
+        purposeLabel =
+            "PASSWORD RESET";
+    }
+
+
+    try {
+
+        await sendResendEmail({
+
+            to:
+                normalizedEmail,
+
+            subject:
+                `SquashberryPay verification code: ${otp}`,
+
+            html:
+                buildAuthOtpEmail({
+
+                    otp,
+
+                    title,
+
+                    description,
+
+                    purpose:
+                        purposeLabel
+                }),
+
+            text:
+                `${title}\n\n${description}\n\nYour verification code is: ${otp}\n\nThis code expires in ${AUTH_OTP_MINUTES} minutes.`
+        });
+
+
+        console.log(
+            `[AUTH] ${purpose} OTP sent to ${normalizedEmail}`
+        );
+
+
+        return {
+
+            success:
+                true,
+
+            expires_in:
+                AUTH_OTP_MINUTES *
+                60
+        };
+
+    } catch (error) {
+
+        /*
+         * Don't keep an OTP if delivery failed.
+         */
+
+        authOtpStore.delete(
+            key
+        );
+
+        throw error;
+    }
+}
+
+
+/* ============================================================
+   VERIFY AUTH OTP
+============================================================ */
+
+function verifyAuthOtp({
+    email,
+    token,
+    purpose
+}) {
+
+    const normalizedEmail =
+        normalizeEmail(
+            email
+        );
+
+
+    const key =
+        `${purpose}:${normalizedEmail}`;
+
+
+    const record =
+        authOtpStore.get(
+            key
+        );
+
+
+    if (
+        !record
+    ) {
+
+        const error =
+            publicError(
+                "No active verification code was found. Request a new code."
+            );
+
+
+        error.code =
+            "OTP_NOT_FOUND";
+
+
+        throw error;
+    }
+
+
+    if (
+        record.expires_at <=
+        Date.now()
+    ) {
+
+        authOtpStore.delete(
+            key
+        );
+
+
+        const error =
+            publicError(
+                "This verification code has expired. Request a new code."
+            );
+
+
+        error.code =
+            "OTP_EXPIRED";
+
+
+        throw error;
+    }
+
+
+    if (
+        record.attempts >=
+        AUTH_OTP_MAX_ATTEMPTS
+    ) {
+
+        authOtpStore.delete(
+            key
+        );
+
+
+        const error =
+            publicError(
+                "Too many incorrect attempts. Request a new code."
+            );
+
+
+        error.code =
+            "OTP_TOO_MANY_ATTEMPTS";
+
+
+        throw error;
+    }
+
+
+    const normalizedToken =
+        String(
+            token || ""
+        )
+            .replace(
+                /\D/g,
+                ""
+            );
+
+
+    if (
+        normalizedToken.length !==
+        6
+    ) {
+
+        const error =
+            publicError(
+                "Enter the complete 6-digit code."
+            );
+
+
+        error.code =
+            "OTP_INVALID";
+
+
+        throw error;
+    }
+
+
+    const expectedHash =
+        hashAuthOtp(
+            normalizedToken
+        );
+
+
+    const expected =
+        Buffer.from(
+            record.otp_hash,
+            "hex"
+        );
+
+
+    const actual =
+        Buffer.from(
+            expectedHash,
+            "hex"
+        );
+
+
+    if (
+        expected.length !==
+            actual.length ||
+        !crypto.timingSafeEqual(
+            expected,
+            actual
+        )
+    ) {
+
+        record.attempts +=
+            1;
+
+
+        const remaining =
+            Math.max(
+                0,
+                AUTH_OTP_MAX_ATTEMPTS -
+                record.attempts
+            );
+
+
+        if (
+            remaining <=
+            0
+        ) {
+
+            authOtpStore.delete(
+                key
+            );
+        }
+
+
+        const error =
+            publicError(
+
+                remaining > 0
+
+                    ? `Incorrect verification code. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`
+
+                    : "Too many incorrect attempts. Request a new code."
+            );
+
+
+        error.code =
+            remaining > 0
+                ? "OTP_INVALID"
+                : "OTP_TOO_MANY_ATTEMPTS";
+
+
+        throw error;
+    }
+
+
+    /*
+     * ONE-TIME USE.
+     */
+
+    authOtpStore.delete(
+        key
+    );
+
+
+    return {
+
+        success:
+            true,
+
+        email:
+            normalizedEmail
+    };
+}
+
+
+/* ============================================================
+   FIND AUTH USER
+============================================================ */
+
+async function findAuthUserByEmail(
+    email
+) {
+
+    const normalizedEmail =
+        normalizeEmail(
+            email
+        );
+
+
+    const {
+        data,
+        error
+    } = await supabase
+        .auth
+        .admin
+        .listUsers({
+
+            page:
+                1,
+
+            perPage:
+                1000
+        });
+
+
+    if (
+        error
+    ) {
+
+        console.error(
+            "Supabase listUsers error:",
+            error
+        );
+
+        throw new Error(
+            "Unable to check account."
+        );
+    }
+
+
+    return (
+        data?.users?.find(
+            user =>
+                normalizeEmail(
+                    user.email
+                ) ===
+                normalizedEmail
+        ) ||
+        null
+    );
+}
+
+
+/* ============================================================
+   HEALTH
+============================================================ */
+
+app.get(
+    "/health",
+    (req, res) => {
+
+        res.json({
+
+            ok:
+                true,
+
+            service:
+                "SquashberryPay",
+
+            version:
+                "2.3.0",
+
+            time:
+                new Date()
+                    .toISOString()
+        });
+    }
+);
+
+
+/* ============================================================
+   SIGNUP — SEND OTP
+============================================================ */
+
+app.post(
+    "/api/public/auth/signup/send-otp",
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const email =
+                normalizeEmail(
+                    req.body?.email
+                );
+
+
+            const businessName =
+                String(
+                    req.body?.business_name ||
+                    ""
+                ).trim();
+
+
+            const businessType =
+                String(
+                    req.body?.business_type ||
+                    ""
+                ).trim();
+
+
+            const phone =
+                String(
+                    req.body?.phone ||
+                    ""
+                ).trim();
+
+
+            const website =
+                String(
+                    req.body?.website ||
+                    ""
+                ).trim();
+
+
+            const password =
+                String(
+                    req.body?.password ||
+                    ""
+                );
+
+
+            if (
+                !isValidEmail(
+                    email
+                )
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Enter a valid business email."
+                });
+            }
+
+
+            if (
+                businessName.length < 2
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Enter your business name."
+                });
+            }
+
+
+            if (
+                password.length < 8
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Password must contain at least 8 characters."
+                });
+            }
+
+
+            const {
+                data: existingMerchant,
+                error:
+                    merchantError
+            } = await supabase
+                .from(
+                    "merchant_profiles"
+                )
+                .select(
+                    "id"
+                )
+                .eq(
+                    "email",
+                    email
+                )
+                .maybeSingle();
+
+
+            if (
+                merchantError
+            ) {
+
+                console.error(
+                    "Signup merchant lookup error:",
+                    merchantError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "We couldn't check your account right now. Please try again."
+                });
+            }
+
+
+            if (
+                existingMerchant
+            ) {
+
+                return res.status(409).json({
+                    error:
+                        "An account with this email already exists. Please sign in instead."
+                });
+            }
+
+
+            pendingSignupStore.set(
+                email,
+                {
+
+                    business_name:
+                        businessName,
+
+                    business_type:
+                        businessType ||
+                        null,
+
+                    phone:
+                        phone ||
+                        null,
+
+                    website:
+                        website ||
+                        null,
+
+                    password,
+
+                    expires_at:
+                        Date.now() +
+                        (
+                            AUTH_OTP_MINUTES *
+                            60 *
+                            1000
+                        )
+                }
+            );
+
+
+            await issueAuthOtp({
+
+                email,
+
+                purpose:
+                    "signup"
+            });
+
+
+            res.json({
+
+                success:
+                    true,
+
+                message:
+                    "Verification code sent to your email.",
+
+                expires_in:
+                    AUTH_OTP_MINUTES *
+                    60
+            });
+
+        } catch (error) {
+
+            console.error(
+                "\nSIGNUP OTP ERROR:",
+                error
+            );
+
+
+            res.status(
+                error.code ===
+                    "OTP_COOLDOWN"
+                    ? 429
+                    : 500
+            ).json({
+
+                error:
+                    error.publicMessage ||
+                    (
+                        error.code ===
+                        "OTP_COOLDOWN"
+                            ? error.message
+                            : "We couldn't send your verification code right now. Please try again in a moment."
+                    )
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   SIGNUP — RESEND OTP
+============================================================ */
+
+app.post(
+    "/api/public/auth/signup/resend-otp",
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const email =
+                normalizeEmail(
+                    req.body?.email
+                );
+
+
+            const pending =
+                pendingSignupStore.get(
+                    email
+                );
+
+
+            if (
+                !pending
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Your signup session has expired. Start signup again."
+                });
+            }
+
+
+            if (
+                pending.expires_at <=
+                Date.now()
+            ) {
+
+                pendingSignupStore.delete(
+                    email
+                );
+
+
+                return res.status(400).json({
+                    error:
+                        "Your signup session has expired. Start signup again."
+                });
+            }
+
+
+            pending.expires_at =
+                Date.now() +
+                (
+                    AUTH_OTP_MINUTES *
+                    60 *
+                    1000
+                );
+
+
+            await issueAuthOtp({
+
+                email,
+
+                purpose:
+                    "signup"
+            });
+
+
+            res.json({
+
+                success:
+                    true,
+
+                message:
+                    "A new verification code has been sent."
+            });
+
+        } catch (error) {
+
+            console.error(
+                "\nSIGNUP RESEND ERROR:",
+                error
+            );
+
+
+            res.status(
+                error.code ===
+                    "OTP_COOLDOWN"
+                    ? 429
+                    : 500
+            ).json({
+
+                error:
+                    error.publicMessage ||
+                    (
+                        error.code ===
+                        "OTP_COOLDOWN"
+                            ? error.message
+                            : "We couldn't resend your verification code right now. Please try again."
+                    )
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   SIGNUP — VERIFY OTP
+============================================================ */
+
+app.post(
+    "/api/public/auth/signup/verify-otp",
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const email =
+                normalizeEmail(
+                    req.body?.email
+                );
+
+
+            const token =
+                String(
+                    req.body?.token ||
+                    ""
+                );
+
+
+            const pending =
+                pendingSignupStore.get(
+                    email
+                );
+
+
+            if (
+                !pending
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Your signup session has expired. Start signup again."
+                });
+            }
+
+
+            if (
+                pending.expires_at <=
+                Date.now()
+            ) {
+
+                pendingSignupStore.delete(
+                    email
+                );
+
+
+                return res.status(400).json({
+                    error:
+                        "Your signup session has expired. Start signup again."
+                });
+            }
+
+
+            verifyAuthOtp({
+
+                email,
+
+                token,
+
+                purpose:
+                    "signup"
+            });
+
+
+            const {
+                data: existingMerchant,
+                error:
+                    merchantLookupError
+            } = await supabase
+                .from(
+                    "merchant_profiles"
+                )
+                .select(
+                    "id"
+                )
+                .eq(
+                    "email",
+                    email
+                )
+                .maybeSingle();
+
+
+            if (
+                merchantLookupError
+            ) {
+
+                console.error(
+                    "Merchant lookup after OTP error:",
+                    merchantLookupError
+                );
+
+                return res.status(500).json({
+                    error:
+                        "Your email was verified, but we couldn't complete account setup. Please try again."
+                });
+            }
+
+
+            if (
+                existingMerchant
+            ) {
+
+                pendingSignupStore.delete(
+                    email
+                );
+
+
+                return res.status(409).json({
+                    error:
+                        "An account with this email already exists. Please sign in instead."
+                });
+            }
+
+
+            let authUser =
+                await findAuthUserByEmail(
+                    email
+                );
+
+
+            if (
+                !authUser
+            ) {
+
+                const {
+                    data:
+                        createdUser,
+                    error:
+                        createUserError
+                } = await supabase
+                    .auth
+                    .admin
+                    .createUser({
+
+                        email,
+
+                        password:
+                            pending.password,
+
+                        email_confirm:
+                            true
+                    });
+
+
+                if (
+                    createUserError
+                ) {
+
+                    console.error(
+                        "Supabase createUser error:",
+                        createUserError
+                    );
+
+
+                    return res.status(500).json({
+
+                        error:
+                            "Your email was verified, but we couldn't finish creating your account. Please try again."
+                    });
+                }
+
+
+                authUser =
+                    createdUser.user;
+
+            } else {
+
+                const {
+                    data:
+                        updatedUser,
+                    error:
+                        updateUserError
+                } = await supabase
+                    .auth
+                    .admin
+                    .updateUserById(
+                        authUser.id,
+                        {
+
+                            password:
+                                pending.password,
+
+                            email_confirm:
+                                true
+                        }
+                    );
+
+
+                if (
+                    updateUserError
+                ) {
+
+                    console.error(
+                        "Supabase updateUser error:",
+                        updateUserError
+                    );
+
+
+                    return res.status(500).json({
+
+                        error:
+                            "Your email was verified, but we couldn't finish setting up your account."
+                    });
+                }
+
+
+                authUser =
+                    updatedUser.user;
+            }
+
+
+            const {
+                data: merchant,
+                error:
+                    merchantError
+            } = await supabase
+                .from(
+                    "merchant_profiles"
+                )
+                .insert({
+
+                    owner_user_id:
+                        authUser.id,
+
+                    business_name:
+                        pending.business_name,
+
+                    business_type:
+                        pending.business_type,
+
+                    email:
+                        email,
+
+                    phone:
+                        pending.phone,
+
+                    website:
+                        pending.website,
+
+                    status:
+                        "active"
+                })
+                .select(
+                    "*"
+                )
+                .single();
+
+
+            if (
+                merchantError
+            ) {
+
+                console.error(
+                    "Merchant profile creation error:",
+                    merchantError
+                );
+
+
+                try {
+
+                    await supabase
+                        .auth
+                        .admin
+                        .deleteUser(
+                            authUser.id
+                        );
+
+                } catch (
+                    rollbackError
+                ) {
+
+                    console.error(
+                        "Signup rollback error:",
+                        rollbackError
+                    );
+                }
+
+
+                return res.status(500).json({
+
+                    error:
+                        "Your email was verified, but we couldn't finish creating your business account."
+                });
+            }
+
+
+            pendingSignupStore.delete(
+                email
+            );
+
+
+            await supabase
+                .from(
+                    "audit_logs"
+                )
+                .insert({
+
+                    actor_type:
+                        "merchant",
+
+                    actor_id:
+                        merchant.id,
+
+                    action:
+                        "merchant_account_created",
+
+                    metadata: {
+
+                        authentication:
+                            "custom_resend_otp",
+
+                        account_status:
+                            "active"
+                    }
+                });
+
+
+            const {
+                data:
+                    loginData,
+                error:
+                    loginError
+            } = await authClient
+                .auth
+                .signInWithPassword({
+
+                    email,
+
+                    password:
+                        pending.password
+                });
+
+
+            if (
+                loginError ||
+                !loginData?.session
+            ) {
+
+                console.error(
+                    "Automatic signup login error:",
+                    loginError
+                );
+
+
+                return res.status(201).json({
+
+                    success:
+                        true,
+
+                    account_created:
+                        true,
+
+                    merchant,
+
+                    message:
+                        "Your business account has been created. Please sign in."
+                });
+            }
+
+
+            res.status(201).json({
+
+                success:
+                    true,
+
+                account_created:
+                    true,
+
+                access_token:
+                    loginData.session
+                        .access_token,
+
+                refresh_token:
+                    loginData.session
+                        .refresh_token,
+
+                expires_at:
+                    loginData.session
+                        .expires_at,
+
+                merchant,
+
+                message:
+                    "Your business account is active."
+            });
+
+        } catch (error) {
+
+            console.error(
+                "\nSIGNUP VERIFY ERROR:",
+                error
+            );
+
+
+            const otpError =
+                [
+                    "OTP_INVALID",
+                    "OTP_EXPIRED",
+                    "OTP_NOT_FOUND",
+                    "OTP_TOO_MANY_ATTEMPTS"
+                ].includes(
+                    error.code
+                );
+
+
+            res.status(
+                otpError
+                    ? 400
+                    : 500
+            ).json({
+
+                error:
+                    error.publicMessage ||
+                    (
+                        otpError
+                            ? error.message
+                            : "We couldn't complete your signup right now. Please try again."
+                    )
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   NORMAL LOGIN — NO OTP
+============================================================ */
+
+app.post(
+    "/api/public/auth/login",
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const email =
+                normalizeEmail(
+                    req.body?.email
+                );
+
+
+            const password =
+                String(
+                    req.body?.password ||
+                    ""
+                );
+
+
+            if (
+                !isValidEmail(
+                    email
+                )
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Enter a valid email address."
+                });
+            }
+
+
+            if (
+                !password
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Enter your password."
+                });
+            }
+
+
+            const {
+                data,
+                error
+            } = await authClient
+                .auth
+                .signInWithPassword({
+
+                    email,
+
+                    password
+                });
+
+
+            if (
+                error ||
+                !data?.user ||
+                !data?.session
+            ) {
+
+                return res.status(401).json({
+                    error:
+                        "Incorrect email or password."
+                });
+            }
+
+
+            const {
+                data: merchant,
+                error:
+                    merchantError
+            } = await supabase
+                .from(
+                    "merchant_profiles"
+                )
+                .select(
+                    `
+                    id,
+                    owner_user_id,
+                    business_name,
+                    business_type,
+                    email,
+                    phone,
+                    website,
+                    description,
+                    status,
+                    created_at,
+                    updated_at
+                    `
+                )
+                .eq(
+                    "owner_user_id",
+                    data.user.id
+                )
+                .maybeSingle();
+
+
+            if (
+                merchantError
+            ) {
+
+                console.error(
+                    "Login merchant lookup error:",
+                    merchantError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "We couldn't load your business account right now. Please try again."
+                });
+            }
+
+
+            if (
+                !merchant
+            ) {
+
+                return res.status(403).json({
+                    error:
+                        "This account does not have a SquashberryPay business profile."
+                });
+            }
+
+
+            if (
+                merchant.status !==
+                "active"
+            ) {
+
+                return res.status(403).json({
+                    error:
+                        "Your SquashberryPay business account is currently unavailable."
+                });
+            }
+
+
+            await supabase
+                .from(
+                    "audit_logs"
+                )
+                .insert({
+
+                    actor_type:
+                        "merchant",
+
+                    actor_id:
+                        merchant.id,
+
+                    action:
+                        "merchant_signed_in",
+
+                    metadata: {
+
+                        authentication:
+                            "password"
+                    }
+                });
+
+
+            res.json({
+
+                success:
+                    true,
+
+                access_token:
+                    data.session
+                        .access_token,
+
+                refresh_token:
+                    data.session
+                        .refresh_token,
+
+                expires_at:
+                    data.session
+                        .expires_at,
+
+                merchant
+            });
+
+        } catch (error) {
+
+            console.error(
+                "LOGIN ERROR:",
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    "We couldn't sign you in right now. Please try again."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   FORGOT PASSWORD — SEND OTP
+============================================================ */
+
+app.post(
+    "/api/public/auth/forgot-password/send-otp",
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const email =
+                normalizeEmail(
+                    req.body?.email
+                );
+
+
+            if (
+                !isValidEmail(
+                    email
+                )
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Enter a valid email address."
+                });
+            }
+
+
+            const user =
+                await findAuthUserByEmail(
+                    email
+                );
+
+
+            /*
+             * Don't expose account existence.
+             */
+
+            if (
+                !user
+            ) {
+
+                return res.json({
+
+                    success:
+                        true,
+
+                    message:
+                        "If an account exists for this email, a reset code has been sent."
+                });
+            }
+
+
+            const {
+                data: merchant,
+                error:
+                    merchantError
+            } = await supabase
+                .from(
+                    "merchant_profiles"
+                )
+                .select(
+                    "id,status"
+                )
+                .eq(
+                    "owner_user_id",
+                    user.id
+                )
+                .maybeSingle();
+
+
+            if (
+                merchantError
+            ) {
+
+                console.error(
+                    "Forgot-password merchant lookup error:",
+                    merchantError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "We couldn't process your request right now. Please try again."
+                });
+            }
+
+
+            if (
+                !merchant ||
+                merchant.status !==
+                    "active"
+            ) {
+
+                return res.json({
+
+                    success:
+                        true,
+
+                    message:
+                        "If an account exists for this email, a reset code has been sent."
+                });
+            }
+
+
+            await issueAuthOtp({
+
+                email,
+
+                purpose:
+                    "password_reset"
+            });
+
+
+            res.json({
+
+                success:
+                    true,
+
+                message:
+                    "Password reset code sent to your email."
+            });
+
+        } catch (error) {
+
+            console.error(
+                "RESET SEND OTP ERROR:",
+                error
+            );
+
+
+            res.status(
+                error.code ===
+                    "OTP_COOLDOWN"
+                    ? 429
+                    : 500
+            ).json({
+
+                error:
+                    error.publicMessage ||
+                    (
+                        error.code ===
+                        "OTP_COOLDOWN"
+                            ? error.message
+                            : "We couldn't send your reset code right now. Please try again."
+                    )
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   FORGOT PASSWORD — VERIFY OTP
+============================================================ */
+
+app.post(
+    "/api/public/auth/forgot-password/check-otp",
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const email =
+                normalizeEmail(
+                    req.body?.email
+                );
+
+
+            const token =
+                String(
+                    req.body?.token ||
+                    ""
+                );
+
+
+            if (
+                !isValidEmail(
+                    email
+                )
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Invalid email address."
+                });
+            }
+
+
+            const user =
+                await findAuthUserByEmail(
+                    email
+                );
+
+
+            if (
+                !user
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Invalid or expired reset code."
+                });
+            }
+
+
+            verifyAuthOtp({
+
+                email,
+
+                token,
+
+                purpose:
+                    "password_reset"
+            });
+
+
+            const {
+                data: merchant,
+                error:
+                    merchantError
+            } = await supabase
+                .from(
+                    "merchant_profiles"
+                )
+                .select(
+                    "id,status"
+                )
+                .eq(
+                    "owner_user_id",
+                    user.id
+                )
+                .maybeSingle();
+
+
+            if (
+                merchantError
+            ) {
+
+                console.error(
+                    "Reset merchant lookup error:",
+                    merchantError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "We couldn't verify your reset request right now."
+                });
+            }
+
+
+            if (
+                !merchant ||
+                merchant.status !==
+                    "active"
+            ) {
+
+                return res.status(403).json({
+                    error:
+                        "This account is unavailable."
+                });
+            }
+
+
+            const resetTicket =
+                crypto
+                    .randomBytes(
+                        32
+                    )
+                    .toString(
+                        "base64url"
+                    );
+
+
+            passwordResetTickets.set(
+                resetTicket,
+                {
+
+                    userId:
+                        user.id,
+
+                    email,
+
+                    expiresAt:
+                        Date.now() +
+                        (
+                            10 *
+                            60 *
+                            1000
+                        ),
+
+                    used:
+                        false
+                }
+            );
+
+
+            res.json({
+
+                success:
+                    true,
+
+                reset_ticket:
+                    resetTicket
+            });
+
+        } catch (error) {
+
+            console.error(
+                "RESET CHECK OTP ERROR:",
+                error
+            );
+
+
+            const otpError =
+                [
+                    "OTP_INVALID",
+                    "OTP_EXPIRED",
+                    "OTP_NOT_FOUND",
+                    "OTP_TOO_MANY_ATTEMPTS"
+                ].includes(
+                    error.code
+                );
+
+
+            res.status(
+                otpError
+                    ? 400
+                    : 500
+            ).json({
+
+                error:
+                    error.publicMessage ||
+                    (
+                        otpError
+                            ? error.message
+                            : "We couldn't verify the reset code right now."
+                    )
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   FORGOT PASSWORD — SET PASSWORD
+============================================================ */
+
+app.post(
+    "/api/public/auth/forgot-password/reset",
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const resetTicket =
+                String(
+                    req.body?.reset_ticket ||
+                    ""
+                ).trim();
+
+
+            const newPassword =
+                String(
+                    req.body?.new_password ||
+                    ""
+                );
+
+
+            if (
+                !resetTicket
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Password reset session is missing."
+                });
+            }
+
+
+            if (
+                newPassword.length <
+                8
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Password must contain at least 8 characters."
+                });
+            }
+
+
+            const ticket =
+                passwordResetTickets.get(
+                    resetTicket
+                );
+
+
+            if (
+                !ticket
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "This password reset session is invalid or expired."
+                });
+            }
+
+
+            if (
+                ticket.used
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "This password reset session has already been used."
+                });
+            }
+
+
+            if (
+                ticket.expiresAt <=
+                Date.now()
+            ) {
+
+                passwordResetTickets.delete(
+                    resetTicket
+                );
+
+
+                return res.status(400).json({
+                    error:
+                        "This password reset session has expired."
+                });
+            }
+
+
+            const {
+                error
+            } = await supabase
+                .auth
+                .admin
+                .updateUserById(
+                    ticket.userId,
+                    {
+
+                        password:
+                            newPassword
+                    }
+                );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Supabase password update error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "We couldn't update your password right now. Please try again."
+                });
+            }
+
+
+            passwordResetTickets.delete(
+                resetTicket
+            );
+
+
+            await supabase
+                .from(
+                    "audit_logs"
+                )
+                .insert({
+
+                    actor_type:
+                        "merchant",
+
+                    actor_id:
+                        ticket.userId,
+
+                    action:
+                        "merchant_password_reset",
+
+                    metadata: {
+
+                        authentication:
+                            "custom_resend_otp"
+                    }
+                });
+
+
+            res.json({
+
+                success:
+                    true,
+
+                message:
+                    "Your password has been updated successfully."
+            });
+
+        } catch (error) {
+
+            console.error(
+                "PASSWORD RESET ERROR:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    "We couldn't update your password right now. Please try again."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   CLEAN TEMPORARY AUTH DATA
+============================================================ */
+
+setInterval(
+    () => {
+
+        const now =
+            Date.now();
+
+
+        for (
+            const [
+                key,
+                record
+            ]
+            of authOtpStore
+        ) {
+
+            if (
+                record.expires_at <=
+                now
+            ) {
+
+                authOtpStore.delete(
+                    key
+                );
+            }
+        }
+
+
+        for (
+            const [
+                email,
+                record
+            ]
+            of pendingSignupStore
+        ) {
+
+            if (
+                record.expires_at <=
+                now
+            ) {
+
+                pendingSignupStore.delete(
+                    email
+                );
+            }
+        }
+
+
+        for (
+            const [
+                ticket,
+                record
+            ]
+            of passwordResetTickets
+        ) {
+
+            if (
+                record.expiresAt <=
+                now
+            ) {
+
+                passwordResetTickets.delete(
+                    ticket
+                );
+            }
+        }
+
+    },
+    60 *
+    1000
+);
+
+
+/* ============================================================
+   MERCHANT PROFILE
+============================================================ */
+
+app.get(
+    "/api/merchant/me",
+    authenticateMerchant,
+    (req, res) => {
+
+        res.json({
+
+            merchant:
+                req.merchant
+        });
+    }
+);
+
+
+/* ============================================================
+   MERCHANT APPS
+============================================================ */
+
+app.get(
+    "/api/merchant/apps",
+    authenticateMerchant,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data,
+                error
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .select(
+                    `
+                    id,
+                    name,
+                    slug,
+                    website_url,
+                    platform_type,
+                    client_id,
+                    status,
+                    created_at,
+                    updated_at
+                    `
+                )
+                .eq(
+                    "merchant_id",
+                    req.merchant.id
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending:
+                            false
+                    }
+                );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Merchant apps query error:",
+                    error
+                );
+
+                return res.status(500).json({
+                    error:
+                        "Could not load your applications."
+                });
+            }
+
+
+            res.json({
+
+                apps:
+                    data || []
+            });
+
+        } catch (error) {
+
+            console.error(
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    "Could not load your applications."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   MERCHANT CREATE APP
+============================================================ */
+
+app.post(
+    "/api/merchant/apps",
+    authenticateMerchant,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                name,
+                website_url,
+                platform_type
+            } = req.body;
+
+
+            if (
+                !name
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Application name is required."
+                });
+            }
+
+
+            let slug =
+                cleanSlug(
+                    name
+                );
+
+
+            const {
+                data: existingSlug
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .select(
+                    "id"
+                )
+                .eq(
+                    "slug",
+                    slug
+                )
+                .maybeSingle();
+
+
+            if (
+                existingSlug
+            ) {
+
+                slug =
+                    `${slug}-${randomHex(3)}`;
+            }
+
+
+            const clientId =
+                `sbp_live_${randomHex(18)}`;
+
+
+            const clientSecret =
+                `sbps_${randomHex(32)}`;
+
+
+            const clientSecretHash =
+                await bcrypt.hash(
+                    clientSecret,
+                    12
+                );
+
+
+            const {
+                data: service,
+                error
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .insert({
+
+                    merchant_id:
+                        req.merchant.id,
+
+                    name:
+                        String(
+                            name
+                        ).trim(),
+
+                    slug,
+
+                    website_url:
+                        website_url
+                            ? String(
+                                website_url
+                            ).trim()
+                            : null,
+
+                    platform_type:
+                        platform_type
+                            ? String(
+                                platform_type
+                            ).trim()
+                            : null,
+
+                    client_id:
+                        clientId,
+
+                    client_secret_hash:
+                        clientSecretHash,
+
+                    status:
+                        "pending"
+                })
+                .select(
+                    `
+                    id,
+                    name,
+                    slug,
+                    website_url,
+                    platform_type,
+                    client_id,
+                    status,
+                    created_at
+                    `
+                )
+                .single();
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Create app database error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not submit application."
+                });
+            }
+
+
+            await supabase
+                .from(
+                    "audit_logs"
+                )
+                .insert({
+
+                    actor_type:
+                        "merchant",
+
+                    actor_id:
+                        req.merchant.id,
+
+                    action:
+                        "application_submitted",
+
+                    metadata: {
+
+                        service_id:
+                            service.id,
+
+                        service_name:
+                            service.name
+                    }
+                });
+
+
+            res.status(201).json({
+
+                app:
+                    service,
+
+                approval_required:
+                    true,
+
+                credentials: {
+
+                    client_id:
+                        clientId,
+
+                    client_secret:
+                        clientSecret
+                },
+
+                message:
+                    "Application submitted for approval. Save these credentials securely. They become usable after approval."
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Create app error:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    "Could not submit application."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   MERCHANT REMOVE APP
+============================================================ */
+
+app.delete(
+    "/api/merchant/apps/:id",
+    authenticateMerchant,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data: service,
+                error:
+                    lookupError
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .select(
+                    "id,name,status"
+                )
+                .eq(
+                    "id",
+                    req.params.id
+                )
+                .eq(
+                    "merchant_id",
+                    req.merchant.id
+                )
+                .maybeSingle();
+
+
+            if (
+                lookupError
+            ) {
+
+                console.error(
+                    "Remove app lookup error:",
+                    lookupError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not remove application."
+                });
+            }
+
+
+            if (
+                !service
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Application not found."
+                });
+            }
+
+
+            const {
+                error
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .update({
+
+                    status:
+                        "disabled",
+
+                    updated_at:
+                        new Date()
+                            .toISOString()
+                })
+                .eq(
+                    "id",
+                    service.id
+                );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Disable app error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not remove application."
+                });
+            }
+
+
+            await supabase
+                .from(
+                    "audit_logs"
+                )
+                .insert({
+
+                    actor_type:
+                        "merchant",
+
+                    actor_id:
+                        req.merchant.id,
+
+                    action:
+                        "application_disabled",
+
+                    metadata: {
+
+                        service_id:
+                            service.id
+                    }
+                });
+
+
+            res.json({
+
+                success:
+                    true
+            });
+
+        } catch (error) {
+
+            console.error(
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    "Could not remove application."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   MERCHANT PRODUCTS
+============================================================ */
+
+app.get(
+    "/api/merchant/apps/:id/products",
+    authenticateMerchant,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data: service
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .select(
+                    "id,status"
+                )
+                .eq(
+                    "id",
+                    req.params.id
+                )
+                .eq(
+                    "merchant_id",
+                    req.merchant.id
+                )
+                .maybeSingle();
+
+
+            if (
+                !service
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Application not found."
+                });
+            }
+
+
+            const {
+                data,
+                error
+            } = await supabase
+                .from(
+                    "products"
+                )
+                .select(
+                    "*"
+                )
+                .eq(
+                    "service_id",
+                    service.id
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending:
+                            false
+                    }
+                );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Load products error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not load products."
+                });
+            }
+
+
+            res.json({
+
+                products:
+                    data || []
+            });
+
+        } catch (error) {
+
+            console.error(
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    "Could not load products."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   MERCHANT CREATE / UPDATE PRODUCT
+============================================================ */
+
+app.post(
+    "/api/merchant/apps/:id/products",
+    authenticateMerchant,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data: service
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .select(
+                    "id,status"
+                )
+                .eq(
+                    "id",
+                    req.params.id
+                )
+                .eq(
+                    "merchant_id",
+                    req.merchant.id
+                )
+                .maybeSingle();
+
+
+            if (
+                !service
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Application not found."
+                });
+            }
+
+
+            const {
+                product_code,
+                name,
+                description,
+                payment_type,
+                amount,
+                currency,
+                subscription_interval,
+                allow_custom_amount
+            } = req.body;
+
+
+            if (
+                !product_code ||
+                !name ||
+                !payment_type
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Product code, name and payment type are required."
+                });
+            }
+
+
+            if (
+                payment_type !==
+                    "donate" &&
+                (
+                    amount === undefined ||
+                    Number(amount) <= 0
+                )
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "A positive amount is required."
+                });
+            }
+
+
+            if (
+                payment_type ===
+                    "subscribe" &&
+                ![
+                    "monthly",
+                    "yearly"
+                ].includes(
+                    subscription_interval
+                )
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Choose monthly or yearly billing."
+                });
+            }
+
+
+            const {
+                data,
+                error
+            } = await supabase
+                .from(
+                    "products"
+                )
+                .upsert({
+
+                    service_id:
+                        service.id,
+
+                    product_code:
+                        String(
+                            product_code
+                        )
+                            .trim()
+                            .toLowerCase(),
+
+                    name:
+                        String(
+                            name
+                        ).trim(),
+
+                    description:
+                        description
+                            ? String(
+                                description
+                            ).trim()
+                            : null,
+
+                    payment_type,
+
+                    amount:
+                        (
+                            payment_type ===
+                                "donate" &&
+                            allow_custom_amount
+                        )
+                            ? (
+                                amount
+                                    ? Number(
+                                        amount
+                                    )
+                                    : null
+                            )
+                            : Number(
+                                amount
+                            ),
+
+                    currency:
+                        (
+                            currency ||
+                            "GMD"
+                        ).toUpperCase(),
+
+                    subscription_interval:
+                        payment_type ===
+                            "subscribe"
+                            ? subscription_interval
+                            : null,
+
+                    allow_custom_amount:
+                        Boolean(
+                            allow_custom_amount
+                        ),
+
+                    status:
+                        "active",
+
+                    updated_at:
+                        new Date()
+                            .toISOString()
+
+                }, {
+
+                    onConflict:
+                        "service_id,product_code"
+                })
+                .select(
+                    "*"
+                )
+                .single();
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Save product error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not save product."
+                });
+            }
+
+
+            res.status(201).json({
+
+                product:
+                    data
+            });
+
+        } catch (error) {
+
+            console.error(
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    "Could not save product."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   MERCHANT PAYMENT METHODS
+============================================================ */
+
+app.get(
+    "/api/merchant/apps/:id/payment-methods",
+    authenticateMerchant,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data: service
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .select(
+                    "id"
+                )
+                .eq(
+                    "id",
+                    req.params.id
+                )
+                .eq(
+                    "merchant_id",
+                    req.merchant.id
+                )
+                .maybeSingle();
+
+
+            if (
+                !service
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Application not found."
+                });
+            }
+
+
+            const {
+                data,
+                error
+            } = await supabase
+                .from(
+                    "payment_methods"
+                )
+                .select(
+                    "*"
+                )
+                .eq(
+                    "service_id",
+                    service.id
+                )
+                .order(
+                    "name"
+                );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Load payment methods error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not load payment methods."
+                });
+            }
+
+
+            res.json({
+
+                payment_methods:
+                    data || []
+            });
+
+        } catch (error) {
+
+            console.error(
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    "Could not load payment methods."
+            });
+        }
+    }
+);
+
+
+app.post(
+    "/api/merchant/apps/:id/payment-methods",
+    authenticateMerchant,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data: service
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .select(
+                    "id"
+                )
+                .eq(
+                    "id",
+                    req.params.id
+                )
+                .eq(
+                    "merchant_id",
+                    req.merchant.id
+                )
+                .maybeSingle();
+
+
+            if (
+                !service
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Application not found."
+                });
+            }
+
+
+            const {
+                name,
+                type,
+                instructions,
+                account_name,
+                account_number,
+                bank_name,
+                phone_number
+            } = req.body;
+
+
+            if (
+                !name ||
+                !type ||
+                !instructions
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Name, type and instructions are required."
+                });
+            }
+
+
+            const icons = {
+
+                wave:
+                    "/assets/payment-methods/wave.svg",
+
+                aps:
+                    "/assets/payment-methods/aps.svg",
+
+                nada:
+                    "/assets/payment-methods/nada.svg",
+
+                bank:
+                    null,
+
+                other:
+                    null
+            };
+
+
+            const {
+                data,
+                error
+            } = await supabase
+                .from(
+                    "payment_methods"
+                )
+                .insert({
+
+                    service_id:
+                        service.id,
+
+                    name:
+                        String(
+                            name
+                        ).trim(),
+
+                    type,
+
+                    icon_path:
+                        icons[type] ||
+                        null,
+
+                    instructions:
+                        String(
+                            instructions
+                        ).trim(),
+
+                    account_name:
+                        account_name
+                            ? String(
+                                account_name
+                            ).trim()
+                            : null,
+
+                    account_number:
+                        account_number
+                            ? String(
+                                account_number
+                            ).trim()
+                            : null,
+
+                    bank_name:
+                        bank_name
+                            ? String(
+                                bank_name
+                            ).trim()
+                            : null,
+
+                    phone_number:
+                        phone_number
+                            ? String(
+                                phone_number
+                            ).trim()
+                            : null,
+
+                    enabled:
+                        true
+                })
+                .select(
+                    "*"
+                )
+                .single();
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Save payment method error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not save payment method."
+                });
+            }
+
+
+            res.status(201).json({
+
+                payment_method:
+                    data
+            });
+
+        } catch (error) {
+
+            console.error(
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    "Could not save payment method."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   V1 REGISTER USER
+============================================================ */
+
+app.post(
+    "/api/v1/users",
+    authenticateService,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                external_user_id,
+                email
+            } = req.body;
+
+
+            if (
+                !external_user_id ||
+                !email
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "external_user_id and email are required."
+                });
+            }
+
+
+            const {
+                data,
+                error
+            } = await supabase
+                .from(
+                    "service_users"
+                )
+                .upsert({
+
+                    service_id:
+                        req.service.id,
+
+                    external_user_id:
+                        String(
+                            external_user_id
+                        ),
+
+                    email:
+                        normalizeEmail(
+                            email
+                        )
+
+                }, {
+
+                    onConflict:
+                        "service_id,external_user_id"
+                })
+                .select(
+                    "id,external_user_id,email,created_at"
+                )
+                .single();
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Register user error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not register customer."
+                });
+            }
+
+
+            res.json({
+
+                user:
+                    data
+            });
+
+        } catch (error) {
+
+            console.error(
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    "Could not register customer."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   V1 CREATE PAYMENT
+============================================================ */
+
+app.post(
+    "/api/v1/payments",
+    authenticateService,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                external_user_id,
+                product_code,
+                return_url,
+                amount
+            } = req.body;
+
+
+            if (
+                !external_user_id ||
+                !product_code
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "external_user_id and product_code are required."
+                });
+            }
+
+
+            const {
+                data: user
+            } = await supabase
+                .from(
+                    "service_users"
+                )
+                .select(
+                    "*"
+                )
+                .eq(
+                    "service_id",
+                    req.service.id
+                )
+                .eq(
+                    "external_user_id",
+                    String(
+                        external_user_id
+                    )
+                )
+                .maybeSingle();
+
+
+            if (
+                !user
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Customer has not been registered."
+                });
+            }
+
+
+            const {
+                data: product,
+                error:
+                    productError
+            } = await supabase
+                .from(
+                    "products"
+                )
+                .select(
+                    "*"
+                )
+                .eq(
+                    "service_id",
+                    req.service.id
+                )
+                .eq(
+                    "product_code",
+                    String(
+                        product_code
+                    )
+                        .trim()
+                        .toLowerCase()
+                )
+                .eq(
+                    "status",
+                    "active"
+                )
+                .maybeSingle();
+
+
+            if (
+                productError ||
+                !product
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Active product not found."
+                });
+            }
+
+
+            let finalAmount;
+
+
+            if (
+                product.payment_type ===
+                    "donate" &&
+                product.allow_custom_amount
+            ) {
+
+                finalAmount =
+                    Number(
+                        amount
+                    );
+
+            } else {
+
+                finalAmount =
+                    Number(
+                        product.amount
+                    );
+            }
+
+
+            if (
+                !Number.isFinite(
+                    finalAmount
+                ) ||
+                finalAmount <=
+                    0
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Invalid payment amount."
+                });
+            }
+
+
+            let normalizedReturnUrl =
+                null;
+
+
+            if (
+                return_url
+            ) {
+
+                try {
+
+                    const parsed =
+                        new URL(
+                            return_url
+                        );
+
+
+                    if (
+                        parsed.protocol !==
+                            "https:" &&
+                        parsed.hostname !==
+                            "localhost" &&
+                        parsed.hostname !==
+                            "127.0.0.1"
+                    ) {
+
+                        return res.status(400).json({
+                            error:
+                                "return_url must use HTTPS in production."
+                        });
+                    }
+
+
+                    normalizedReturnUrl =
+                        parsed.toString();
+
+                } catch {
+
+                    return res.status(400).json({
+                        error:
+                            "Invalid return_url."
+                    });
+                }
+            }
+
+
+            const expiresAt =
+                addMinutes(
+                    PAYMENT_SESSION_MINUTES
+                );
+
+
+            const {
+                data: payment,
+                error:
+                    paymentError
+            } = await supabase
+                .from(
+                    "payments"
+                )
+                .insert({
+
+                    payment_reference:
+                        generateReference(),
+
+                    service_id:
+                        req.service.id,
+
+                    service_user_id:
+                        user.id,
+
+                    product_id:
+                        product.id,
+
+                    amount:
+                        finalAmount,
+
+                    currency:
+                        product.currency,
+
+                    payment_type:
+                        product.payment_type,
+
+                    status:
+                        "pending",
+
+                    return_url:
+                        normalizedReturnUrl,
+
+                    expires_at:
+                        expiresAt
+                })
+                .select(
+                    `
+                    id,
+                    payment_reference,
+                    amount,
+                    currency,
+                    payment_type,
+                    status,
+                    expires_at
+                    `
+                )
+                .single();
+
+
+            if (
+                paymentError
+            ) {
+
+                console.error(
+                    "Create payment database error:",
+                    paymentError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not create payment session."
+                });
+            }
+
+
+            const rawSessionToken =
+                randomToken();
+
+
+            const {
+                error:
+                    sessionError
+            } = await supabase
+                .from(
+                    "payment_sessions"
+                )
+                .insert({
+
+                    payment_id:
+                        payment.id,
+
+                    session_token_hash:
+                        hash(
+                            rawSessionToken
+                        ),
+
+                    expires_at:
+                        expiresAt
+                });
+
+
+            if (
+                sessionError
+            ) {
+
+                console.error(
+                    "Create payment session error:",
+                    sessionError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not create payment session."
+                });
+            }
+
+
+            res.status(201).json({
+
+                payment,
+
+                payment_url:
+                    `${BASE_URL}/pay/${rawSessionToken}`
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Create payment session error:",
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    "Could not create payment session."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   V1 VERIFY PAYMENT
+============================================================ */
+
+app.post(
+    "/api/v1/verify-payment",
+    authenticateService,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                external_user_id,
+                token
+            } = req.body;
+
+
+            if (
+                !external_user_id ||
+                !token
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "external_user_id and token are required."
+                });
+            }
+
+
+            const result =
+                await supabase.rpc(
+                    "redeem_payment_token",
+                    {
+
+                        p_service_id:
+                            req.service.id,
+
+                        p_external_user_id:
+                            String(
+                                external_user_id
+                            ),
+
+                        p_token_hash:
+                            hash(
+                                String(
+                                    token
+                                )
+                                    .trim()
+                                    .toUpperCase()
+                            )
+                    }
+                );
+
+
+            if (
+                result.error
+            ) {
+
+                console.error(
+                    "Redeem token RPC error:",
+                    result.error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Payment verification failed."
+                });
+            }
+
+
+            if (
+                !result.data?.success
+            ) {
+
+                return res.status(400).json({
+
+                    verified:
+                        false,
+
+                    reason:
+                        result.data?.reason ||
+                        "VERIFICATION_FAILED"
+                });
+            }
+
+
+            res.json({
+
+                verified:
+                    true,
+
+                payment_id:
+                    result.data.payment_id,
+
+                product_id:
+                    result.data.product_id,
+
+                amount:
+                    result.data.amount,
+
+                currency:
+                    result.data.currency,
+
+                payment_type:
+                    result.data.payment_type
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Verify payment error:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    "Payment verification failed."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   PUBLIC PAYMENT SESSION
+============================================================ */
+
+app.get(
+    "/api/public/session/:token",
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data: session,
+                error
+            } = await supabase
+                .from(
+                    "payment_sessions"
+                )
+                .select(
+                    `
+                    id,
+                    payment_id,
+                    expires_at,
+
+                    payments (
+                        id,
+                        payment_reference,
+                        amount,
+                        currency,
+                        payment_type,
+                        status,
+                        receipt_uploaded_at,
+                        service_id,
+                        service_user_id,
+                        payment_method_id,
+                        payment_started_at,
+                        payment_deadline_at,
+                        return_url,
+
+                        products (
+                            name,
+                            product_code,
+                            description,
+                            payment_type,
+                            subscription_interval,
+                            allow_custom_amount
+                        ),
+
+                        services (
+                            name,
+                            slug,
+                            status
+                        )
+                    )
+                    `
+                )
+                .eq(
+                    "session_token_hash",
+                    hash(
+                        req.params.token
+                    )
+                )
+                .maybeSingle();
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Get payment session error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not load payment session."
+                });
+            }
+
+
+            if (
+                !session
+            ) {
+
+                return res.status(404).json({
+                    expired:
+                        true,
+                    error:
+                        "Payment session not found."
+                });
+            }
+
+
+            if (
+                new Date(
+                    session.expires_at
+                ) <=
+                new Date()
+            ) {
+
+                return res.status(410).json({
+                    expired:
+                        true,
+                    error:
+                        "This payment session has expired."
+                });
+            }
+
+
+            const payment =
+                session.payments;
+
+
+            if (
+                !payment
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Payment record not found."
+                });
+            }
+
+
+            if (
+                payment.services.status !==
+                "active"
+            ) {
+
+                return res.status(403).json({
+                    error:
+                        "This application is no longer active."
+                });
+            }
+
+
+            if (
+                payment.status ===
+                "cancelled"
+            ) {
+
+                return res.status(409).json({
+                    cancelled:
+                        true
+                });
+            }
+
+
+            const {
+                data: methods,
+                error:
+                    methodsError
+            } = await supabase
+                .from(
+                    "payment_methods"
+                )
+                .select(
+                    `
+                    id,
+                    name,
+                    type,
+                    icon_path
+                    `
+                )
+                .eq(
+                    "service_id",
+                    payment.service_id
+                )
+                .eq(
+                    "enabled",
+                    true
+                )
+                .order(
+                    "name"
+                );
+
+
+            if (
+                methodsError
+            ) {
+
+                console.error(
+                    "Payment methods load error:",
+                    methodsError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not load payment methods."
+                });
+            }
+
+
+            res.json({
+
+                expired:
+                    false,
+
+                session: {
+
+                    expires_at:
+                        session.expires_at
+                },
+
+                payment: {
+
+                    id:
+                        payment.id,
+
+                    reference:
+                        payment.payment_reference,
+
+                    amount:
+                        payment.amount,
+
+                    currency:
+                        payment.currency,
+
+                    payment_type:
+                        payment.payment_type,
+
+                    status:
+                        payment.status,
+
+                    receipt_uploaded:
+                        Boolean(
+                            payment.receipt_uploaded_at
+                        ),
+
+                    payment_started_at:
+                        payment.payment_started_at,
+
+                    payment_deadline_at:
+                        payment.payment_deadline_at,
+
+                    return_url:
+                        payment.return_url,
+
+                    product:
+                        payment.products
+                },
+
+                service: {
+
+                    name:
+                        payment.services.name,
+
+                    slug:
+                        payment.services.slug
+                },
+
+                payment_methods:
+                    methods || []
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Public session error:",
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    "Could not load payment session."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   PUBLIC PAYMENT METHOD
+============================================================ */
+
+app.get(
+    "/api/public/session/:token/method/:methodId",
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data: session,
+                error
+            } = await supabase
+                .from(
+                    "payment_sessions"
+                )
+                .select(
+                    `
+                    payment_id,
+                    expires_at,
+
+                    payments (
+                        id,
+                        service_id,
+                        status,
+                        payment_method_id,
+                        payment_started_at,
+                        payment_deadline_at,
+
+                        services (
+                            status
+                        )
+                    )
+                    `
+                )
+                .eq(
+                    "session_token_hash",
+                    hash(
+                        req.params.token
+                    )
+                )
+                .maybeSingle();
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Payment method session query error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not load payment method."
+                });
+            }
+
+
+            if (
+                !session
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Payment session not found."
+                });
+            }
+
+
+            if (
+                new Date(
+                    session.expires_at
+                ) <=
+                new Date()
+            ) {
+
+                return res.status(410).json({
+                    expired:
+                        true
+                });
+            }
+
+
+            const payment =
+                session.payments;
+
+
+            if (
+                !payment
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Payment not found."
+                });
+            }
+
+
+            if (
+                payment.services.status !==
+                "active"
+            ) {
+
+                return res.status(403).json({
+                    error:
+                        "This application is no longer active."
+                });
+            }
+
+
+            if (
+                ![
+                    "pending",
+                    "awaiting_receipt"
+                ].includes(
+                    payment.status
+                )
+            ) {
+
+                return res.status(409).json({
+                    error:
+                        "This payment is no longer at the payment stage."
+                });
+            }
+
+
+            const {
+                data: method,
+                error:
+                    methodError
+            } = await supabase
+                .from(
+                    "payment_methods"
+                )
+                .select(
+                    `
+                    id,
+                    name,
+                    type,
+                    icon_path,
+                    instructions,
+                    account_name,
+                    account_number,
+                    bank_name,
+                    phone_number
+                    `
+                )
+                .eq(
+                    "id",
+                    req.params.methodId
+                )
+                .eq(
+                    "service_id",
+                    payment.service_id
+                )
+                .eq(
+                    "enabled",
+                    true
+                )
+                .maybeSingle();
+
+
+            if (
+                methodError
+            ) {
+
+                console.error(
+                    "Payment method lookup error:",
+                    methodError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not load payment method."
+                });
+            }
+
+
+            if (
+                !method
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Payment method not found."
+                });
+            }
+
+
+            let startedAt =
+                payment.payment_started_at;
+
+
+            let deadlineAt =
+                payment.payment_deadline_at;
+
+
+            /*
+             * Start payment attempt countdown
+             * when account details are opened.
+             */
+
+            if (
+                !startedAt
+            ) {
+
+                startedAt =
+                    new Date()
+                        .toISOString();
+
+
+                deadlineAt =
+                    addMinutes(
+                        PAYMENT_ATTEMPT_MINUTES
+                    );
+
+
+                const {
+                    error:
+                        updateError
+                } = await supabase
+                    .from(
+                        "payments"
+                    )
+                    .update({
+
+                        payment_method_id:
+                            method.id,
+
+                        payment_started_at:
+                            startedAt,
+
+                        payment_deadline_at:
+                            deadlineAt,
+
+                        status:
+                            "awaiting_receipt"
+                    })
+                    .eq(
+                        "id",
+                        payment.id
+                    )
+                    .eq(
+                        "status",
+                        "pending"
+                    );
+
+
+                if (
+                    updateError
+                ) {
+
+                    console.error(
+                        "Start payment attempt error:",
+                        updateError
+                    );
+
+
+                    return res.status(500).json({
+                        error:
+                            "Could not start payment."
+                    });
+                }
+            }
+
+
+            if (
+                new Date(
+                    deadlineAt
+                ) <=
+                new Date()
+            ) {
+
+                await supabase
+                    .from(
+                        "payments"
+                    )
+                    .update({
+
+                        status:
+                            "expired"
+                    })
+                    .eq(
+                        "id",
+                        payment.id
+                    );
+
+
+                return res.status(410).json({
+                    expired:
+                        true
+                });
+            }
+
+
+            res.json({
+
+                method,
+
+                payment_attempt: {
+
+                    started_at:
+                        startedAt,
+
+                    deadline_at:
+                        deadlineAt
+                }
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Public payment method error:",
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    "Could not load payment method."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   RECEIPT UPLOAD
+============================================================ */
+
+app.post(
+    "/api/public/session/:token/receipt",
+    upload.single(
+        "receipt"
+    ),
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            if (
+                !req.file
+            ) {
+
+                return res.status(400).json({
+                    error:
+                        "Please choose a payment receipt."
+                });
+            }
+
+
+            const {
+                data: session
+            } = await supabase
+                .from(
+                    "payment_sessions"
+                )
+                .select(
+                    "payment_id,expires_at"
+                )
+                .eq(
+                    "session_token_hash",
+                    hash(
+                        req.params.token
+                    )
+                )
+                .maybeSingle();
+
+
+            if (
+                !session
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Payment session not found."
+                });
+            }
+
+
+            if (
+                new Date(
+                    session.expires_at
+                ) <=
+                new Date()
+            ) {
+
+                return res.status(410).json({
+                    expired:
+                        true
+                });
+            }
+
+
+            const {
+                data: payment
+            } = await supabase
+                .from(
+                    "payments"
+                )
+                .select(
+                    `
+                    id,
+                    status,
+                    payment_deadline_at
+                    `
+                )
+                .eq(
+                    "id",
+                    session.payment_id
+                )
+                .maybeSingle();
+
+
+            if (
+                !payment
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Payment not found."
+                });
+            }
+
+
+            if (
+                payment.status !==
+                "awaiting_receipt"
+            ) {
+
+                return res.status(409).json({
+                    error:
+                        "This payment is not accepting a receipt."
+                });
+            }
+
+
+            if (
+                payment.payment_deadline_at &&
+                new Date(
+                    payment.payment_deadline_at
+                ) <=
+                new Date()
+            ) {
+
+                await supabase
+                    .from(
+                        "payments"
+                    )
+                    .update({
+
+                        status:
+                            "expired"
+                    })
+                    .eq(
+                        "id",
+                        payment.id
+                    );
+
+
+                return res.status(410).json({
+                    expired:
+                        true
+                });
+            }
+
+
+            const extension =
+                (
+                    req.file.originalname
+                        .split(
+                            "."
+                        )
+                        .pop() ||
+                    "jpg"
+                ).toLowerCase();
+
+
+            const storagePath =
+                `${payment.id}/${randomHex(12)}.${extension}`;
+
+
+            const {
+                error:
+                    uploadError
+            } = await supabase
+                .storage
+                .from(
+                    "payment-receipts"
+                )
+                .upload(
+                    storagePath,
+                    req.file.buffer,
+                    {
+
+                        contentType:
+                            req.file.mimetype,
+
+                        upsert:
+                            false
+                    }
+                );
+
+
+            if (
+                uploadError
+            ) {
+
+                console.error(
+                    "Receipt storage error:",
+                    uploadError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "We couldn't save your receipt. Please try again."
+                });
+            }
+
+
+            const {
+                error:
+                    updateError
+            } = await supabase
+                .from(
+                    "payments"
+                )
+                .update({
+
+                    receipt_path:
+                        storagePath,
+
+                    receipt_uploaded_at:
+                        new Date()
+                            .toISOString(),
+
+                    status:
+                        "awaiting_verification"
+                })
+                .eq(
+                    "id",
+                    payment.id
+                )
+                .eq(
+                    "status",
+                    "awaiting_receipt"
+                );
+
+
+            if (
+                updateError
+            ) {
+
+                console.error(
+                    "Receipt database update error:",
+                    updateError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "We couldn't submit your receipt. Please try again."
+                });
+            }
+
+
+            await supabase
+                .from(
+                    "audit_logs"
+                )
+                .insert({
+
+                    actor_type:
+                        "system",
+
+                    action:
+                        "receipt_uploaded",
+
+                    payment_id:
+                        payment.id,
+
+                    metadata: {
+
+                        receipt_path:
+                            storagePath,
+
+                        mimetype:
+                            req.file.mimetype,
+
+                        size_bytes:
+                            req.file.size
+                    }
+                });
+
+
+            res.json({
+
+                success:
+                    true,
+
+                message:
+                    "Receipt submitted for verification."
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Receipt upload error:",
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    "We couldn't submit your receipt. Please try again."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   CANCEL PAYMENT
+============================================================ */
+
+app.post(
+    "/api/public/session/:token/cancel",
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data: session
+            } = await supabase
+                .from(
+                    "payment_sessions"
+                )
+                .select(
+                    `
+                    payment_id,
+                    expires_at,
+
+                    payments (
+                        id,
+                        status,
+                        return_url
+                    )
+                    `
+                )
+                .eq(
+                    "session_token_hash",
+                    hash(
+                        req.params.token
+                    )
+                )
+                .maybeSingle();
+
+
+            if (
+                !session
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Payment session not found."
+                });
+            }
+
+
+            if (
+                new Date(
+                    session.expires_at
+                ) <=
+                new Date()
+            ) {
+
+                return res.status(410).json({
+                    expired:
+                        true
+                });
+            }
+
+
+            const payment =
+                session.payments;
+
+
+            if (
+                !payment
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Payment not found."
+                });
+            }
+
+
+            if (
+                [
+                    "approved",
+                    "completed"
+                ].includes(
+                    payment.status
+                )
+            ) {
+
+                return res.status(409).json({
+                    error:
+                        "This payment can no longer be cancelled."
+                });
+            }
+
+
+            const {
+                error
+            } = await supabase
+                .from(
+                    "payments"
+                )
+                .update({
+
+                    status:
+                        "cancelled",
+
+                    cancel_reason:
+                        "Customer cancelled payment.",
+
+                    cancelled_at:
+                        new Date()
+                            .toISOString()
+
+                })
+                .eq(
+                    "id",
+                    payment.id
+                );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Cancel payment database error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not cancel this payment."
+                });
+            }
+
+
+            await supabase
+                .from(
+                    "audit_logs"
+                )
+                .insert({
+
+                    actor_type:
+                        "system",
+
+                    action:
+                        "payment_cancelled",
+
+                    payment_id:
+                        payment.id,
+
+                    metadata: {
+
+                        reason:
+                            "customer_cancelled"
+                    }
+                });
+
+
+            res.json({
+
+                success:
+                    true,
+
+                return_url:
+                    payment.return_url
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Cancel payment error:",
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    "Could not cancel this payment."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   ADMIN LOGIN
+============================================================ */
+
+app.post(
+    "/api/admin/login",
+    (req, res) => {
+
+        const {
+            username,
+            password
+        } = req.body;
+
+
+        if (
+            username !==
+                process.env.ADMIN_USERNAME ||
+            password !==
+                process.env.ADMIN_PASSWORD
+        ) {
+
+            return res.status(401).json({
+                error:
+                    "Invalid administrator credentials."
+            });
+        }
+
+
+        const cookie =
+            createAdminCookie();
+
+
+        res.setHeader(
+            "Set-Cookie",
+            [
+                `sbp_admin=${cookie}`,
+                "HttpOnly",
+                "Path=/",
+                "SameSite=Strict",
+                "Max-Age=28800"
+            ].join(
+                "; "
+            )
+        );
+
+
+        res.json({
+
+            success:
+                true
+        });
+    }
+);
+
+
+/* ============================================================
+   ADMIN LOGOUT
+============================================================ */
+
+app.post(
+    "/api/admin/logout",
+    (req, res) => {
+
+        res.setHeader(
+            "Set-Cookie",
+            [
+                "sbp_admin=",
+                "HttpOnly",
+                "Path=/",
+                "SameSite=Strict",
+                "Max-Age=0"
+            ].join(
+                "; "
+            )
+        );
+
+
+        res.json({
+
+            success:
+                true
+        });
+    }
+);
+
+
+/* ============================================================
+   ADMIN ME
+============================================================ */
+
+app.get(
+    "/api/admin/me",
+    (req, res) => {
+
+        const cookies =
+            req.headers.cookie ||
+            "";
+
+
+        const match =
+            cookies.match(
+                /sbp_admin=([^;]+)/
+            );
+
+
+        res.json({
+
+            authenticated:
+                Boolean(
+                    match &&
+                    verifyAdminCookie(
+                        match[1]
+                    )
+                )
+        });
+    }
+);
+
+
+/* ============================================================
+   ADMIN APPLICATION QUEUE
+============================================================ */
+
+app.get(
+    "/api/admin/applications",
+    requireAdmin,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data,
+                error
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .select(
+                    `
+                    id,
+                    name,
+                    slug,
+                    website_url,
+                    platform_type,
+                    client_id,
+                    status,
+                    created_at,
+
+                    merchant_profiles (
+                        id,
+                        business_name,
+                        email,
+                        phone,
+                        website
+                    )
+                    `
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending:
+                            false
+                    }
+                );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Admin applications error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not load application queue."
+                });
+            }
+
+
+            res.json({
+
+                applications:
+                    data || []
+            });
+
+        } catch (error) {
+
+            console.error(
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    "Could not load application queue."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   ADMIN APPROVE APPLICATION
+============================================================ */
+
+app.post(
+    "/api/admin/applications/:id/approve",
+    requireAdmin,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data: service,
+                error:
+                    serviceError
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .select(
+                    `
+                    id,
+                    name,
+                    status,
+                    merchant_id
+                    `
+                )
+                .eq(
+                    "id",
+                    req.params.id
+                )
+                .maybeSingle();
+
+
+            if (
+                serviceError
+            ) {
+
+                console.error(
+                    "Approve app lookup error:",
+                    serviceError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not approve application."
+                });
+            }
+
+
+            if (
+                !service
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Application not found."
+                });
+            }
+
+
+            if (
+                service.status ===
+                "active"
+            ) {
+
+                return res.status(409).json({
+                    error:
+                        "This application is already active."
+                });
+            }
+
+
+            const {
+                data,
+                error
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .update({
+
+                    status:
+                        "active",
+
+                    updated_at:
+                        new Date()
+                            .toISOString()
+                })
+                .eq(
+                    "id",
+                    service.id
+                )
+                .select(
+                    `
+                    id,
+                    name,
+                    slug,
+                    client_id,
+                    status
+                    `
+                )
+                .single();
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Approve app update error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not approve application."
+                });
+            }
+
+
+            await supabase
+                .from(
+                    "audit_logs"
+                )
+                .insert({
+
+                    actor_type:
+                        "admin",
+
+                    actor_id:
+                        "admin",
+
+                    action:
+                        "application_approved",
+
+                    metadata: {
+
+                        service_id:
+                            service.id
+                    }
+                });
+
+
+            res.json({
+
+                success:
+                    true,
+
+                application:
+                    data,
+
+                message:
+                    "Application approved. Its credentials are now active."
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Approve application error:",
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    "Could not approve application."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   ADMIN REJECT APPLICATION
+============================================================ */
+
+app.post(
+    "/api/admin/applications/:id/reject",
+    requireAdmin,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                error
+            } = await supabase
+                .from(
+                    "services"
+                )
+                .update({
+
+                    status:
+                        "rejected",
+
+                    updated_at:
+                        new Date()
+                            .toISOString()
+                })
+                .eq(
+                    "id",
+                    req.params.id
+                )
+                .eq(
+                    "status",
+                    "pending"
+                );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Reject app error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not reject application."
+                });
+            }
+
+
+            await supabase
+                .from(
+                    "audit_logs"
+                )
+                .insert({
+
+                    actor_type:
+                        "admin",
+
+                    actor_id:
+                        "admin",
+
+                    action:
+                        "application_rejected",
+
+                    metadata: {
+
+                        service_id:
+                            req.params.id
+                    }
+                });
+
+
+            res.json({
+
+                success:
+                    true
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Reject application error:",
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    "Could not reject application."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   ADMIN PAYMENTS
+============================================================ */
+
+app.get(
+    "/api/admin/payments",
+    requireAdmin,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data,
+                error
+            } = await supabase
+                .from(
+                    "payments"
+                )
+                .select(
+                    `
+                    id,
+                    payment_reference,
+                    amount,
+                    currency,
+                    payment_type,
+                    status,
+                    receipt_path,
+                    receipt_uploaded_at,
+                    approved_at,
+                    completed_at,
+                    created_at,
+
+                    services (
+                        name,
+                        slug,
+                        status,
+
+                        merchant_profiles (
+                            business_name
+                        )
+                    ),
+
+                    service_users (
+                        email,
+                        external_user_id
+                    ),
+
+                    products (
+                        name,
+                        product_code
+                    ),
+
+                    payment_methods (
+                        name,
+                        type
+                    )
+                    `
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending:
+                            false
+                    }
+                )
+                .limit(
+                    500
+                );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Admin payments error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not load payments."
+                });
+            }
+
+
+            res.json({
+
+                payments:
+                    data || []
+            });
+
+        } catch (error) {
+
+            console.error(
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    "Could not load payments."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   ADMIN APPROVE PAYMENT
+============================================================ */
+
+app.post(
+    "/api/admin/payments/:paymentId/approve",
+    requireAdmin,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data: payment,
+                error:
+                    paymentError
+            } = await supabase
+                .from(
+                    "payments"
+                )
+                .select(
+                    `
+                    *,
+                    service_users (
+                        email
+                    ),
+                    services (
+                        name,
+                        status
+                    )
+                    `
+                )
+                .eq(
+                    "id",
+                    req.params.paymentId
+                )
+                .maybeSingle();
+
+
+            if (
+                paymentError
+            ) {
+
+                console.error(
+                    "Admin payment lookup error:",
+                    paymentError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not approve payment."
+                });
+            }
+
+
+            if (
+                !payment
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Payment not found."
+                });
+            }
+
+
+            if (
+                payment.services.status !==
+                "active"
+            ) {
+
+                return res.status(403).json({
+                    error:
+                        "The application associated with this payment is not active."
+                });
+            }
+
+
+            if (
+                payment.status !==
+                "awaiting_verification"
+            ) {
+
+                return res.status(409).json({
+                    error:
+                        "Only payments awaiting verification can be approved."
+                });
+            }
+
+
+            const rawCode =
+                generatePaymentCode();
+
+
+            const {
+                error:
+                    tokenError
+            } = await supabase
+                .from(
+                    "payment_tokens"
+                )
+                .upsert({
+
+                    payment_id:
+                        payment.id,
+
+                    service_id:
+                        payment.service_id,
+
+                    service_user_id:
+                        payment.service_user_id,
+
+                    token_hash:
+                        hash(
+                            rawCode
+                        ),
+
+                    expires_at:
+                        addHours(
+                            PAYMENT_TOKEN_HOURS
+                        ),
+
+                    used_at:
+                        null
+
+                }, {
+
+                    onConflict:
+                        "payment_id"
+                });
+
+
+            if (
+                tokenError
+            ) {
+
+                console.error(
+                    "Payment token error:",
+                    tokenError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not generate the payment verification code."
+                });
+            }
+
+
+            const {
+                error:
+                    updateError
+            } = await supabase
+                .from(
+                    "payments"
+                )
+                .update({
+
+                    status:
+                        "approved",
+
+                    approved_at:
+                        new Date()
+                            .toISOString()
+                })
+                .eq(
+                    "id",
+                    payment.id
+                );
+
+
+            if (
+                updateError
+            ) {
+
+                console.error(
+                    "Approve payment update error:",
+                    updateError
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not approve payment."
+                });
+            }
+
+
+            await sendPaymentCodeEmail({
+
+                email:
+                    payment
+                        .service_users
+                        ?.email,
+
+                code:
+                    rawCode,
+
+                serviceName:
+                    payment
+                        .services
+                        ?.name,
+
+                amount:
+                    payment.amount,
+
+                currency:
+                    payment.currency,
+
+                reference:
+                    payment.payment_reference
+            });
+
+
+            res.json({
+
+                success:
+                    true,
+
+                message:
+                    "Payment approved. The one-time payment code has been sent to the customer."
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Approve payment error:",
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    error.publicMessage ||
+                    "Could not approve payment."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   ADMIN REJECT PAYMENT
+============================================================ */
+
+app.post(
+    "/api/admin/payments/:paymentId/reject",
+    requireAdmin,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const reason =
+                String(
+                    req.body?.reason ||
+                    "Payment could not be verified."
+                ).trim();
+
+
+            const {
+                error
+            } = await supabase
+                .from(
+                    "payments"
+                )
+                .update({
+
+                    status:
+                        "rejected",
+
+                    rejection_reason:
+                        reason
+                })
+                .eq(
+                    "id",
+                    req.params.paymentId
+                )
+                .eq(
+                    "status",
+                    "awaiting_verification"
+                );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Reject payment error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not reject payment."
+                });
+            }
+
+
+            await supabase
+                .from(
+                    "audit_logs"
+                )
+                .insert({
+
+                    actor_type:
+                        "admin",
+
+                    actor_id:
+                        "admin",
+
+                    action:
+                        "payment_rejected",
+
+                    payment_id:
+                        req.params.paymentId,
+
+                    metadata: {
+
+                        reason
+                    }
+                });
+
+
+            res.json({
+
+                success:
+                    true
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Reject payment error:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    "Could not reject payment."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   ADMIN VIEW RECEIPT
+============================================================ */
+
+app.get(
+    "/api/admin/payments/:paymentId/receipt",
+    requireAdmin,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const {
+                data: payment
+            } = await supabase
+                .from(
+                    "payments"
+                )
+                .select(
+                    "receipt_path"
+                )
+                .eq(
+                    "id",
+                    req.params.paymentId
+                )
+                .maybeSingle();
+
+
+            if (
+                !payment?.receipt_path
+            ) {
+
+                return res.status(404).json({
+                    error:
+                        "Receipt not found."
+                });
+            }
+
+
+            const {
+                data,
+                error
+            } = await supabase
+                .storage
+                .from(
+                    "payment-receipts"
+                )
+                .createSignedUrl(
+                    payment.receipt_path,
+                    300
+                );
+
+
+            if (
+                error
+            ) {
+
+                console.error(
+                    "Receipt signed URL error:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not open receipt."
+                });
+            }
+
+
+            res.json({
+
+                url:
+                    data.signedUrl
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Receipt viewing error:",
+                error
+            );
+
+
+            res.status(500).json({
+                error:
+                    "Could not open receipt."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   PAYMENT CODE EMAIL
+============================================================ */
+
+async function sendPaymentCodeEmail({
+
+    email,
+
+    code,
+
+    serviceName,
+
+    amount,
+
+    currency,
+
+    reference
+
+}) {
+
+    if (
+        !email
+    ) {
+
+        console.error(
+            "Payment-code email skipped: no recipient."
+        );
+
+
+        return;
+    }
+
+
+    const apiKey =
+        process.env.RESEND_API_KEY;
+
+
+    const from =
+        process.env.RESEND_FROM_EMAIL;
+
+
+    if (
+        !apiKey ||
+        !from
+    ) {
+
+        console.error(
+            "Payment-code email unavailable: Resend configuration missing."
+        );
+
+
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "https://api.resend.com/emails",
+                {
+
+                    method:
+                        "POST",
+
+                    headers: {
+
+                        Authorization:
+                            `Bearer ${apiKey}`,
+
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            from,
+
+                            to: [
+                                email
+                            ],
+
+                            subject:
+                                `${serviceName} payment approved — verification code`,
+
+                            text:
+                                `Your payment for ${serviceName} has been approved.\n\nReference: ${reference}\nAmount: ${currency} ${amount}\n\nYour one-time payment code is: ${code}\n\nEnter this code in the application or website where you started the payment. Do not share this code.`,
+
+                            html:
+                                `
+<!DOCTYPE html>
+
+<html>
+
+<body
+style="
+    margin:0;
+    padding:0;
+    background:#f6f6f3;
+    font-family:Arial,Helvetica,sans-serif;
+    color:#111;
+"
+>
+
+<div
+style="
+    max-width:560px;
+    margin:auto;
+    padding:40px 20px;
+"
+>
+
+
+<div
+style="
+    background:#ffffff;
+    border:1px solid #e7e7e2;
+    border-radius:20px;
+    padding:34px;
+"
+>
+
+
+<div
+style="
+    width:42px;
+    height:42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#111;
+    color:white;
+    border-radius:11px;
+    font-weight:800;
+"
+>
+S
+</div>
+
+
+<h1
+style="
+    margin:25px 0 10px;
+    font-size:27px;
+    letter-spacing:-1px;
+"
+>
+Payment approved
+</h1>
+
+
+<p
+style="
+    color:#666;
+    line-height:1.7;
+"
+>
+Your payment for
+<strong>
+${escapeHtml(serviceName)}
+</strong>
+has been verified and approved.
+</p>
+
+
+<div
+style="
+    background:#f7f7f4;
+    border:1px solid #e7e7e1;
+    border-radius:16px;
+    padding:22px;
+    margin:25px 0;
+"
+>
+
+
+<div
+style="
+    color:#777;
+    font-size:11px;
+    margin-bottom:8px;
+"
+>
+PAYMENT REFERENCE
+</div>
+
+
+<div
+style="
+    font-family:monospace;
+    font-weight:bold;
+"
+>
+${escapeHtml(reference)}
+</div>
+
+
+<div
+style="
+    color:#777;
+    font-size:11px;
+    margin-top:18px;
+    margin-bottom:8px;
+"
+>
+AMOUNT
+</div>
+
+
+<div
+style="
+    font-weight:bold;
+"
+>
+${escapeHtml(currency)}
+${Number(amount).toFixed(2)}
+</div>
+
+
+</div>
+
+
+<div
+style="
+    border:1px solid #deded9;
+    border-radius:16px;
+    padding:25px;
+    text-align:center;
+"
+>
+
+
+<div
+style="
+    color:#777;
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:2px;
+"
+>
+ONE-TIME PAYMENT CODE
+</div>
+
+
+<div
+style="
+    margin-top:12px;
+    font-family:Consolas,Monaco,monospace;
+    font-size:29px;
+    font-weight:800;
+    letter-spacing:2px;
+"
+>
+${escapeHtml(code)}
+</div>
+
+
+</div>
+
+
+<p
+style="
+    color:#666;
+    font-size:13px;
+    line-height:1.7;
+    margin-top:24px;
+"
+>
+Return to the application or website
+where you started the payment and
+enter this code there.
+</p>
+
+
+<p
+style="
+    color:#999;
+    font-size:12px;
+    line-height:1.6;
+    border-top:1px solid #eee;
+    padding-top:18px;
+    margin-top:25px;
+"
+>
+This payment code is tied to this
+transaction and can only be used once.
+Do not share it with anyone.
+</p>
+
+
+</div>
+
+</div>
+
+</body>
+
+</html>
+`
+                        })
+                }
+            );
+
+
+        if (
+            !response.ok
+        ) {
+
+            console.error(
+                "\n========== PAYMENT EMAIL ERROR =========="
+            );
+
+            console.error(
+                await response.text()
+            );
+
+            console.error(
+                "==========================================\n"
+            );
+
+            return;
+        }
+
+
+        console.log(
+            `Payment-code email sent successfully to ${email}`
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Payment-code email exception:",
+            error
+        );
+    }
+}
+
+
+/* ============================================================
+   FRONTEND ROUTES
+============================================================ */
+
+app.get(
+    "/",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "index.html"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/pay/:token",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "index.html"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/signup",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "signup.html"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/signin",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "signin.html"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/merchant",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "merchant.html"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/admin",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "admin.html"
+            )
+        );
+    }
+);
+
+
+/* ============================================================
+   STATIC ASSET ROUTES
+============================================================ */
+
+app.get(
+    "/styles.css",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "styles.css"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/app.js",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "app.js"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/auth.css",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "auth.css"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/auth.js",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "auth.js"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/merchant.css",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "merchant.css"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/merchant.js",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "merchant.js"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/admin.css",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "admin.css"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/admin.js",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "admin.js"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/pay/styles.css",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "styles.css"
+            )
+        );
+    }
+);
+
+
+app.get(
+    "/pay/app.js",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "app.js"
+            )
+        );
+    }
+);
+
+
+/* ============================================================
+   API 404
+============================================================ */
+
+app.use(
+    "/api",
+    (req, res) => {
+
+        res.status(404).json({
+
+            error:
+                "API endpoint not found."
+        });
+    }
+);
+
+
+/* ============================================================
+   FRONTEND FALLBACK
+============================================================ */
+
+app.get(
+    "*",
+    (req, res) => {
+
+        if (
+            req.accepts("html")
+        ) {
+
+            return res.sendFile(
+                path.join(
+                    __dirname,
+                    "public",
+                    "index.html"
+                )
+            );
+        }
+
+
+        res.status(404).json({
+
+            error:
+                "Not found."
+        });
+    }
+);
+
+
+/* ============================================================
+   GLOBAL ERROR HANDLER
+============================================================ */
+
+app.use(
+    (
+        error,
+        req,
+        res,
+        next
+    ) => {
+
+        console.error(
+            "\n========== UNHANDLED SERVER ERROR =========="
+        );
+
+        console.error(
+            error
+        );
+
+        console.error(
+            "============================================\n"
+        );
+
+
+        if (
+            res.headersSent
+        ) {
+
+            return next(
+                error
+            );
+        }
+
+
+        res.status(500).json({
+
+            error:
+                error.publicMessage ||
+                "Something went wrong. Please try again."
+        });
+    }
+);
+
+
+/* ============================================================
+   START
+============================================================ */
+
+app.listen(
+    PORT,
+    () => {
+
+        console.log(
+            "\n=============================================="
+        );
+
+        console.log(
+            "             SQUASHBERRYPAY"
+        );
+
+        console.log(
+            "=============================================="
+        );
+
+        console.log(
+            `Website:       ${BASE_URL}`
+        );
+
+        console.log(
+            `Sign up:       ${BASE_URL}/signup`
+        );
+
+        console.log(
+            `Sign in:       ${BASE_URL}/signin`
+        );
+
+        console.log(
+            `Merchant:      ${BASE_URL}/merchant`
+        );
+
+        console.log(
+            `Admin:         ${BASE_URL}/admin`
+        );
+
+        console.log(
+            `Health:        ${BASE_URL}/health`
+        );
+
+        console.log(
+            "----------------------------------------------"
+        );
+
+        console.log(
+            `Auth OTP:      ${AUTH_OTP_MINUTES} minutes`
+        );
+
+        console.log(
+            `OTP attempts:  ${AUTH_OTP_MAX_ATTEMPTS}`
+        );
+
+        console.log(
+            `OTP cooldown:  ${AUTH_OTP_RESEND_SECONDS}s`
+        );
+
+        console.log(
+            "----------------------------------------------"
+        );
+
+        console.log(
+            "Signup OTP:    Resend"
+        );
+
+        console.log(
+            "Login:         Email + Password"
+        );
+
+        console.log(
+            "Reset:         Resend OTP"
+        );
+
+        console.log(
+            "==============================================\n"
+        );
+    }
+);

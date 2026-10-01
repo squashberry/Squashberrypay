@@ -1,0 +1,2003 @@
+/* ============================================================
+   SQUASHBERRYPAY AUTH
+============================================================ */
+
+.auth-message {
+    margin-bottom:
+        18px;
+
+    padding:
+        12px 14px;
+
+    border:
+        1px solid transparent;
+
+    border-radius:
+        12px;
+
+    background:
+        #fff3f3;
+
+    color:
+        #992626;
+
+    font-size:
+        13px;
+
+    line-height:
+        1.55;
+
+    transform-origin:
+        top center;
+}
+
+
+.auth-message.success {
+    background:
+        #eef8f1;
+
+    color:
+        #176b3a;
+
+    border-color:
+        #cce7d4;
+}
+
+
+.auth-message.state-enter {
+    animation:
+        authAlertIn
+        .32s
+        cubic-bezier(
+            .16,
+            1,
+            .3,
+            1
+        );
+}
+
+
+.signup-page {
+    width:
+        min(
+            1080px,
+            calc(100% - 30px)
+        );
+
+    margin:
+        0 auto;
+
+    padding:
+        72px 0 95px;
+
+    display:
+        grid;
+
+    grid-template-columns:
+        minmax(280px, .9fr)
+        minmax(390px, 1.1fr);
+
+    gap:
+        72px;
+
+    align-items:
+        start;
+
+    animation:
+        pageEnter
+        .5s
+        both;
+}
+
+
+.signup-intro {
+    padding-top:
+        18px;
+}
+
+
+.auth-intro h1 {
+    margin:
+        16px 0;
+
+    max-width:
+        570px;
+
+    font-size:
+        clamp(
+            46px,
+            5.7vw,
+            74px
+        );
+
+    line-height:
+        .94;
+
+    letter-spacing:
+        -.06em;
+
+    animation:
+        introTextIn
+        .6s
+        .05s
+        both;
+}
+
+
+.auth-intro p {
+    max-width:
+        470px;
+
+    color:
+        var(--muted);
+
+    font-size:
+        15px;
+
+    line-height:
+        1.75;
+
+    animation:
+        introTextIn
+        .6s
+        .12s
+        both;
+}
+
+
+/* ============================================================
+   INTRO POINTS
+============================================================ */
+
+.intro-points {
+    display:
+        grid;
+
+    gap:
+        15px;
+
+    margin-top:
+        34px;
+
+    animation:
+        introTextIn
+        .6s
+        .18s
+        both;
+}
+
+
+.intro-point {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        12px;
+
+    color:
+        #555555;
+
+    font-size:
+        12px;
+
+    font-weight:
+        650;
+}
+
+
+.point-number {
+    color:
+        #999999;
+
+    font-family:
+        "JetBrains Mono",
+        Consolas,
+        monospace;
+
+    font-size:
+        11px;
+}
+
+
+/* ============================================================
+   CARD
+============================================================ */
+
+.signup-card {
+    position:
+        relative;
+
+    min-height:
+        560px;
+
+    padding:
+        30px;
+
+    background:
+        #ffffff;
+
+    border:
+        1px solid var(--line);
+
+    border-radius:
+        22px;
+
+    box-shadow:
+        0 22px 70px
+        rgba(
+            0,
+            0,
+            0,
+            .055
+        );
+
+    animation:
+        cardIn
+        .55s
+        .1s
+        both;
+}
+
+
+.signup-card form {
+    margin:
+        0;
+}
+
+
+/* ============================================================
+   PROGRESS
+============================================================ */
+
+.signup-progress {
+    position:
+        relative;
+
+    display:
+        flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        flex-start;
+
+    margin:
+        0 2px 40px;
+
+    padding:
+        0 5px;
+}
+
+
+.progress-line {
+    position:
+        absolute;
+
+    left:
+        25px;
+
+    right:
+        25px;
+
+    top:
+        15px;
+
+    height:
+        2px;
+
+    background:
+        #ecece7;
+
+    z-index:
+        0;
+}
+
+
+.progress-line-fill {
+    width:
+        0;
+
+    height:
+        100%;
+
+    background:
+        #111111;
+
+    transition:
+        width
+        .55s
+        cubic-bezier(
+            .16,
+            1,
+            .3,
+            1
+        );
+}
+
+
+.progress-step {
+    position:
+        relative;
+
+    z-index:
+        1;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    gap:
+        7px;
+
+    width:
+        60px;
+
+    color:
+        #aaaaaa;
+
+    font-size:
+        10px;
+
+    font-weight:
+        700;
+
+    transition:
+        color
+        .25s
+        ease;
+}
+
+
+.progress-step > span {
+    width:
+        32px;
+
+    height:
+        32px;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    border:
+        1px solid #ddddda;
+
+    border-radius:
+        50%;
+
+    background:
+        #ffffff;
+
+    color:
+        #999999;
+
+    font-size:
+        11px;
+
+    transition:
+        all
+        .35s
+        cubic-bezier(
+            .16,
+            1,
+            .3,
+            1
+        );
+}
+
+
+.progress-step.active,
+.progress-step.complete {
+    color:
+        #111111;
+}
+
+
+.progress-step.active > span {
+    background:
+        #111111;
+
+    border-color:
+        #111111;
+
+    color:
+        #ffffff;
+
+    box-shadow:
+        0 5px 18px
+        rgba(
+            0,
+            0,
+            0,
+            .16
+        );
+
+    transform:
+        scale(1.04);
+}
+
+
+.progress-step.complete > span {
+    background:
+        #eef7f1;
+
+    border-color:
+        #bddfc8;
+
+    color:
+        #176b3a;
+}
+
+
+/* ============================================================
+   STEPS
+============================================================ */
+
+.signup-step {
+    animation:
+        stepIn
+        .35s
+        cubic-bezier(
+            .16,
+            1,
+            .3,
+            1
+        );
+}
+
+
+.signup-step[hidden] {
+    display:
+        none;
+}
+
+
+.signup-step h2 {
+    margin:
+        9px 0 8px;
+
+    font-size:
+        28px;
+
+    letter-spacing:
+        -.045em;
+}
+
+
+.step-description {
+    margin:
+        0 0 26px;
+
+    color:
+        var(--muted);
+
+    font-size:
+        13px;
+
+    line-height:
+        1.65;
+}
+
+
+/* ============================================================
+   FIELDS
+============================================================ */
+
+.form-field {
+    margin-bottom:
+        17px;
+}
+
+
+.form-field label {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        6px;
+
+    margin-bottom:
+        7px;
+
+    color:
+        #555555;
+
+    font-size:
+        12px;
+
+    font-weight:
+        750;
+
+    transition:
+        color
+        .18s
+        ease,
+        transform
+        .18s
+        ease;
+}
+
+
+.form-field:focus-within label {
+    color:
+        #111111;
+
+    transform:
+        translateX(2px);
+}
+
+
+.optional {
+    color:
+        #aaaaaa;
+
+    font-size:
+        10px;
+
+    font-weight:
+        600;
+}
+
+
+.input-shell {
+    position:
+        relative;
+}
+
+
+.input-shell input {
+    width:
+        100%;
+
+    height:
+        51px;
+
+    padding:
+        0 44px 0 14px;
+
+    border:
+        1px solid #d7d7d2;
+
+    border-radius:
+        11px;
+
+    background:
+        #ffffff;
+
+    color:
+        #111111;
+
+    outline:
+        none;
+
+    font:
+        inherit;
+
+    font-size:
+        14px;
+
+    transition:
+        border-color
+        .2s
+        ease,
+        box-shadow
+        .2s
+        ease,
+        background
+        .2s
+        ease,
+        transform
+        .18s
+        ease;
+}
+
+
+.input-shell input::placeholder {
+    color:
+        #aaaaa5;
+
+    transition:
+        opacity
+        .2s
+        ease,
+        transform
+        .2s
+        ease;
+}
+
+
+.input-shell input:focus::placeholder {
+    opacity:
+        .25;
+
+    transform:
+        translateX(4px);
+}
+
+
+.input-shell input:focus {
+    border-color:
+        #111111;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(
+            0,
+            0,
+            0,
+            .045
+        );
+
+    transform:
+        translateY(-1px);
+}
+
+
+.input-shell input.is-valid {
+    border-color:
+        #68a77d;
+
+    background:
+        #fbfffc;
+}
+
+
+.input-shell input.is-invalid {
+    border-color:
+        #c86a6a;
+
+    background:
+        #fffafa;
+}
+
+
+.field-status {
+    position:
+        absolute;
+
+    right:
+        14px;
+
+    top:
+        50%;
+
+    width:
+        16px;
+
+    height:
+        16px;
+
+    transform:
+        translateY(-50%)
+        scale(.7);
+
+    opacity:
+        0;
+
+    border-radius:
+        50%;
+
+    pointer-events:
+        none;
+
+    transition:
+        opacity
+        .2s
+        ease,
+        transform
+        .22s
+        ease,
+        background
+        .2s
+        ease;
+}
+
+
+.input-shell input.is-valid
+~ .field-status {
+    opacity:
+        1;
+
+    transform:
+        translateY(-50%)
+        scale(1);
+
+    background:
+        #176b3a;
+}
+
+
+.input-shell input.is-valid
+~ .field-status::after {
+    content:
+        "✓";
+
+    position:
+        absolute;
+
+    inset:
+        0;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    color:
+        #ffffff;
+
+    font-size:
+        9px;
+
+    font-weight:
+        800;
+}
+
+
+.input-shell input.is-invalid
+~ .field-status {
+    opacity:
+        1;
+
+    transform:
+        translateY(-50%)
+        scale(1);
+
+    background:
+        #a11b1b;
+}
+
+
+.input-shell input.is-invalid
+~ .field-status::after {
+    content:
+        "!";
+
+    position:
+        absolute;
+
+    inset:
+        0;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    color:
+        #ffffff;
+
+    font-size:
+        9px;
+
+    font-weight:
+        800;
+}
+
+
+/* ============================================================
+   PASSWORD
+============================================================ */
+
+.password-toggle {
+    position:
+        absolute;
+
+    right:
+        37px;
+
+    top:
+        50%;
+
+    transform:
+        translateY(-50%);
+
+    padding:
+        3px 4px;
+
+    border:
+        0;
+
+    background:
+        transparent;
+
+    color:
+        #777777;
+
+    font-size:
+        10px;
+
+    font-weight:
+        750;
+
+    cursor:
+        pointer;
+
+    z-index:
+        2;
+}
+
+
+.password-toggle:hover {
+    color:
+        #111111;
+}
+
+
+.password-strength {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        8px;
+
+    margin-top:
+        7px;
+}
+
+
+.strength-bar {
+    width:
+        75px;
+
+    height:
+        4px;
+
+    overflow:
+        hidden;
+
+    background:
+        #e9e9e4;
+
+    border-radius:
+        10px;
+}
+
+
+.strength-bar span {
+    display:
+        block;
+
+    width:
+        0;
+
+    height:
+        100%;
+
+    background:
+        #777777;
+
+    border-radius:
+        inherit;
+
+    transition:
+        width
+        .3s
+        ease;
+}
+
+
+.password-strength.weak
+.strength-bar span {
+    width:
+        33%;
+}
+
+
+.password-strength.medium
+.strength-bar span {
+    width:
+        66%;
+}
+
+
+.password-strength.strong
+.strength-bar span {
+    width:
+        100%;
+}
+
+
+.password-strength small {
+    color:
+        #999999;
+
+    font-size:
+        10px;
+}
+
+
+/* ============================================================
+   BUTTON
+============================================================ */
+
+.button-arrow {
+    transition:
+        transform
+        .2s
+        ease;
+}
+
+
+.button:hover
+.button-arrow {
+    transform:
+        translateX(3px);
+}
+
+
+/* ============================================================
+   BACK
+============================================================ */
+
+.auth-back {
+    border:
+        0;
+
+    margin-bottom:
+        20px;
+
+    padding:
+        0;
+
+    background:
+        transparent;
+
+    color:
+        #777777;
+
+    font-size:
+        12px;
+
+    font-weight:
+        700;
+
+    cursor:
+        pointer;
+
+    transition:
+        color
+        .18s
+        ease,
+        transform
+        .18s
+        ease;
+}
+
+
+.auth-back:hover {
+    color:
+        #111111;
+
+    transform:
+        translateX(-2px);
+}
+
+
+/* ============================================================
+   OTP
+============================================================ */
+
+.otp-step {
+    text-align:
+        center;
+}
+
+
+.otp-top {
+    margin-bottom:
+        20px;
+}
+
+
+.mail-animation {
+    width:
+        56px;
+
+    height:
+        56px;
+
+    margin:
+        0 auto 18px;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    border:
+        1px solid #e1e1dc;
+
+    border-radius:
+        50%;
+
+    background:
+        #fafaf7;
+
+    animation:
+        mailPulse
+        2.4s
+        ease-in-out
+        infinite;
+}
+
+
+.mail-animation span {
+    font-size:
+        20px;
+
+    font-weight:
+        800;
+}
+
+
+.otp-top h2 {
+    margin:
+        9px 0 8px;
+
+    font-size:
+        29px;
+
+    letter-spacing:
+        -.045em;
+}
+
+
+.otp-top p {
+    margin:
+        0 auto;
+
+    max-width:
+        440px;
+
+    color:
+        var(--muted);
+
+    font-size:
+        13px;
+
+    line-height:
+        1.65;
+}
+
+
+.otp-email {
+    color:
+        #111111;
+
+    font-weight:
+        750;
+
+    word-break:
+        break-word;
+}
+
+
+.otp-group {
+    min-height:
+        58px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    gap:
+        7px;
+
+    margin:
+        25px 0;
+}
+
+
+.otp-digit {
+    width:
+        46px !important;
+
+    height:
+        55px !important;
+
+    padding:
+        0 !important;
+
+    border:
+        1px solid #d4d4cf !important;
+
+    border-radius:
+        11px !important;
+
+    background:
+        #ffffff;
+
+    text-align:
+        center;
+
+    color:
+        #111111;
+
+    font-family:
+        "JetBrains Mono",
+        Consolas,
+        Monaco,
+        monospace;
+
+    font-size:
+        19px;
+
+    font-weight:
+        800;
+
+    transition:
+        width
+        .35s
+        cubic-bezier(
+            .16,
+            1,
+            .3,
+            1
+        ),
+        margin
+        .35s
+        cubic-bezier(
+            .16,
+            1,
+            .3,
+            1
+        ),
+        opacity
+        .3s
+        ease,
+        border-color
+        .2s
+        ease,
+        transform
+        .2s
+        ease,
+        background
+        .2s
+        ease;
+}
+
+
+.otp-digit:focus {
+    border-color:
+        #111111 !important;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(
+            0,
+            0,
+            0,
+            .055
+        );
+
+    transform:
+        translateY(-1px);
+}
+
+
+.otp-digit.filled {
+    border-color:
+        #777777 !important;
+
+    transform:
+        translateY(-2px)
+        scale(1.025);
+}
+
+
+.otp-group.verifying {
+    gap:
+        0;
+}
+
+
+.otp-group.verifying
+.otp-digit {
+    width:
+        8px !important;
+
+    height:
+        55px !important;
+
+    margin:
+        0 -4px;
+
+    padding:
+        0 !important;
+
+    border:
+        0 !important;
+
+    border-radius:
+        0 !important;
+
+    background:
+        #176b3a;
+
+    opacity:
+        .85;
+
+    transform:
+        scaleY(.42);
+}
+
+
+.otp-group.verified
+.otp-digit {
+    width:
+        0 !important;
+
+    margin:
+        0;
+
+    opacity:
+        0;
+
+    pointer-events:
+        none;
+}
+
+
+.otp-group.error-shake {
+    animation:
+        otpShake
+        .42s
+        ease;
+}
+
+
+.otp-group.error-shake
+.otp-digit {
+    border-color:
+        #c85e5e !important;
+
+    background:
+        #fff8f8;
+}
+
+
+.otp-success-animation {
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    gap:
+        7px;
+
+    margin:
+        -3px 0 20px;
+
+    color:
+        #176b3a;
+
+    font-size:
+        12px;
+
+    font-weight:
+        750;
+}
+
+
+.otp-check {
+    width:
+        46px;
+
+    height:
+        46px;
+}
+
+
+.otp-check svg {
+    width:
+        100%;
+
+    height:
+        100%;
+}
+
+
+.otp-check circle {
+    fill:
+        #eef7f1;
+
+    stroke:
+        #a8d3b7;
+
+    stroke-width:
+        2;
+
+    stroke-dasharray:
+        151;
+
+    stroke-dashoffset:
+        151;
+
+    animation:
+        circleDraw
+        .5s
+        ease
+        forwards;
+}
+
+
+.otp-check path {
+    fill:
+        none;
+
+    stroke:
+        #176b3a;
+
+    stroke-width:
+        3.2;
+
+    stroke-linecap:
+        round;
+
+    stroke-linejoin:
+        round;
+
+    stroke-dasharray:
+        35;
+
+    stroke-dashoffset:
+        35;
+
+    animation:
+        checkDraw
+        .4s
+        .35s
+        ease
+        forwards;
+}
+
+
+.otp-actions {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    flex-wrap:
+        wrap;
+
+    gap:
+        8px;
+
+    margin-top:
+        15px;
+
+    color:
+        #999999;
+
+    font-size:
+        12px;
+}
+
+
+.otp-actions button {
+    border:
+        0;
+
+    padding:
+        0;
+
+    background:
+        transparent;
+
+    color:
+        #111111;
+
+    font-size:
+        12px;
+
+    font-weight:
+        750;
+
+    cursor:
+        pointer;
+}
+
+
+.otp-actions button:disabled {
+    color:
+        #aaaaaa;
+
+    cursor:
+        not-allowed;
+}
+
+
+.otp-timer {
+    font-variant-numeric:
+        tabular-nums;
+
+    font-weight:
+        750;
+}
+
+
+.otp-security-note {
+    margin:
+        26px 0 0;
+
+    color:
+        #aaa9a4;
+
+    font-size:
+        10px;
+
+    line-height:
+        1.6;
+}
+
+
+/* ============================================================
+   SUCCESS
+============================================================ */
+
+.auth-success {
+    min-height:
+        430px;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    text-align:
+        center;
+
+    animation:
+        stepIn
+        .4s
+        cubic-bezier(
+            .16,
+            1,
+            .3,
+            1
+        );
+}
+
+
+.auth-success h2 {
+    margin:
+        11px 0 8px;
+
+    font-size:
+        30px;
+
+    letter-spacing:
+        -.045em;
+}
+
+
+.auth-success p {
+    max-width:
+        390px;
+
+    margin:
+        0;
+
+    color:
+        var(--muted);
+
+    font-size:
+        13px;
+
+    line-height:
+        1.7;
+}
+
+
+.success-animation {
+    width:
+        72px;
+
+    height:
+        72px;
+
+    margin-bottom:
+        15px;
+}
+
+
+.success-animation svg {
+    width:
+        100%;
+
+    height:
+        100%;
+}
+
+
+.success-animation circle {
+    fill:
+        #eef7f1;
+
+    stroke:
+        #9bcbaa;
+
+    stroke-width:
+        2;
+
+    stroke-dasharray:
+        183;
+
+    stroke-dashoffset:
+        183;
+
+    animation:
+        circleDraw
+        .55s
+        ease
+        forwards;
+}
+
+
+.success-animation path {
+    fill:
+        none;
+
+    stroke:
+        #176b3a;
+
+    stroke-width:
+        4;
+
+    stroke-linecap:
+        round;
+
+    stroke-linejoin:
+        round;
+
+    stroke-dasharray:
+        48;
+
+    stroke-dashoffset:
+        48;
+
+    animation:
+        checkDraw
+        .45s
+        .4s
+        ease
+        forwards;
+}
+
+
+/* ============================================================
+   LOADING SPINNER
+============================================================ */
+
+.spinner {
+    display:
+        inline-block;
+
+    width:
+        15px;
+
+    height:
+        15px;
+
+    border:
+        2px solid
+        currentColor;
+
+    border-right-color:
+        transparent;
+
+    border-radius:
+        50%;
+
+    animation:
+        spin
+        .65s
+        linear
+        infinite;
+}
+
+
+.is-loading {
+    pointer-events:
+        none;
+}
+
+
+/* ============================================================
+   SKELETON
+============================================================ */
+
+.skeleton-loading .skeleton {
+    position:
+        relative;
+
+    overflow:
+        hidden;
+
+    background:
+        #eeeeea;
+
+    border-radius:
+        9px;
+}
+
+
+.skeleton-loading .skeleton::after {
+    content:
+        "";
+
+    position:
+        absolute;
+
+    inset:
+        0;
+
+    transform:
+        translateX(-100%);
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(
+                255,
+                255,
+                255,
+                .65
+            ),
+            transparent
+        );
+
+    animation:
+        skeletonMove
+        1.2s
+        infinite;
+}
+
+
+/* ============================================================
+   ANIMATIONS
+============================================================ */
+
+@keyframes spin {
+
+    to {
+        transform:
+            rotate(360deg);
+    }
+
+}
+
+
+@keyframes pageEnter {
+
+    from {
+        opacity:
+            0;
+
+        transform:
+            translateY(12px);
+    }
+
+    to {
+        opacity:
+            1;
+
+        transform:
+            translateY(0);
+    }
+
+}
+
+
+@keyframes cardIn {
+
+    from {
+        opacity:
+            0;
+
+        transform:
+            translateY(18px)
+            scale(.985);
+    }
+
+    to {
+        opacity:
+            1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+
+}
+
+
+@keyframes introTextIn {
+
+    from {
+        opacity:
+            0;
+
+        transform:
+            translateY(12px);
+    }
+
+    to {
+        opacity:
+            1;
+
+        transform:
+            translateY(0);
+    }
+
+}
+
+
+@keyframes stepIn {
+
+    from {
+        opacity:
+            0;
+
+        transform:
+            translateX(9px)
+            translateY(4px);
+    }
+
+    to {
+        opacity:
+            1;
+
+        transform:
+            translateX(0)
+            translateY(0);
+    }
+
+}
+
+
+@keyframes authAlertIn {
+
+    from {
+        opacity:
+            0;
+
+        transform:
+            translateY(-8px)
+            scale(.98);
+    }
+
+    to {
+        opacity:
+            1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+
+}
+
+
+@keyframes otpShake {
+
+    0%,
+    100% {
+        transform:
+            translateX(0);
+    }
+
+    20% {
+        transform:
+            translateX(-7px);
+    }
+
+    40% {
+        transform:
+            translateX(6px);
+    }
+
+    60% {
+        transform:
+            translateX(-4px);
+    }
+
+    80% {
+        transform:
+            translateX(3px);
+    }
+
+}
+
+
+@keyframes mailPulse {
+
+    0%,
+    100% {
+        transform:
+            translateY(0)
+            scale(1);
+    }
+
+    50% {
+        transform:
+            translateY(-2px)
+            scale(1.04);
+    }
+
+}
+
+
+@keyframes circleDraw {
+
+    to {
+        stroke-dashoffset:
+            0;
+    }
+
+}
+
+
+@keyframes checkDraw {
+
+    to {
+        stroke-dashoffset:
+            0;
+    }
+
+}
+
+
+@keyframes skeletonMove {
+
+    to {
+        transform:
+            translateX(100%);
+    }
+
+}
+
+
+/* ============================================================
+   MOBILE
+============================================================ */
+
+@media (
+    max-width: 780px
+) {
+
+    .signup-page {
+        grid-template-columns:
+            1fr;
+
+        gap:
+            38px;
+
+        padding:
+            48px 0 80px;
+    }
+
+
+    .signup-intro {
+        padding-top:
+            0;
+    }
+
+
+    .auth-intro h1 {
+        font-size:
+            50px;
+    }
+
+
+    .signup-card {
+        min-height:
+            0;
+    }
+
+}
+
+
+@media (
+    max-width: 500px
+) {
+
+    .signup-page {
+        width:
+            calc(
+                100% - 22px
+            );
+    }
+
+
+    .signup-card {
+        padding:
+            22px 18px;
+    }
+
+
+    .auth-intro h1 {
+        font-size:
+            43px;
+    }
+
+
+    .intro-points {
+        gap:
+            11px;
+    }
+
+
+    .progress-step {
+        width:
+            54px;
+    }
+
+
+    .progress-line {
+        left:
+            22px;
+
+        right:
+            22px;
+    }
+
+
+    .otp-group {
+        gap:
+            4px;
+    }
+
+
+    .otp-digit {
+        width:
+            40px !important;
+
+        height:
+            51px !important;
+    }
+
+}

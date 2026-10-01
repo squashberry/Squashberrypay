@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>
+        Sign in — SquashberryPay
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/styles.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/auth.css"
+    >
+
+</head>
+
+
+<body>
+
+<header class="site-header">
+
+    <a
+        href="/"
+        class="brand"
+    >
+
+        <span class="brand-mark">
+            S
+        </span>
+
+        <span>
+            SquashberryPay
+        </span>
+
+    </a>
+
+
+    <div class="header-actions">
+
+        <span>
+            New business?
+        </span>
+
+        <a
+            href="/signup"
+            class="nav-login"
+        >
+            Create account
+        </a>
+
+    </div>
+
+</header>
+
+
+<main>
+
+<section class="auth-page">
+
+
+    <div class="auth-intro">
+
+        <span class="eyebrow">
+            MERCHANT PORTAL
+        </span>
+
+
+        <h1>
+            Welcome back.
+        </h1>
+
+
+        <p>
+            Sign in to manage your applications,
+            products, payment buttons, payment
+            methods and transaction history.
+        </p>
+
+    </div>
+
+
+    <div class="auth-card">
+
+
+        <div
+            id="authMessage"
+            class="auth-message"
+            hidden
+        ></div>
+
+
+        <!-- ==================================================
+             NORMAL LOGIN
+        ================================================== -->
+
+        <div
+            id="signinEmailStep"
+            class="auth-step"
+        >
+
+            <span class="eyebrow">
+                SIGN IN
+            </span>
+
+
+            <h2>
+                Your account
+            </h2>
+
+
+            <form
+                id="signinForm"
+            >
+
+
+                <label>
+
+                    Business email
+
+                    <input
+                        id="signinEmail"
+                        type="email"
+                        placeholder="you@business.com"
+                        autocomplete="email"
+                        required
+                    >
+
+                </label>
+
+
+                <div
+                    class="forgot-row"
+                >
+
+                    <button
+                        id="forgotPasswordLink"
+                        class="auth-link"
+                        type="button"
+                    >
+                        Forgot password?
+                    </button>
+
+                </div>
+
+
+                <label>
+
+                    Password
+
+                    <input
+                        id="signinPassword"
+                        type="password"
+                        placeholder="Your password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                </label>
+
+
+                <button
+                    id="signinButton"
+                    class="button primary full"
+                    type="submit"
+                >
+                    Sign in
+                </button>
+
+
+            </form>
+
+        </div>
+
+
+        <!-- ==================================================
+             LOGIN SUCCESS
+        ================================================== -->
+
+        <div
+            id="signinSuccess"
+            class="auth-success"
+            hidden
+        >
+
+            <div
+                class="auth-success-icon"
+            >
+                ✓
+            </div>
+
+
+            <h2>
+                Signed in.
+            </h2>
+
+
+            <p>
+                Opening your merchant dashboard…
+            </p>
+
+        </div>
+
+
+        <!-- ==================================================
+             RESET EMAIL
+        ================================================== -->
+
+        <div
+            id="resetEmailStep"
+            class="auth-step"
+            hidden
+        >
+
+            <button
+                class="auth-back"
+                type="button"
+                data-reset-back="signin"
+            >
+                ← Back to sign in
+            </button>
+
+
+            <span class="eyebrow">
+                PASSWORD RECOVERY
+            </span>
+
+
+            <h2>
+                Reset your password
+            </h2>
+
+
+            <label>
+
+                Business email
+
+                <input
+                    id="resetEmail"
+                    type="email"
+                    placeholder="you@business.com"
+                    autocomplete="email"
+                >
+
+            </label>
+
+
+            <button
+                id="sendResetButton"
+                class="button primary full"
+                type="button"
+            >
+                Send reset code
+            </button>
+
+        </div>
+
+
+        <!-- ==================================================
+             RESET OTP
+        ================================================== -->
+
+        <div
+            id="resetOtpStep"
+            class="auth-step"
+            hidden
+        >
+
+            <button
+                class="auth-back"
+                type="button"
+                data-reset-back="reset-email"
+            >
+                ← Change email
+            </button>
+
+
+            <div
+                class="otp-header"
+            >
+
+                <span class="eyebrow">
+                    VERIFY RESET
+                </span>
+
+
+                <h2>
+                    Enter your code
+                </h2>
+
+
+                <p>
+
+                    We sent a 6-digit reset code to
+
+                    <strong
+                        id="resetEmailDisplay"
+                        class="otp-email"
+                    ></strong>
+
+                </p>
+
+            </div>
+
+
+            <div
+                id="resetOtpContainer"
+                class="otp-group"
+            ></div>
+
+
+            <button
+                id="verifyResetOtpButton"
+                class="button primary full"
+                type="button"
+                disabled
+            >
+                Verify code
+            </button>
+
+
+            <div
+                class="otp-actions"
+            >
+
+                <span>
+
+                    Resend in
+
+                    <strong
+                        id="resetResendTimer"
+                        class="otp-timer"
+                    >
+                        60s
+                    </strong>
+
+                </span>
+
+
+                <button
+                    id="resendResetButton"
+                    type="button"
+                    disabled
+                >
+                    Resend code
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==================================================
+             NEW PASSWORD
+        ================================================== -->
+
+        <div
+            id="resetPasswordStep"
+            class="auth-step"
+            hidden
+        >
+
+            <button
+                class="auth-back"
+                type="button"
+                data-reset-back="reset-otp"
+            >
+                ← Back
+            </button>
+
+
+            <span class="eyebrow">
+                NEW PASSWORD
+            </span>
+
+
+            <h2>
+                Create a new password
+            </h2>
+
+
+            <label>
+
+                New password
+
+                <input
+                    id="newPassword"
+                    type="password"
+                    placeholder="At least 8 characters"
+                    autocomplete="new-password"
+                    minlength="8"
+                >
+
+            </label>
+
+
+            <label>
+
+                Confirm new password
+
+                <input
+                    id="confirmNewPassword"
+                    type="password"
+                    placeholder="Enter password again"
+                    autocomplete="new-password"
+                    minlength="8"
+                >
+
+            </label>
+
+
+            <button
+                id="saveNewPasswordButton"
+                class="button primary full"
+                type="button"
+            >
+                Update password
+            </button>
+
+        </div>
+
+
+        <!-- ==================================================
+             RESET SUCCESS
+        ================================================== -->
+
+        <div
+            id="resetSuccess"
+            class="auth-success"
+            hidden
+        >
+
+            <div
+                class="auth-success-icon"
+            >
+                ✓
+            </div>
+
+
+            <h2>
+                Password updated.
+            </h2>
+
+
+            <p>
+                Your password has been changed.
+                Returning you to sign in…
+            </p>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+</main>
+
+
+<footer class="site-footer">
+
+    <span>
+        © 2026 SquashberryPay
+    </span>
+
+    <span>
+        Password authentication
+    </span>
+
+</footer>
+
+
+<script
+    src="/auth.js"
+></script>
+
+</body>
+
+</html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>
+        SquashberryPay Owner
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/styles.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/admin.css"
+    >
+
+</head>
+
+<body>
+
+<header class="site-header">
+
+    <a
+        href="/"
+        class="brand"
+    >
+
+        <span class="brand-mark">
+            S
+        </span>
+
+        <span>
+            SquashberryPay
+        </span>
+
+    </a>
+
+    <span>
+        Owner Control Center
+    </span>
+
+</header>
+
+
+<main
+    class="admin-page"
+>
+
+    <section
+        id="loginSection"
+        class="admin-login"
+    >
+
+        <span class="eyebrow">
+            OWNER ACCESS
+        </span>
+
+        <h1>
+            Control Center
+        </h1>
+
+        <p>
+            Manage applications, payments and
+            platform operations.
+        </p>
+
+
+        <input
+            id="username"
+            class="admin-input"
+            type="text"
+            placeholder="Username"
+        >
+
+
+        <input
+            id="password"
+            class="admin-input"
+            type="password"
+            placeholder="Password"
+        >
+
+
+        <button
+            id="loginButton"
+            class="button primary full"
+            type="button"
+        >
+            Sign in
+        </button>
+
+    </section>
+
+
+    <section
+        id="dashboardSection"
+        hidden
+    >
+
+        <div
+            class="admin-header"
+        >
+
+            <div>
+
+                <span class="eyebrow">
+                    OWNER
+                </span>
+
+                <h1>
+                    SquashberryPay
+                </h1>
+
+                <p>
+                    Platform control center.
+                </p>
+
+            </div>
+
+
+            <button
+                id="logoutButton"
+                class="button secondary"
+                type="button"
+            >
+                Sign out
+            </button>
+
+        </div>
+
+
+        <nav
+            class="admin-nav"
+        >
+
+            <button
+                class="active"
+                data-tab="payments"
+                type="button"
+            >
+                Payments
+            </button>
+
+
+            <button
+                data-tab="applications"
+                type="button"
+            >
+                App Approvals
+            </button>
+
+
+            <button
+                data-tab="businesses"
+                type="button"
+            >
+                Businesses
+            </button>
+
+        </nav>
+
+
+        <!-- ================================================= -->
+        <!-- PAYMENTS -->
+        <!-- ================================================= -->
+
+        <section
+            id="tab-payments"
+            class="admin-panel"
+        >
+
+            <h2>
+                Payment history
+            </h2>
+
+
+            <div
+                class="table-wrap"
+            >
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Reference
+                            </th>
+
+                            <th>
+                                Business
+                            </th>
+
+                            <th>
+                                Customer
+                            </th>
+
+                            <th>
+                                Amount
+                            </th>
+
+                            <th>
+                                Method
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                            <th>
+                                Actions
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody
+                        id="paymentRows"
+                    ></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================================================= -->
+        <!-- APP APPROVALS -->
+        <!-- ================================================= -->
+
+        <section
+            id="tab-applications"
+            class="admin-panel"
+            hidden
+        >
+
+            <div
+                style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:flex-start;
+                    gap:20px;
+                "
+            >
+
+                <div>
+
+                    <span class="eyebrow">
+                        APPLICATION REVIEW
+                    </span>
+
+                    <h2>
+                        App approval queue
+                    </h2>
+
+                    <p>
+                        Businesses can create accounts
+                        freely. Applications only become
+                        active after you approve them.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="applicationRows"
+                class="application-list"
+            ></div>
+
+        </section>
+
+
+        <!-- ================================================= -->
+        <!-- BUSINESSES -->
+        <!-- ================================================= -->
+
+        <section
+            id="tab-businesses"
+            class="admin-panel"
+            hidden
+        >
+
+            <h2>
+                Registered applications
+            </h2>
+
+
+            <div
+                class="table-wrap"
+            >
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Business
+                            </th>
+
+                            <th>
+                                Application
+                            </th>
+
+                            <th>
+                                Website
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody
+                        id="businessRows"
+                    ></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </section>
+
+</main>
+
+
+<script
+    src="/admin.js"
+></script>
+
+</body>
+</html>

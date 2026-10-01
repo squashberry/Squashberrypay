@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <meta
+        name="theme-color"
+        content="#111111"
+    >
+
+    <title>
+        Create account — SquashberryPay
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/styles.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/auth.css"
+    >
+
+</head>
+
+
+<body>
+
+<header class="site-header">
+
+    <a
+        href="/"
+        class="brand"
+    >
+
+        <span class="brand-mark">
+            S
+        </span>
+
+        <span>
+            SquashberryPay
+        </span>
+
+    </a>
+
+
+    <div class="header-actions">
+
+        <span>
+            Already have an account?
+        </span>
+
+        <a
+            href="/signin"
+            class="nav-login"
+        >
+            Sign in
+        </a>
+
+    </div>
+
+</header>
+
+
+<main>
+
+<section class="signup-page">
+
+
+    <!-- =====================================================
+         INTRO
+    ====================================================== -->
+
+    <div class="auth-intro signup-intro">
+
+        <span class="eyebrow">
+            FOR BUSINESSES
+        </span>
+
+
+        <h1 id="introTitle">
+            Start accepting payments.
+        </h1>
+
+
+        <p id="introText">
+            Create your SquashberryPay business
+            account in a few simple steps.
+            Your business account is free.
+            Application approval happens separately.
+        </p>
+
+
+        <div class="intro-points">
+
+            <div class="intro-point">
+
+                <span class="point-number">
+                    01
+                </span>
+
+                <span>
+                    Create your business account
+                </span>
+
+            </div>
+
+
+            <div class="intro-point">
+
+                <span class="point-number">
+                    02
+                </span>
+
+                <span>
+                    Verify your email
+                </span>
+
+            </div>
+
+
+            <div class="intro-point">
+
+                <span class="point-number">
+                    03
+                </span>
+
+                <span>
+                    Connect your application
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         CARD
+    ====================================================== -->
+
+    <div class="auth-card signup-card">
+
+
+        <!-- GLOBAL MESSAGE -->
+
+        <div
+            id="authMessage"
+            class="auth-message"
+            hidden
+        ></div>
+
+
+        <!-- ==================================================
+             PROGRESS
+        ================================================== -->
+
+        <div
+            class="signup-progress"
+            id="signupProgress"
+        >
+
+            <div class="progress-line">
+
+                <div
+                    class="progress-line-fill"
+                    id="progressLineFill"
+                ></div>
+
+            </div>
+
+
+            <div
+                class="progress-step active"
+                data-progress="1"
+            >
+
+                <span>
+                    1
+                </span>
+
+                <small>
+                    Business
+                </small>
+
+            </div>
+
+
+            <div
+                class="progress-step"
+                data-progress="2"
+            >
+
+                <span>
+                    2
+                </span>
+
+                <small>
+                    Account
+                </small>
+
+            </div>
+
+
+            <div
+                class="progress-step"
+                data-progress="3"
+            >
+
+                <span>
+                    3
+                </span>
+
+                <small>
+                    Verify
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==================================================
+             STEP 1
+        ================================================== -->
+
+        <form
+            id="signupForm"
+            novalidate
+        >
+
+            <section
+                id="signupStep1"
+                class="auth-step signup-step active"
+                data-step="1"
+            >
+
+                <span class="eyebrow">
+                    STEP 1 OF 3
+                </span>
+
+
+                <h2>
+                    Your business
+                </h2>
+
+
+                <p class="step-description">
+                    Tell us a little about the business
+                    using SquashberryPay.
+                </p>
+
+
+                <div class="form-field">
+
+                    <label
+                        for="businessName"
+                    >
+                        Business name
+                    </label>
+
+                    <div class="input-shell">
+
+                        <input
+                            id="businessName"
+                            type="text"
+                            placeholder="e.g. Squashberry Media"
+                            autocomplete="organization"
+                            required
+                        >
+
+                        <span
+                            class="field-status"
+                            aria-hidden="true"
+                        ></span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-field">
+
+                    <label
+                        for="businessType"
+                    >
+                        Business type
+                    </label>
+
+                    <div class="input-shell">
+
+                        <input
+                            id="businessType"
+                            type="text"
+                            placeholder="e.g. Software, education, restaurant"
+                        >
+
+                        <span
+                            class="field-status"
+                            aria-hidden="true"
+                        ></span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-field">
+
+                    <label
+                        for="website"
+                    >
+                        Website
+                        <span class="optional">
+                            Optional
+                        </span>
+                    </label>
+
+                    <div class="input-shell">
+
+                        <input
+                            id="website"
+                            type="url"
+                            placeholder="https://yourbusiness.com"
+                            autocomplete="url"
+                        >
+
+                        <span
+                            class="field-status"
+                            aria-hidden="true"
+                        ></span>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    id="step1Next"
+                    class="button primary full"
+                    type="button"
+                >
+                    Continue
+                    <span class="button-arrow">
+                        →
+                    </span>
+                </button>
+
+            </section>
+
+
+            <!-- ==================================================
+                 STEP 2
+            ================================================== -->
+
+            <section
+                id="signupStep2"
+                class="auth-step signup-step"
+                data-step="2"
+                hidden
+            >
+
+                <button
+                    type="button"
+                    class="auth-back"
+                    data-back-step="1"
+                >
+                    ← Back
+                </button>
+
+
+                <span class="eyebrow">
+                    STEP 2 OF 3
+                </span>
+
+
+                <h2>
+                    Your account
+                </h2>
+
+
+                <p class="step-description">
+                    This email and password will be used
+                    to access your merchant dashboard.
+                </p>
+
+
+                <div class="form-field">
+
+                    <label
+                        for="email"
+                    >
+                        Business email
+                    </label>
+
+                    <div class="input-shell">
+
+                        <input
+                            id="email"
+                            type="email"
+                            placeholder="you@business.com"
+                            autocomplete="email"
+                            required
+                        >
+
+                        <span
+                            class="field-status"
+                            aria-hidden="true"
+                        ></span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-field">
+
+                    <label
+                        for="phone"
+                    >
+                        Phone number
+                        <span class="optional">
+                            Optional
+                        </span>
+                    </label>
+
+                    <div class="input-shell">
+
+                        <input
+                            id="phone"
+                            type="tel"
+                            placeholder="+220..."
+                            autocomplete="tel"
+                        >
+
+                        <span
+                            class="field-status"
+                            aria-hidden="true"
+                        ></span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-field">
+
+                    <label
+                        for="signupPassword"
+                    >
+                        Password
+                    </label>
+
+                    <div class="input-shell">
+
+                        <input
+                            id="signupPassword"
+                            type="password"
+                            placeholder="At least 8 characters"
+                            autocomplete="new-password"
+                            minlength="8"
+                            required
+                        >
+
+                        <button
+                            class="password-toggle"
+                            type="button"
+                            data-password-toggle="signupPassword"
+                            aria-label="Show password"
+                        >
+                            Show
+                        </button>
+
+                        <span
+                            class="field-status"
+                            aria-hidden="true"
+                        ></span>
+
+                    </div>
+
+                    <div
+                        id="passwordStrength"
+                        class="password-strength"
+                    >
+
+                        <div class="strength-bar">
+                            <span></span>
+                        </div>
+
+                        <small>
+                            Use at least 8 characters
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-field">
+
+                    <label
+                        for="confirmPassword"
+                    >
+                        Confirm password
+                    </label>
+
+                    <div class="input-shell">
+
+                        <input
+                            id="confirmPassword"
+                            type="password"
+                            placeholder="Enter password again"
+                            autocomplete="new-password"
+                            minlength="8"
+                            required
+                        >
+
+                        <span
+                            class="field-status"
+                            aria-hidden="true"
+                        ></span>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    id="signupButton"
+                    class="button primary full"
+                    type="submit"
+                >
+                    Continue with email
+                    <span class="button-arrow">
+                        →
+                    </span>
+                </button>
+
+            </section>
+
+
+            <!-- ==================================================
+                 STEP 3
+            ================================================== -->
+
+            <section
+                id="signupStep3"
+                class="auth-step signup-step otp-step"
+                data-step="3"
+                hidden
+            >
+
+                <div class="otp-top">
+
+                    <div
+                        class="mail-animation"
+                        aria-hidden="true"
+                    >
+                        <span>
+                            @
+                        </span>
+                    </div>
+
+
+                    <span class="eyebrow">
+                        STEP 3 OF 3
+                    </span>
+
+
+                    <h2>
+                        Check your email
+                    </h2>
+
+
+                    <p>
+
+                        We sent a 6-digit verification code
+                        to
+
+                        <strong
+                            id="signupEmailDisplay"
+                            class="otp-email"
+                        ></strong>
+
+                    </p>
+
+                </div>
+
+
+                <div
+                    id="signupOtpContainer"
+                    class="otp-group"
+                    data-verify-button="#verifySignupButton"
+                ></div>
+
+
+                <div
+                    id="otpSuccessAnimation"
+                    class="otp-success-animation"
+                    hidden
+                >
+
+                    <div class="otp-check">
+
+                        <svg
+                            viewBox="0 0 52 52"
+                            aria-hidden="true"
+                        >
+
+                            <circle
+                                cx="26"
+                                cy="26"
+                                r="24"
+                            ></circle>
+
+                            <path
+                                d="M14 27 L22 35 L39 18"
+                            ></path>
+
+                        </svg>
+
+                    </div>
+
+                    <span>
+                        Code verified
+                    </span>
+
+                </div>
+
+
+                <button
+                    id="verifySignupButton"
+                    class="button primary full"
+                    type="button"
+                    disabled
+                >
+                    Verify email
+                </button>
+
+
+                <div
+                    class="otp-actions"
+                >
+
+                    <span>
+                        Resend in
+                        <strong
+                            id="signupResendTimer"
+                            class="otp-timer"
+                        >
+                            60s
+                        </strong>
+                    </span>
+
+
+                    <button
+                        id="resendSignupButton"
+                        type="button"
+                        disabled
+                    >
+                        Resend code
+                    </button>
+
+                </div>
+
+
+                <p class="otp-security-note">
+                    Your code is private and expires
+                    after 10 minutes.
+                </p>
+
+            </section>
+
+        </form>
+
+
+        <!-- ==================================================
+             SUCCESS
+        ================================================== -->
+
+        <section
+            id="signupSuccess"
+            class="auth-success"
+            hidden
+        >
+
+            <div class="success-animation">
+
+                <svg
+                    viewBox="0 0 64 64"
+                    aria-hidden="true"
+                >
+
+                    <circle
+                        cx="32"
+                        cy="32"
+                        r="29"
+                    ></circle>
+
+                    <path
+                        d="M18 33 L27 42 L47 22"
+                    ></path>
+
+                </svg>
+
+            </div>
+
+
+            <span class="eyebrow">
+                ACCOUNT CREATED
+            </span>
+
+
+            <h2>
+                You're ready.
+            </h2>
+
+
+            <p>
+                Your SquashberryPay business account is
+                active. Opening your merchant dashboard…
+            </p>
+
+        </section>
+
+    </div>
+
+</section>
+
+</main>
+
+
+<footer class="site-footer">
+
+    <span>
+        © 2026 SquashberryPay
+    </span>
+
+    <span>
+        Secure business authentication
+    </span>
+
+</footer>
+
+
+<script
+    src="/auth.js"
+></script>
+
+</body>
+
+</html>

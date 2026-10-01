@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>
+        Start using SquashberryPay
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/styles.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/apply.css"
+    >
+
+</head>
+
+<body>
+
+<header class="site-header">
+
+    <a
+        href="/"
+        class="brand"
+    >
+
+        <span class="brand-mark">
+            S
+        </span>
+
+        <span>
+            SquashberryPay
+        </span>
+
+    </a>
+
+</header>
+
+
+<main class="apply-page">
+
+    <div class="apply-copy">
+
+        <span class="eyebrow">
+            FOR BUSINESSES
+        </span>
+
+        <h1>
+            Start using
+            SquashberryPay.
+        </h1>
+
+        <p>
+            Tell us about your business or app.
+            We'll review your application and
+            contact you when your SquashberryPay
+            account is ready.
+        </p>
+
+    </div>
+
+
+    <form
+        id="applicationForm"
+        class="apply-card"
+    >
+
+        <div class="field">
+
+            <label
+                for="businessName"
+            >
+                Business or app name
+            </label>
+
+            <input
+                id="businessName"
+                type="text"
+                required
+                placeholder="e.g. MediSquash"
+            >
+
+        </div>
+
+
+        <div class="field">
+
+            <label
+                for="businessType"
+            >
+                What type of business or service is this?
+            </label>
+
+            <input
+                id="businessType"
+                type="text"
+                placeholder="e.g. Mobile app, restaurant, online store"
+            >
+
+        </div>
+
+
+        <div class="field">
+
+            <label
+                for="website"
+            >
+                Website or app link
+            </label>
+
+            <input
+                id="website"
+                type="url"
+                placeholder="https://..."
+            >
+
+        </div>
+
+
+        <div class="field">
+
+            <label
+                for="email"
+            >
+                Business email
+            </label>
+
+            <input
+                id="email"
+                type="email"
+                required
+                placeholder="you@business.com"
+            >
+
+        </div>
+
+
+        <div class="field">
+
+            <label
+                for="phone"
+            >
+                Phone number
+            </label>
+
+            <input
+                id="phone"
+                type="tel"
+                placeholder="+220 ..."
+            >
+
+        </div>
+
+
+        <div class="field">
+
+            <label
+                for="description"
+            >
+                Tell us what you're using SquashberryPay for
+            </label>
+
+            <textarea
+                id="description"
+                rows="5"
+                placeholder="Describe your products, subscriptions or services."
+            ></textarea>
+
+        </div>
+
+
+        <button
+            class="button primary full"
+            type="submit"
+            id="submitApplication"
+        >
+            Submit application
+        </button>
+
+
+        <p
+            id="formMessage"
+            class="form-message"
+        ></p>
+
+    </form>
+
+
+    <div
+        id="successCard"
+        class="success-card"
+        hidden
+    >
+
+        <div class="success-icon">
+            ✓
+        </div>
+
+        <span class="eyebrow">
+            APPLICATION RECEIVED
+        </span>
+
+        <h2>
+            Thanks for applying.
+        </h2>
+
+        <p>
+            Your application has been submitted
+            to SquashberryPay for review.
+        </p>
+
+        <a
+            href="/"
+            class="button secondary"
+        >
+            Back to SquashberryPay
+        </a>
+
+    </div>
+
+</main>
+
+
+<script src="/apply.js"></script>
+
+</body>
+</html>
