@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>Secure checkout — SquashberryPay</title>
+    <link rel="stylesheet" href="/checkout.css">
+</head>
+<body>
+    <main class="page-shell">
+        <section class="checkout-card" aria-live="polite">
+            <div class="brand">
+                <span class="brand-mark">S</span>
+                <div>
+                    <strong>SquashberryPay</strong>
+                    <span>Secure hosted checkout</span>
+                </div>
+            </div>
+
+            <div id="loadingState" class="state">
+                <span class="spinner" aria-hidden="true"></span>
+                <p>Loading checkout…</p>
+            </div>
+
+            <div id="errorState" class="state error-state" hidden>
+                <div class="state-icon">!</div>
+                <h1>Checkout unavailable</h1>
+                <p id="errorMessage">This payment link is not available.</p>
+                <button id="retryButton" class="button secondary" type="button">Try again</button>
+            </div>
+
+            <div id="checkoutState" hidden>
+                <div class="eyebrow">PAYMENT</div>
+                <h1 id="checkoutTitle">Checkout</h1>
+                <p id="checkoutDescription" class="description"></p>
+
+                <div class="summary-card">
+                    <div>
+                        <span>Merchant</span>
+                        <strong id="merchantName">—</strong>
+                    </div>
+                    <div>
+                        <span>Product</span>
+                        <strong id="productName">—</strong>
+                    </div>
+                    <div>
+                        <span>Amount</span>
+                        <strong id="amountLabel">—</strong>
+                    </div>
+                </div>
+
+                <form id="checkoutForm" novalidate>
+                    <label>
+                        Email address
+                        <input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required>
+                    </label>
+
+                    <label id="customAmountWrap" hidden>
+                        Amount
+                        <div class="money-input">
+                            <span id="currencyPrefix">GMD</span>
+                            <input id="customAmount" name="amount" type="number" min="0.01" step="0.01" placeholder="0.00" inputmode="decimal">
+                        </div>
+                    </label>
+
+                    <p id="amountHelp" class="help" hidden>Choose the amount you would like to pay.</p>
+
+                    <button id="continueButton" class="button primary" type="submit">
+                        <span id="buttonText">Continue to payment</span>
+                    </button>
+
+                    <p class="security-note">You’ll be redirected to the SquashberryPay payment page to choose an available payment method and complete the transfer.</p>
+                    <p id="formError" class="form-error" role="alert" hidden></p>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="/checkout.js"></script>
+</body>
+</html>
