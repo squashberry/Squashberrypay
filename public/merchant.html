@@ -807,11 +807,23 @@
 
 
                 <p>
-                    Generate a hosted checkout link that works
-                    anywhere a normal link or button works.
-                    No client secret is needed in browser JavaScript.
+                    Generate the exact SquashberryPay button
+                    that customers will see on every website.
+                    Merchants paste one standard script tag;
+                    SquashberryPay controls the button design,
+                    behavior and checkout experience.
                 </p>
 
+
+                <div class="guide-code-actions">
+                    <button
+                        id="copyButtonCode"
+                        class="button secondary"
+                        type="button"
+                    >
+                        Copy button code
+                    </button>
+                </div>
 
                 <pre><code
                     id="buttonCode"
@@ -927,16 +939,17 @@
                     </span>
 
                     <h3>
-                        Add your Pay Now button
+                        Add the SquashberryPay button
                     </h3>
 
                     <p>
-                        Your website button stays yours.
-                        When a customer clicks it, your
-                        server creates a SquashberryPay
-                        payment and redirects the customer
-                        to the returned
-                        <strong>payment_url</strong>.
+                        Use the exact same SquashberryPay
+                        button on any website. Paste the
+                        one generated script tag and
+                        SquashberryPay renders and controls
+                        the button automatically. No
+                        client secret is placed in browser
+                        code.
                     </p>
 
                 </article>
@@ -988,13 +1001,14 @@
                     </span>
 
                     <h3>
-                        Customer receives the code
+                        Payment is completed
                     </h3>
 
                     <p>
-                        SquashberryPay sends a one-time
-                        verification code to the customer's
-                        email.
+                        After verification, the hosted
+                        checkout records the payment as
+                        completed and can return the
+                        customer to your website or app.
                     </p>
 
                 </article>
@@ -1007,13 +1021,15 @@
                     </span>
 
                     <h3>
-                        Verify the code on your site
+                        Keep the button everywhere
                     </h3>
 
                     <p>
-                        Build your own code-entry screen.
-                        Your server sends the entered code
-                        to SquashberryPay's verification API.
+                        The same universal button snippet
+                        can be copied into any website,
+                        landing page, web app or storefront.
+                        The button design remains controlled
+                        by SquashberryPay.
                     </p>
 
                 </article>
@@ -1028,40 +1044,22 @@
                 <div class="guide-header">
 
                     <strong>
-                        Example: create a payment
+                        The universal button
                     </strong>
 
                 </div>
 
+                <p>
+                    This is the complete integration.
+                    Paste it exactly as generated.
+                    The same SquashberryPay button will
+                    render on any website.
+                </p>
 
-                <pre><code>const response = await fetch(
-    "https://pay.squashberrypro.com/api/v1/payments",
-    {
-        method: "POST",
-
-        headers: {
-            "Content-Type": "application/json",
-
-            "X-SquashberryPay-Client-ID":
-                process.env.SQUASHBERRYPAY_CLIENT_ID,
-
-            "X-SquashberryPay-Client-Secret":
-                process.env.SQUASHBERRYPAY_CLIENT_SECRET
-        },
-
-        body: JSON.stringify({
-            external_user_id: customer.id,
-            product_code: "premium_monthly",
-            return_url:
-                "https://yourwebsite.com/payment"
-        })
-    }
-);
-
-const payment = await response.json();
-
-window.location.href =
-    payment.payment_url;</code></pre>
+                <pre><code>&lt;script
+    src="https://YOUR-SQUASHBERRYPAY-DOMAIN/buttons.js"
+    data-squashberrypay-button="YOUR-LINK-SLUG"&gt;
+&lt;/script&gt;</code></pre>
 
             </div>
 

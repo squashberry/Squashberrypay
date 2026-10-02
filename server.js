@@ -8839,6 +8839,20 @@ app.get(
 
 
 app.get(
+    "/buttons.js",
+    (req, res) => {
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "squashberrypay.js"
+            )
+        );
+    }
+);
+
+
+app.get(
     "/styles.css",
     (req, res) => {
 

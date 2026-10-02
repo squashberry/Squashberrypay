@@ -1690,69 +1690,70 @@ function getButtonExample(
     buttonLabel
 ) {
 
-    const text =
-        buttonLabel ||
-        (
-            type === "subscribe"
-                ? "Subscribe"
-                : type === "donate"
-                    ? "Donate"
-                    : "Pay Now"
-        );
-
-    const quotedSlug =
-        JSON.stringify(
-            slug
-        );
-
-    const quotedUrl =
-        JSON.stringify(
-            paymentUrl
-        );
-
     const sdkOrigin =
         new URL(
             paymentUrl
         ).origin;
 
     return [
-        "<!-- Simplest option: works anywhere a normal link works -->",
-        "<a href=" +
-            quotedUrl +
-            ">",
-        "    " +
-            text,
-        "</a>",
-        "",
-        "<!-- Branded button: no client secret required -->",
-        "<script src=" +
+        "<!-- SquashberryPay universal button -->",
+        "<script",
+        "    src=" +
             JSON.stringify(
                 sdkOrigin +
-                "/squashberrypay.js"
+                "/buttons.js"
+            ),
+        "    data-squashberrypay-button=" +
+            JSON.stringify(
+                slug
             ) +
-            " defer></script>",
-        "<button id=\"squashberrypay-custom-button\" type=\"button\">",
-        "    " +
-            text,
-        "</button>",
-        "",
-        "<!-- Or use the JavaScript API from your own button -->",
-        "<script>",
-        "window.addEventListener(\"DOMContentLoaded\", function () {",
-        "    document.getElementById(\"squashberrypay-custom-button\").addEventListener(\"click\", function () {",
-        "        window.SquashberryPay.open(" +
-            quotedSlug +
-            ");",
-        "    });",
-        "});",
+        ">",
         "</script>",
         "",
-        "<!-- Hosted checkout URL -->",
+        "<!-- Hosted checkout link -->",
         paymentUrl
     ].join(
         "\n"
     );
 }
+
+
+$("#copyButtonCode")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const code =
+                $("#buttonCode")
+                    ?.textContent ||
+                "";
+
+            if (
+                !code
+            ) {
+                return;
+            }
+
+            try {
+
+                await navigator.clipboard.writeText(
+                    code
+                );
+
+                notify(
+                    "Button code copied.",
+                    "success"
+                );
+
+            } catch {
+
+                notify(
+                    "Could not copy the code automatically.",
+                    "error"
+                );
+            }
+        }
+    );
 
 
 /* ============================================================
