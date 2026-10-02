@@ -6968,7 +6968,8 @@ app.post(
                     payments (
                         id,
                         status,
-                        return_url
+                        return_url,
+                        cancel_url
                     )
                     `
                 )
@@ -7108,6 +7109,10 @@ app.post(
                     true,
 
                 return_url:
+                    payment.return_url,
+
+                cancel_url:
+                    payment.cancel_url ||
                     payment.return_url
             });
 
