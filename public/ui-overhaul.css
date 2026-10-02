@@ -481,3 +481,122 @@ table th{background:#f0f0ed!important;color:#555!important}
 .auth-card .auth-step > h2 + form{
   margin-top:20px;
 }
+
+
+/* ---------- SIGN-IN TWO-STATE UI ---------- */
+
+.auth-page .auth-card{
+  overflow:hidden;
+}
+
+.auth-page .signin-state{
+  animation:signinStateIn .28s cubic-bezier(.2,.8,.2,1);
+}
+
+.auth-page .signin-state h2{
+  margin-bottom:8px;
+}
+
+.auth-page .auth-step-copy{
+  margin:0 0 22px;
+  color:#6b6b66;
+  font-size:14px;
+  line-height:1.6;
+}
+
+.auth-page .auth-step-copy strong{
+  display:block;
+  margin-top:5px;
+  color:#111;
+  font-weight:750;
+  overflow-wrap:anywhere;
+}
+
+.auth-page .signin-state-form{
+  display:grid;
+  gap:18px;
+}
+
+.auth-page .signin-state-form label{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  color:#4d4d48;
+  font-size:12px;
+  line-height:1.35;
+  font-weight:750;
+}
+
+.auth-page .signin-state-form input{
+  width:100%;
+  height:54px;
+  box-sizing:border-box;
+  border:1px solid #cfcfca!important;
+  border-radius:15px!important;
+  padding:0 15px;
+  background:#fafaf8!important;
+  color:#111!important;
+  font-size:15px;
+  font-weight:500;
+  outline:none;
+  box-shadow:inset 0 0 0 1px transparent;
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease,transform .18s ease;
+}
+
+.auth-page .signin-state-form input:hover{
+  border-color:#aaa!important;
+}
+
+.auth-page .signin-state-form input:focus{
+  border-color:#111!important;
+  background:#fff!important;
+  box-shadow:0 0 0 4px rgba(0,0,0,.06)!important;
+  transform:translateY(-1px);
+}
+
+.auth-page .signin-state-form input.is-invalid{
+  border-color:#111!important;
+  box-shadow:0 0 0 4px rgba(0,0,0,.08)!important;
+}
+
+.auth-page .signin-forgot-email,
+.auth-page .signin-forgot-password{
+  display:block;
+  margin:17px auto 0;
+}
+
+.auth-page #signinContinueButton,
+.auth-page #signinButton{
+  min-height:52px;
+  border-radius:15px;
+}
+
+@keyframes signinStateIn{
+  from{
+    opacity:0;
+    transform:translateX(10px);
+  }
+  to{
+    opacity:1;
+    transform:translateX(0);
+  }
+}
+
+@media (max-width:620px){
+  .auth-page .auth-card{
+    padding:22px 18px;
+  }
+
+  .auth-page .signin-state-form{
+    gap:15px;
+  }
+
+  .auth-page .signin-state-form input{
+    height:53px;
+    border-radius:14px!important;
+  }
+
+  .auth-page .auth-step-copy{
+    margin-bottom:19px;
+  }
+}
