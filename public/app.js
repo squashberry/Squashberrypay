@@ -1357,12 +1357,16 @@ cancelPaymentBtn?.addEventListener(
             setTimeout(
                 () => {
 
+                    const cancelDestination =
+                        data.cancel_url ||
+                        data.return_url;
+
                     if (
-                        data.return_url
+                        cancelDestination
                     ) {
 
                         window.location.href =
-                            data.return_url;
+                            cancelDestination;
 
                     } else {
 
@@ -1734,12 +1738,16 @@ function handleAttemptExpired() {
     setTimeout(
         () => {
 
+            const expiryDestination =
+                state.payment?.cancel_url ||
+                state.payment?.return_url;
+
             if (
-                state.payment?.return_url
+                expiryDestination
             ) {
 
                 window.location.href =
-                    state.payment.return_url;
+                    expiryDestination;
 
             } else {
 
