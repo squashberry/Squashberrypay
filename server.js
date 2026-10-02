@@ -7823,6 +7823,108 @@ app.post(
             }
 
 
+            if (
+                payment.payment_link_id
+            ) {
+
+                const {
+                    error:
+                        linkUpdateError
+                } =
+                    await supabase
+                        .from(
+                            "payments"
+                        )
+                        .update({
+                            status:
+                                "completed",
+                            approved_at:
+                                new Date()
+                                    .toISOString(),
+                            completed_at:
+                                new Date()
+                                    .toISOString()
+                        })
+                        .eq(
+                            "id",
+                            payment.id
+                        )
+                        .eq(
+                            "status",
+                            "awaiting_verification"
+                        );
+
+                if (linkUpdateError) {
+                    console.error(
+                        "Payment-link approval update error:",
+                        linkUpdateError
+                    );
+
+                    return res.status(500).json({
+                        error:
+                            "Could not complete payment."
+                    });
+                }
+
+                await supabase
+                    .from(
+                        "audit_logs"
+                    )
+                    .insert({
+                        actor_type:
+                            "admin",
+                        actor_id:
+                            "admin",
+                        action:
+                            "payment_link_completed",
+                        payment_id:
+                            payment.id,
+                        metadata: {
+                            payment_link_id:
+                                payment.payment_link_id
+                        }
+                    });
+
+                try {
+
+                    await sendPaymentLinkApprovedEmail({
+                        email:
+                            payment
+                                .service_users
+                                ?.email,
+                        serviceName:
+                            payment
+                                .services
+                                ?.name,
+                        amount:
+                            payment.amount,
+                        currency:
+                            payment.currency,
+                        reference:
+                            payment.payment_reference,
+                        returnUrl:
+                            payment.return_url
+                    });
+
+                } catch (emailError) {
+
+                    console.error(
+                        "Payment-link approval email error:",
+                        emailError
+                    );
+                }
+
+                return res.json({
+                    success:
+                        true,
+                    code:
+                        null,
+                    message:
+                        "Payment approved and checkout completed."
+                });
+            }
+
+
             const rawCode =
                 generatePaymentCode();
 
@@ -7830,50 +7932,48 @@ app.post(
             const {
                 error:
                     tokenError
-            } = await supabase
-                .from(
-                    "payment_tokens"
-                )
-                .upsert({
+            } =
+                await supabase
+                    .from(
+                        "payment_tokens"
+                    )
+                    .upsert({
 
-                    payment_id:
-                        payment.id,
+                        payment_id:
+                            payment.id,
 
-                    service_id:
-                        payment.service_id,
+                        service_id:
+                            payment.service_id,
 
-                    service_user_id:
-                        payment.service_user_id,
+                        service_user_id:
+                            payment.service_user_id,
 
-                    token_hash:
-                        hash(
-                            rawCode
-                        ),
+                        token_hash:
+                            hash(
+                                rawCode
+                            ),
 
-                    expires_at:
-                        addHours(
-                            PAYMENT_TOKEN_HOURS
-                        ),
+                        expires_at:
+                            addHours(
+                                PAYMENT_TOKEN_HOURS
+                            ),
 
-                    used_at:
-                        null
+                        used_at:
+                            null
 
-                }, {
+                    }, {
 
-                    onConflict:
-                        "payment_id"
-                });
+                        onConflict:
+                            "payment_id"
+                    });
 
 
-            if (
-                tokenError
-            ) {
+            if (tokenError) {
 
                 console.error(
                     "Payment token error:",
                     tokenError
                 );
-
 
                 return res.status(500).json({
                     error:
@@ -7885,34 +7985,30 @@ app.post(
             const {
                 error:
                     updateError
-            } = await supabase
-                .from(
-                    "payments"
-                )
-                .update({
+            } =
+                await supabase
+                    .from(
+                        "payments"
+                    )
+                    .update({
+                        status:
+                            "approved",
+                        approved_at:
+                            new Date()
+                                .toISOString()
+                    })
+                    .eq(
+                        "id",
+                        payment.id
+                    );
 
-                    status:
-                        "approved",
 
-                    approved_at:
-                        new Date()
-                            .toISOString()
-                })
-                .eq(
-                    "id",
-                    payment.id
-                );
-
-
-            if (
-                updateError
-            ) {
+            if (updateError) {
 
                 console.error(
                     "Approve payment update error:",
                     updateError
                 );
-
 
                 return res.status(500).json({
                     error:
@@ -8178,6 +8274,99 @@ app.get(
         }
     }
 );
+
+
+
+/* ============================================================
+   PAYMENT-LINK APPROVAL EMAIL
+============================================================ */
+
+async function sendPaymentLinkApprovedEmail({
+    email,
+    serviceName,
+    amount,
+    currency,
+    reference,
+    returnUrl
+}) {
+
+    if (!email) {
+        return;
+    }
+
+    const destination =
+        returnUrl ||
+        BASE_URL +
+        "/";
+
+    await sendResendEmail({
+        to:
+            email,
+
+        subject:
+            String(
+                serviceName ||
+                "SquashberryPay"
+            ) +
+            " payment confirmed — " +
+            String(
+                reference
+            ),
+
+        text:
+            "Your payment for " +
+            String(
+                serviceName ||
+                "the merchant"
+            ) +
+            " has been approved.\n\n" +
+            "Reference: " +
+            String(
+                reference
+            ) +
+            "\nAmount: " +
+            String(
+                currency
+            ) +
+            " " +
+            String(
+                amount
+            ) +
+            "\n\nContinue: " +
+            destination,
+
+        html:
+            `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Payment confirmed</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f2;font-family:Arial,Helvetica,sans-serif;color:#111">
+<div style="max-width:560px;margin:auto;padding:40px 18px">
+<div style="background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:32px">
+<div style="font-weight:900;font-size:18px">SquashberryPay</div>
+<div style="margin-top:24px;font-size:11px;font-weight:800;letter-spacing:2px;color:#777">PAYMENT CONFIRMED</div>
+<h1 style="margin:10px 0 12px;font-size:28px">Payment approved.</h1>
+<p style="color:#666;line-height:1.7">Your payment to ${escapeHtml(serviceName || "the merchant")} has been verified.</p>
+<div style="margin:22px 0;padding:18px;border:1px solid #e7e7e2;border-radius:14px;background:#fafaf7">
+<strong>Reference</strong><br>
+<span>${escapeHtml(reference)}</span>
+<br><br>
+<strong>Amount</strong><br>
+<span>${escapeHtml(currency)} ${escapeHtml(amount)}</span>
+</div>
+<a href="${escapeHtml(destination)}" style="display:inline-block;padding:13px 18px;border-radius:12px;background:#111;color:#fff;text-decoration:none;font-weight:800">Continue</a>
+<p style="margin-top:24px;color:#999;font-size:12px">This message was sent by SquashberryPay.</p>
+</div>
+</div>
+</body>
+</html>
+`
+    });
+}
 
 
 /* ============================================================
