@@ -197,6 +197,16 @@ function renderDonationCampaign(
     const goal =
         donation.goal;
 
+    const showGoal =
+        donation.show_goal &&
+        goal !== null;
+
+    donationProgressPercent.hidden =
+        !showGoal;
+
+    donationProgressBar.parentElement.hidden =
+        !showGoal;
+
     const raised =
         Number(
             donation.raised || 0
@@ -224,9 +234,9 @@ function renderDonationCampaign(
         );
 
     donationRemainingStat.hidden =
-        goal === null;
+        !showGoal;
 
-    if (goal !== null) {
+    if (showGoal) {
         donationRemaining.textContent =
             money(
                 donation.remaining,
