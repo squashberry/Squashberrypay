@@ -478,13 +478,16 @@ button:disabled {
         );
 
         fetch(
-            "/api/public/links/" +
-            encodeURIComponent(
-                String(
-                    slug ||
-                    ""
-                )
-            )
+            new URL(
+                "/api/public/links/" +
+                encodeURIComponent(
+                    String(
+                        slug ||
+                        ""
+                    )
+                ),
+                baseUrl
+            ).toString()
         )
             .then(
                 response => {
@@ -738,7 +741,7 @@ button:disabled {
     const api =
         {
             version:
-                "2.0.0",
+                "2.1.0",
 
             url:
                 checkoutUrl,
