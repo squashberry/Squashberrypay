@@ -50,6 +50,46 @@
                     </div>
                 </div>
 
+                <section id="donationCampaign" class="donation-campaign" hidden aria-live="polite">
+                    <div class="donation-heading">
+                        <div>
+                            <span class="eyebrow">DONATION CAMPAIGN</span>
+                            <h2 id="donationGoalTitle">Help reach the goal</h2>
+                        </div>
+                        <strong id="donationProgressPercent">0%</strong>
+                    </div>
+
+                    <p id="donationGoalMessage" class="campaign-message" hidden></p>
+
+                    <div class="progress-track" aria-hidden="true">
+                        <div id="donationProgressBar" class="progress-bar"></div>
+                    </div>
+
+                    <div class="campaign-stats">
+                        <div>
+                            <span>Raised</span>
+                            <strong id="donationRaised">GMD 0.00</strong>
+                        </div>
+                        <div id="donationRemainingStat">
+                            <span>Remaining</span>
+                            <strong id="donationRemaining">—</strong>
+                        </div>
+                        <div id="donorCountStat">
+                            <span>Donors</span>
+                            <strong id="donorCount">0</strong>
+                        </div>
+                    </div>
+
+                    <div id="donationPresetsWrap" class="preset-wrap" hidden>
+                        <span class="preset-label">Suggested amounts</span>
+                        <div id="donationPresets" class="preset-grid"></div>
+                    </div>
+
+                    <div id="donationEnded" class="campaign-ended" hidden>
+                        This donation campaign is no longer accepting donations.
+                    </div>
+                </section>
+
                 <form id="checkoutForm" novalidate>
                     <label>
                         Email address
@@ -57,14 +97,31 @@
                     </label>
 
                     <label id="customAmountWrap" hidden>
-                        Amount
+                        <span id="customAmountLabel">Donation amount</span>
                         <div class="money-input">
                             <span id="currencyPrefix">GMD</span>
                             <input id="customAmount" name="amount" type="number" min="0.01" step="0.01" placeholder="0.00" inputmode="decimal">
                         </div>
                     </label>
 
-                    <p id="amountHelp" class="help" hidden>Choose the amount you would like to pay.</p>
+                    <p id="amountHelp" class="help" hidden>Choose the amount you would like to donate.</p>
+
+                    <div id="donorFields" hidden>
+                        <label>
+                            Name
+                            <input id="donorName" name="donor_name" type="text" autocomplete="name" maxlength="120" placeholder="Your name">
+                        </label>
+
+                        <label>
+                            Message <span class="optional">(optional)</span>
+                            <textarea id="donorMessage" name="donor_message" rows="3" maxlength="500" placeholder="Leave a message with your donation."></textarea>
+                        </label>
+
+                        <label class="checkbox-line">
+                            <input id="donorAnonymous" name="donor_anonymous" type="checkbox">
+                            Make my name anonymous
+                        </label>
+                    </div>
 
                     <button id="continueButton" class="button primary" type="submit">
                         <span id="buttonText">Continue to payment</span>

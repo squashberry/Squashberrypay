@@ -420,3 +420,14 @@ th {
     }
 
 }
+
+.admin-donation-note{
+    margin-top:6px;
+    color:#777;
+    font-size:11px;
+    line-height:1.45;
+}
+.admin-donation-note > div{
+    margin-top:3px;
+    color:#999;
+}

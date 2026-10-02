@@ -899,18 +899,48 @@ $("#productApp")
     );
 
 
+function updateProductTypeFields() {
+    const type =
+        $("#productType")
+            ?.value;
+
+    $("#subscriptionIntervalGroup")
+        .hidden =
+        type !==
+        "subscribe";
+
+    $("#donationSettings")
+        .hidden =
+        type !==
+        "donate";
+
+    if (
+        type ===
+        "donate"
+    ) {
+        $("#customDonation")
+            .checked =
+            $("#customDonation")
+                .dataset.initialized !==
+                "true"
+                ? true
+                : $("#customDonation")
+                    .checked;
+
+        $("#customDonation")
+            .dataset.initialized =
+            "true";
+    }
+}
+
+
 $("#productType")
     ?.addEventListener(
         "change",
-        () => {
-
-            $("#subscriptionIntervalGroup")
-                .hidden =
-                $("#productType")
-                    .value !==
-                    "subscribe";
-        }
+        updateProductTypeFields
     );
+
+updateProductTypeFields();
 
 
 async function loadProducts() {
@@ -1024,7 +1054,79 @@ $("#saveProduct")
                         .value,
 
                 allow_custom_amount:
+                    $("#productType")
+                        .value ===
+                        "donate" &&
                     $("#customDonation")
+                        .checked,
+
+                donation_goal:
+                    $("#donationGoal")
+                        .value
+                        ? Number(
+                            $("#donationGoal")
+                                .value
+                        )
+                        : null,
+
+                donation_minimum:
+                    $("#donationMinimum")
+                        .value
+                        ? Number(
+                            $("#donationMinimum")
+                                .value
+                        )
+                        : null,
+
+                donation_maximum:
+                    $("#donationMaximum")
+                        .value
+                        ? Number(
+                            $("#donationMaximum")
+                                .value
+                        )
+                        : null,
+
+                donation_presets:
+                    $("#donationPresets")
+                        .value
+                        .split(",")
+                        .map(value =>
+                            Number(
+                                value.trim()
+                            )
+                        )
+                        .filter(value =>
+                            Number.isFinite(
+                                value
+                            ) &&
+                            value > 0
+                        ),
+
+                donation_goal_message:
+                    $("#donationGoalMessage")
+                        .value
+                        .trim(),
+
+                donation_end_at:
+                    $("#donationEndAt")
+                        .value
+                        ? new Date(
+                            $("#donationEndAt")
+                                .value
+                        ).toISOString()
+                        : null,
+
+                show_donation_goal:
+                    $("#showDonationGoal")
+                        .checked,
+
+                show_donor_count:
+                    $("#showDonorCount")
+                        .checked,
+
+                close_on_goal:
+                    $("#closeOnGoal")
                         .checked
             };
 
@@ -1075,7 +1177,13 @@ $("#saveProduct")
                     "#productCode",
                     "#productName",
                     "#productDescription",
-                    "#productAmount"
+                    "#productAmount",
+                    "#donationGoal",
+                    "#donationMinimum",
+                    "#donationMaximum",
+                    "#donationPresets",
+                    "#donationGoalMessage",
+                    "#donationEndAt"
                 ].forEach(
                     selector => {
                         $(selector)
@@ -1083,6 +1191,24 @@ $("#saveProduct")
                             "";
                     }
                 );
+
+                $("#customDonation")
+                    .checked =
+                    true;
+
+                $("#showDonationGoal")
+                    .checked =
+                    true;
+
+                $("#showDonorCount")
+                    .checked =
+                    true;
+
+                $("#closeOnGoal")
+                    .checked =
+                    false;
+
+                updateProductTypeFields();
 
 
                 await loadProducts();
@@ -1165,6 +1291,38 @@ function renderProducts(
                     ? ` / ${product.subscription_interval}`
                     : "";
 
+            const donationDetails =
+                product.payment_type ===
+                    "donate"
+                    ? [
+                        product.donation_goal
+                            ? "Goal " +
+                                product.currency +
+                                " " +
+                                Number(
+                                    product.donation_goal
+                                ).toFixed(2)
+                            : null,
+                        product.donation_minimum
+                            ? "Min " +
+                                product.currency +
+                                " " +
+                                Number(
+                                    product.donation_minimum
+                                ).toFixed(2)
+                            : null,
+                        product.donation_maximum
+                            ? "Max " +
+                                product.currency +
+                                " " +
+                                Number(
+                                    product.donation_maximum
+                                ).toFixed(2)
+                            : null
+                    ]
+                        .filter(Boolean)
+                        .join(" · ")
+                    : "";
 
             card.innerHTML =
                 `
@@ -1184,6 +1342,18 @@ function renderProducts(
                         )}
                         ${interval}
                     </p>
+
+                    ${
+                        donationDetails
+                            ? `
+                                <p class="product-meta">
+                                    ${escapeHtml(
+                                        donationDetails
+                                    )}
+                                </p>
+                            `
+                            : ""
+                    }
                 `;
 
 
