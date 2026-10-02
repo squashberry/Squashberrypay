@@ -2271,6 +2271,113 @@ function saveMerchantSession(
     }
 }
 
+/* ============================================================
+   SIGN-IN TWO-STATE FLOW
+   Email → Continue → Password → Sign in
+============================================================ */
+
+const signinState = {
+    email: ""
+};
+
+const signinEmailStep = $("#signinEmailStep");
+const signinPasswordStep = $("#signinPasswordStep");
+const signinEmailForm = $("#signinEmailForm");
+const signinForm = $("#signinForm");
+const signinEmailInput = $("#signinEmail");
+const signinPasswordInput = $("#signinPassword");
+const signinEmailDisplay = $("#signinEmailDisplay");
+
+function showSigninState(stateName) {
+    const showEmail = stateName === "email";
+
+    if (signinEmailStep) {
+        signinEmailStep.hidden = !showEmail;
+        signinEmailStep.classList.toggle("active", showEmail);
+    }
+
+    if (signinPasswordStep) {
+        signinPasswordStep.hidden = showEmail;
+        signinPasswordStep.classList.toggle("active", !showEmail);
+    }
+
+    clearMessage();
+
+    const target = showEmail
+        ? signinEmailInput
+        : signinPasswordInput;
+
+    setTimeout(() => target?.focus(), 120);
+}
+
+signinEmailForm?.addEventListener("submit", event => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const email = normalizeEmail(
+        signinEmailInput?.value
+    );
+
+    if (!validEmail(email)) {
+        setFieldState(
+            signinEmailInput,
+            false,
+            true
+        );
+
+        shake(signinEmailInput);
+        showMessage("Enter a valid business email.");
+        signinEmailInput?.focus();
+        return;
+    }
+
+    setFieldState(
+        signinEmailInput,
+        true
+    );
+
+    signinState.email = email;
+
+    if (signinEmailInput) {
+        signinEmailInput.value = email;
+    }
+
+    if (signinEmailDisplay) {
+        signinEmailDisplay.textContent = email;
+    }
+
+    showSigninState("password");
+});
+
+$("#signinBackToEmail")?.addEventListener(
+    "click",
+    () => {
+        if (signinPasswordInput) {
+            signinPasswordInput.value = "";
+        }
+
+        showSigninState("email");
+    }
+);
+
+$("#signinForgotFromEmail")?.addEventListener(
+    "click",
+    () => {
+        $("#forgotPasswordLink")?.click();
+    }
+);
+
+$("#signinForgotLink")?.addEventListener(
+    "click",
+    () => {
+        $("#forgotPasswordLink")?.click();
+    }
+);
+
+/* Existing sign-in submit logic continues to own #signinForm. */
+showSigninState("email");
+
+
 
 /* ============================================================
    INITIAL STATE
