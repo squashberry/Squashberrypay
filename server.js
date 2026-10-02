@@ -4199,7 +4199,16 @@ app.post(
                 amount,
                 currency,
                 subscription_interval,
-                allow_custom_amount
+                allow_custom_amount,
+                donation_goal,
+                donation_minimum,
+                donation_maximum,
+                donation_presets,
+                donation_goal_message,
+                donation_end_at,
+                show_donation_goal,
+                show_donor_count,
+                close_on_goal
             } = req.body;
 
 
@@ -4247,6 +4256,203 @@ app.post(
                     error:
                         "Choose monthly or yearly billing."
                 });
+            }
+
+
+            let normalizedDonationGoal =
+                null;
+
+            let normalizedDonationMinimum =
+                null;
+
+            let normalizedDonationMaximum =
+                null;
+
+            let normalizedDonationPresets =
+                [];
+
+            let normalizedDonationEndAt =
+                null;
+
+            if (
+                payment_type ===
+                    "donate"
+            ) {
+
+                if (
+                    donation_goal !== null &&
+                    donation_goal !== undefined &&
+                    donation_goal !== ""
+                ) {
+                    normalizedDonationGoal =
+                        Number(
+                            donation_goal
+                        );
+
+                    if (
+                        !Number.isFinite(
+                            normalizedDonationGoal
+                        ) ||
+                        normalizedDonationGoal <= 0
+                    ) {
+                        return res.status(400).json({
+                            error:
+                                "Donation goal must be greater than zero."
+                        });
+                    }
+
+                    normalizedDonationGoal =
+                        Math.round(
+                            normalizedDonationGoal * 100
+                        ) / 100;
+                }
+
+                if (
+                    donation_minimum !== null &&
+                    donation_minimum !== undefined &&
+                    donation_minimum !== ""
+                ) {
+                    normalizedDonationMinimum =
+                        Number(
+                            donation_minimum
+                        );
+
+                    if (
+                        !Number.isFinite(
+                            normalizedDonationMinimum
+                        ) ||
+                        normalizedDonationMinimum <= 0
+                    ) {
+                        return res.status(400).json({
+                            error:
+                                "Minimum donation must be greater than zero."
+                        });
+                    }
+
+                    normalizedDonationMinimum =
+                        Math.round(
+                            normalizedDonationMinimum * 100
+                        ) / 100;
+                }
+
+                if (
+                    donation_maximum !== null &&
+                    donation_maximum !== undefined &&
+                    donation_maximum !== ""
+                ) {
+                    normalizedDonationMaximum =
+                        Number(
+                            donation_maximum
+                        );
+
+                    if (
+                        !Number.isFinite(
+                            normalizedDonationMaximum
+                        ) ||
+                        normalizedDonationMaximum <= 0
+                    ) {
+                        return res.status(400).json({
+                            error:
+                                "Maximum donation must be greater than zero."
+                        });
+                    }
+
+                    normalizedDonationMaximum =
+                        Math.round(
+                            normalizedDonationMaximum * 100
+                        ) / 100;
+                }
+
+                if (
+                    normalizedDonationMinimum !== null &&
+                    normalizedDonationMaximum !== null &&
+                    normalizedDonationMaximum <
+                        normalizedDonationMinimum
+                ) {
+                    return res.status(400).json({
+                        error:
+                            "Maximum donation cannot be lower than the minimum."
+                    });
+                }
+
+                if (
+                    Array.isArray(
+                        donation_presets
+                    )
+                ) {
+                    normalizedDonationPresets =
+                        [...new Set(
+                            donation_presets
+                                .map(value => Number(value))
+                                .filter(value =>
+                                    Number.isFinite(value) &&
+                                    value > 0
+                                )
+                                .map(value =>
+                                    Math.round(
+                                        value * 100
+                                    ) / 100
+                                )
+                        )]
+                        .sort(
+                            (a, b) => a - b
+                        )
+                        .slice(
+                            0,
+                            8
+                        );
+                }
+
+                if (
+                    normalizedDonationMinimum !== null &&
+                    normalizedDonationPresets.some(
+                        value =>
+                            value <
+                            normalizedDonationMinimum
+                    )
+                ) {
+                    return res.status(400).json({
+                        error:
+                            "Donation presets cannot be below the minimum donation."
+                    });
+                }
+
+                if (
+                    normalizedDonationMaximum !== null &&
+                    normalizedDonationPresets.some(
+                        value =>
+                            value >
+                            normalizedDonationMaximum
+                    )
+                ) {
+                    return res.status(400).json({
+                        error:
+                            "Donation presets cannot exceed the maximum donation."
+                    });
+                }
+
+                if (
+                    donation_end_at
+                ) {
+                    const parsedEnd =
+                        new Date(
+                            donation_end_at
+                        );
+
+                    if (
+                        Number.isNaN(
+                            parsedEnd.getTime()
+                        )
+                    ) {
+                        return res.status(400).json({
+                            error:
+                                "Donation end date is invalid."
+                        });
+                    }
+
+                    normalizedDonationEndAt =
+                        parsedEnd.toISOString();
+                }
             }
 
 
@@ -4313,9 +4519,81 @@ app.post(
                             : null,
 
                     allow_custom_amount:
-                        Boolean(
-                            allow_custom_amount
-                        ),
+                        payment_type ===
+                            "donate"
+                            ? Boolean(
+                                allow_custom_amount
+                            )
+                            : false,
+
+                    donation_goal:
+                        payment_type ===
+                            "donate"
+                            ? normalizedDonationGoal
+                            : null,
+
+                    donation_minimum:
+                        payment_type ===
+                            "donate"
+                            ? normalizedDonationMinimum
+                            : null,
+
+                    donation_maximum:
+                        payment_type ===
+                            "donate"
+                            ? normalizedDonationMaximum
+                            : null,
+
+                    donation_presets:
+                        payment_type ===
+                            "donate"
+                            ? normalizedDonationPresets
+                            : [],
+
+                    donation_goal_message:
+                        payment_type ===
+                            "donate"
+                            ? (
+                                donation_goal_message
+                                    ? String(
+                                        donation_goal_message
+                                    ).trim().slice(
+                                        0,
+                                        240
+                                    )
+                                    : null
+                            )
+                            : null,
+
+                    donation_end_at:
+                        payment_type ===
+                            "donate"
+                            ? normalizedDonationEndAt
+                            : null,
+
+                    show_donation_goal:
+                        payment_type ===
+                            "donate"
+                            ? donation_goal !==
+                                null &&
+                                show_donation_goal !==
+                                false
+                            : false,
+
+                    show_donor_count:
+                        payment_type ===
+                            "donate"
+                            ? show_donor_count !==
+                                false
+                            : false,
+
+                    close_on_goal:
+                        payment_type ===
+                            "donate"
+                            ? Boolean(
+                                close_on_goal
+                            )
+                            : false,
 
                     status:
                         "active",
@@ -5636,6 +5914,156 @@ app.post(
 
 
 /* ============================================================
+   DONATION CAMPAIGN HELPERS
+============================================================ */
+
+async function getDonationStats(
+    productId
+) {
+    const {
+        data,
+        error
+    } =
+        await supabase
+            .from("payments")
+            .select(
+                "amount"
+            )
+            .eq(
+                "product_id",
+                productId
+            )
+            .eq(
+                "payment_type",
+                "donate"
+            )
+            .eq(
+                "status",
+                "completed"
+            );
+
+    if (error) {
+        throw error;
+    }
+
+    const rows =
+        data || [];
+
+    const raised =
+        Math.round(
+            rows.reduce(
+                (total, row) =>
+                    total +
+                    Number(
+                        row.amount ||
+                        0
+                    ),
+                0
+            ) * 100
+        ) / 100;
+
+    return {
+        raised,
+        donorCount:
+            rows.length
+    };
+}
+
+
+function serializeDonationCampaign(
+    product,
+    stats
+) {
+    const goal =
+        product.donation_goal !== null &&
+        product.donation_goal !== undefined
+            ? Number(
+                product.donation_goal
+            )
+            : null;
+
+    const raised =
+        Number(
+            stats?.raised || 0
+        );
+
+    return {
+        enabled:
+            product.payment_type ===
+                "donate",
+        goal,
+        raised,
+        remaining:
+            goal !== null
+                ? Math.max(
+                    0,
+                    Math.round(
+                        (goal - raised) * 100
+                    ) / 100
+                )
+                : null,
+        progress_percent:
+            goal !== null && goal > 0
+                ? Math.min(
+                    100,
+                    Math.round(
+                        (raised / goal) * 1000
+                    ) / 10
+                )
+                : null,
+        donor_count:
+            Number(
+                stats?.donorCount || 0
+            ),
+        minimum:
+            product.donation_minimum !== null
+                ? Number(
+                    product.donation_minimum
+                )
+                : null,
+        maximum:
+            product.donation_maximum !== null
+                ? Number(
+                    product.donation_maximum
+                )
+                : null,
+        presets:
+            Array.isArray(
+                product.donation_presets
+            )
+                ? product.donation_presets
+                    .map(value => Number(value))
+                    .filter(value =>
+                        Number.isFinite(value) &&
+                        value > 0
+                    )
+                : [],
+        goal_message:
+            product.donation_goal_message ||
+            null,
+        end_at:
+            product.donation_end_at ||
+            null,
+        show_goal:
+            Boolean(
+                product.show_donation_goal
+            ),
+        show_donor_count:
+            Boolean(
+                product.show_donor_count
+            ),
+        close_on_goal:
+            Boolean(
+                product.close_on_goal
+            ),
+        goal_reached:
+            goal !== null &&
+            raised >= goal
+    };
+}
+
+
+/* ============================================================
    PUBLIC HOSTED PAYMENT LINKS
 ============================================================ */
 
@@ -5667,6 +6095,15 @@ app.get(
                             currency,
                             subscription_interval,
                             allow_custom_amount,
+                            donation_goal,
+                            donation_minimum,
+                            donation_maximum,
+                            donation_presets,
+                            donation_goal_message,
+                            donation_end_at,
+                            show_donation_goal,
+                            show_donor_count,
+                            close_on_goal,
                             status
                         ),
                         services (
@@ -5712,6 +6149,30 @@ app.get(
                 });
             }
 
+            let donationStats = {
+                raised:
+                    0,
+                donorCount:
+                    0
+            };
+
+            if (
+                link.products?.payment_type ===
+                    "donate"
+            ) {
+                try {
+                    donationStats =
+                        await getDonationStats(
+                            link.products.id
+                        );
+                } catch (statsError) {
+                    console.error(
+                        "Donation stats lookup error:",
+                        statsError
+                    );
+                }
+            }
+
             res.json({
                 payment_link: {
                     id:
@@ -5726,6 +6187,11 @@ app.get(
                         link.button_label,
                     product:
                         link.products,
+                    donation:
+                        serializeDonationCampaign(
+                            link.products,
+                            donationStats
+                        ),
                     service: {
                         name:
                             link.services.name,
@@ -5790,6 +6256,15 @@ app.post(
                             amount,
                             currency,
                             allow_custom_amount,
+                            donation_goal,
+                            donation_minimum,
+                            donation_maximum,
+                            donation_presets,
+                            donation_goal_message,
+                            donation_end_at,
+                            show_donation_goal,
+                            show_donor_count,
+                            close_on_goal,
                             status
                         ),
                         services (
@@ -5837,6 +6312,67 @@ app.post(
             const product =
                 link.products;
 
+            let donationStats = {
+                raised:
+                    0,
+                donorCount:
+                    0
+            };
+
+            if (
+                product.payment_type ===
+                    "donate"
+            ) {
+                try {
+                    donationStats =
+                        await getDonationStats(
+                            product.id
+                        );
+                } catch (statsError) {
+                    console.error(
+                        "Donation stats lookup error:",
+                        statsError
+                    );
+
+                    return res.status(500).json({
+                        error:
+                            "Could not load donation campaign."
+                    });
+                }
+
+                const campaignEnd =
+                    product.donation_end_at
+                        ? new Date(
+                            product.donation_end_at
+                        )
+                        : null;
+
+                if (
+                    campaignEnd &&
+                    campaignEnd <=
+                        new Date()
+                ) {
+                    return res.status(410).json({
+                        error:
+                            "This donation campaign has ended."
+                    });
+                }
+
+                if (
+                    product.close_on_goal &&
+                    product.donation_goal &&
+                    donationStats.raised >=
+                        Number(
+                            product.donation_goal
+                        )
+                ) {
+                    return res.status(409).json({
+                        error:
+                            "This donation campaign has reached its goal."
+                    });
+                }
+            }
+
             let amount =
                 Number(
                     product.amount
@@ -5868,6 +6404,70 @@ app.post(
                 Math.round(
                     amount * 100
                 ) / 100;
+
+            if (
+                product.payment_type ===
+                    "donate"
+            ) {
+                if (
+                    product.donation_minimum !==
+                        null &&
+                    amount <
+                        Number(
+                            product.donation_minimum
+                        )
+                ) {
+                    return res.status(400).json({
+                        error:
+                            "The donation is below the minimum allowed amount."
+                    });
+                }
+
+                if (
+                    product.donation_maximum !==
+                        null &&
+                    amount >
+                        Number(
+                            product.donation_maximum
+                        )
+                ) {
+                    return res.status(400).json({
+                        error:
+                            "The donation exceeds the maximum allowed amount."
+                    });
+                }
+            }
+
+            const donorAnonymous =
+                Boolean(
+                    req.body?.donor_anonymous
+                );
+
+            const donorName =
+                donorAnonymous
+                    ? null
+                    : String(
+                        req.body?.donor_name ||
+                        ""
+                    )
+                        .trim()
+                        .slice(
+                            0,
+                            120
+                        ) ||
+                        null;
+
+            const donorMessage =
+                String(
+                    req.body?.donor_message ||
+                    ""
+                )
+                    .trim()
+                    .slice(
+                        0,
+                        500
+                    ) ||
+                    null;
 
             const externalUserId =
                 "checkout_" +
@@ -5946,6 +6546,12 @@ app.post(
                             link.cancel_url,
                         payment_link_id:
                             link.id,
+                        donor_name:
+                            donorName,
+                        donor_message:
+                            donorMessage,
+                        donor_anonymous:
+                            donorAnonymous,
                         expires_at:
                             expiresAt
                     })
