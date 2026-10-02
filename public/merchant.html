@@ -545,12 +545,121 @@
                     <input
                         id="customDonation"
                         type="checkbox"
+                        checked
                     >
 
                     Allow customer to choose
                     the donation amount
 
                 </label>
+
+
+                <div
+                    id="donationSettings"
+                    class="donation-settings"
+                    hidden
+                >
+
+                    <div class="form-section-label">
+                        Donation campaign
+                    </div>
+
+                    <label>
+                        Target goal
+                        <input
+                            id="donationGoal"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            placeholder="10000"
+                        >
+                    </label>
+
+                    <label>
+                        Minimum donation
+                        <input
+                            id="donationMinimum"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            placeholder="50"
+                        >
+                    </label>
+
+                    <label>
+                        Maximum donation
+                        <input
+                            id="donationMaximum"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            placeholder="5000"
+                        >
+                    </label>
+
+                    <label>
+                        Suggested amounts
+                        <input
+                            id="donationPresets"
+                            type="text"
+                            placeholder="50, 100, 250, 500"
+                        >
+                    </label>
+
+                    <p class="form-help">
+                        Enter comma-separated preset amounts customers can tap.
+                    </p>
+
+                    <label>
+                        Goal message
+                        <textarea
+                            id="donationGoalMessage"
+                            rows="3"
+                            placeholder="Help us raise GMD 10,000 to provide school supplies."
+                        ></textarea>
+                    </label>
+
+                    <label>
+                        Campaign end date
+                        <input
+                            id="donationEndAt"
+                            type="datetime-local"
+                        >
+                    </label>
+
+                    <label
+                        class="checkbox-line"
+                    >
+                        <input
+                            id="showDonationGoal"
+                            type="checkbox"
+                            checked
+                        >
+                        Show the target and progress to donors
+                    </label>
+
+                    <label
+                        class="checkbox-line"
+                    >
+                        <input
+                            id="showDonorCount"
+                            type="checkbox"
+                            checked
+                        >
+                        Show donor count
+                    </label>
+
+                    <label
+                        class="checkbox-line"
+                    >
+                        <input
+                            id="closeOnGoal"
+                            type="checkbox"
+                    >
+                        Stop accepting donations when the goal is reached
+                    </label>
+
+                </div>
 
 
                 <button
