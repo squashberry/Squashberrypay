@@ -330,3 +330,83 @@ table th{background:#f0f0ed!important;color:#555!important}
     scroll-behavior:auto!important;
   }
 }
+
+
+/* ---------- AUTH PAGE STRUCTURE FIX ---------- */
+/* Sign-in uses the shared auth-page shell; keep it aligned like signup. */
+.auth-page{
+  width:min(1100px,calc(100% - 28px));
+  margin:0 auto;
+  padding:72px 0 95px;
+  display:grid;
+  grid-template-columns:minmax(280px,.9fr) minmax(390px,1.1fr);
+  gap:72px;
+  align-items:start;
+  min-height:calc(100vh - 150px);
+}
+.auth-page .auth-intro{
+  padding-top:18px;
+}
+.auth-page .auth-card{
+  width:100%;
+  box-sizing:border-box;
+  padding:30px;
+  min-height:0;
+}
+.auth-page .auth-step{
+  width:100%;
+  box-sizing:border-box;
+}
+.auth-page .auth-step > h2{
+  margin-top:14px;
+}
+.auth-page .auth-step form{
+  display:grid;
+  gap:18px;
+}
+.auth-page .forgot-row{
+  margin-top:-7px;
+}
+.auth-page .auth-message{
+  width:100%;
+  box-sizing:border-box;
+}
+.auth-page + .site-footer,
+.auth-page ~ .site-footer{
+  margin-top:auto;
+}
+
+@media (max-width:1050px){
+  .auth-page{
+    grid-template-columns:1fr;
+    gap:30px;
+    padding:58px 0 80px;
+    min-height:0;
+  }
+  .auth-page .auth-intro{
+    padding-top:0;
+    max-width:760px;
+  }
+  .auth-page .auth-card{
+    max-width:620px;
+  }
+}
+
+@media (max-width:620px){
+  .auth-page{
+    width:calc(100% - 20px);
+    padding:42px 0 68px;
+    gap:24px;
+  }
+  .auth-page .auth-card{
+    max-width:none;
+    padding:21px;
+    border-radius:21px;
+  }
+  .auth-page .auth-intro h1{
+    font-size:clamp(43px,12vw,58px);
+  }
+  .auth-page .auth-step form{
+    gap:15px;
+  }
+}
