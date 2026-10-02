@@ -317,6 +317,8 @@ create table if not exists public.payments (
 
     return_url text,
 
+    cancel_url text,
+
     receipt_path text,
 
     receipt_uploaded_at timestamptz,
