@@ -112,58 +112,83 @@
 
         <div
             id="signinEmailStep"
-            class="auth-step"
+            class="auth-step signin-state"
         >
 
             <span class="eyebrow">
                 SIGN IN
             </span>
 
-
             <h2>
                 Your account
             </h2>
 
+            <p class="auth-step-copy">
+                Enter your business email to continue.
+            </p>
 
-            <form
-                id="signinForm"
-            >
-
-
+            <form id="signinEmailForm" class="signin-state-form">
                 <label>
-
                     Business email
-
                     <input
                         id="signinEmail"
                         type="email"
                         placeholder="you@business.com"
                         autocomplete="email"
+                        inputmode="email"
                         required
                     >
-
                 </label>
 
-
-                <div
-                    class="forgot-row"
+                <button
+                    id="signinContinueButton"
+                    class="button primary full"
+                    type="submit"
                 >
+                    Continue
+                </button>
+            </form>
 
-                    <button
-                        id="forgotPasswordLink"
-                        class="auth-link"
-                        type="button"
-                    >
-                        Forgot password?
-                    </button>
+            <button
+                id="signinForgotFromEmail"
+                class="auth-link signin-forgot-email"
+                type="button"
+            >
+                Forgot password?
+            </button>
 
-                </div>
+        </div>
 
+        <div
+            id="signinPasswordStep"
+            class="auth-step signin-state"
+            hidden
+        >
 
+            <button
+                id="signinBackToEmail"
+                class="auth-back"
+                type="button"
+            >
+                ← Change email
+            </button>
+
+            <span class="eyebrow">
+                SIGN IN
+            </span>
+
+            <h2>
+                Enter your password
+            </h2>
+
+            <p class="auth-step-copy">
+                Signing in as
+                <strong id="signinEmailDisplay"></strong>
+            </p>
+
+            <form id="signinForm" class="signin-state-form">
                 <label>
-
                     Password
-
                     <input
                         id="signinPassword"
                         type="password"
@@ -171,9 +196,7 @@
                         autocomplete="current-password"
                         required
                     >
-
                 </label>
-
 
                 <button
                     id="signinButton"
@@ -182,9 +205,15 @@
                 >
                     Sign in
                 </button>
-
-
             </form>
+
+            <button
+                id="signinForgotLink"
+                class="auth-link signin-forgot-password"
+                type="button"
+            >
+                Forgot password?
+            </button>
 
         </div>
 
