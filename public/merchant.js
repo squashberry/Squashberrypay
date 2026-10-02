@@ -1561,10 +1561,11 @@ function populateButtonProducts(
 }
 
 
+
 $("#generateButtonGuide")
     ?.addEventListener(
         "click",
-        () => {
+        async () => {
 
             const app =
                 apps.find(
@@ -1593,85 +1594,162 @@ $("#generateButtonGuide")
                 return;
             }
 
+            const generator =
+                $("#generateButtonGuide");
 
-            const type =
-                option.dataset.type;
+            setLoading(
+                generator,
+                "Preparing secure link…"
+            );
 
+            try {
 
-            $("#guideType")
-                .textContent =
-                type;
+                const data =
+                    await api(
+                        "/api/merchant/apps/" +
+                        encodeURIComponent(
+                            app.id
+                        ) +
+                        "/payment-links",
+                        {
+                            method:
+                                "POST",
 
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
 
-            $("#buttonGuide")
-                .hidden =
-                false;
+                            body:
+                                JSON.stringify({
+                                    product_id:
+                                        option.value
+                                })
+                        }
+                    );
 
+                const paymentLink =
+                    data.payment_link;
 
-            $("#buttonGuide")
-                .classList.add(
-                    "state-enter"
+                const paymentUrl =
+                    data.payment_url;
+
+                const type =
+                    option.dataset.type;
+
+                $("#guideType")
+                    .textContent =
+                    type;
+
+                $("#buttonGuide")
+                    .hidden =
+                    false;
+
+                $("#buttonGuide")
+                    .classList.add(
+                        "state-enter"
+                    );
+
+                $("#buttonCode")
+                    .textContent =
+                    getButtonExample(
+                        type,
+                        paymentLink.slug,
+                        paymentUrl,
+                        paymentLink.button_label
+                    );
+
+                notify(
+                    data.reused
+                        ? "Existing secure payment link loaded."
+                        : "Secure payment link created.",
+                    "success"
                 );
 
+            } catch (error) {
 
-            $("#buttonCode")
-                .textContent =
-                getButtonExample(
-                    type,
-                    option.value
+                notify(
+                    error.message,
+                    "error"
                 );
+
+            } finally {
+
+                resetButton(
+                    generator
+                );
+            }
         }
     );
 
 
 function getButtonExample(
     type,
-    productCode
+    slug,
+    paymentUrl,
+    buttonLabel
 ) {
 
     const text =
-        type ===
-            "subscribe"
-            ? "Subscribe"
-            : type ===
-                "donate"
-                ? "Donate"
-                : "Pay Now";
-
-
-    return `<button id="squashberrypay-button">
-    ${text}
-</button>
-
-<script>
-document
-    .getElementById("squashberrypay-button")
-    .addEventListener("click", async () => {
-
-        const response = await fetch(
-            "/api/create-squashberry-payment",
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body: JSON.stringify({
-                    product_code:
-                        "${productCode}"
-                })
-            }
+        buttonLabel ||
+        (
+            type === "subscribe"
+                ? "Subscribe"
+                : type === "donate"
+                    ? "Donate"
+                    : "Pay Now"
         );
 
-        const payment =
-            await response.json();
+    const quotedSlug =
+        JSON.stringify(
+            slug
+        );
 
-        window.location.href =
-            payment.payment_url;
-    });
-<\\/script>`;
+    const quotedUrl =
+        JSON.stringify(
+            paymentUrl
+        );
+
+    const sdkOrigin =
+        new URL(
+            paymentUrl
+        ).origin;
+
+    return [
+        "<!-- Simplest option: works anywhere a normal link works -->",
+        "<a href=" +
+            quotedUrl +
+            ">",
+        "    " +
+            text,
+        "</a>",
+        "",
+        "<!-- Branded button: no client secret required -->",
+        "<script src=" +
+            JSON.stringify(
+                sdkOrigin +
+                "/squashberrypay.js"
+            ) +
+            " defer></script>",
+        "<button type=\"button\" data-squashberrypay=" +
+            quotedSlug +
+            ">",
+        "    " +
+            text,
+        "</button>",
+        "",
+        "<!-- Or open the hosted checkout from your own button -->",
+        "<script>",
+        "SquashberryPay.open(" +
+            quotedSlug +
+            ");",
+        "</script>",
+        "",
+        "<!-- Hosted checkout URL -->",
+        paymentUrl
+    ].join(
+        "\n"
+    );
 }
 
 
