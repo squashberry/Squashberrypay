@@ -815,3 +815,30 @@
     background: #e8f6ed;
     color: #176b3a;
 }
+
+.donation-settings{
+    display:grid;
+    gap:14px;
+    padding:17px;
+    border:1px solid var(--line);
+    border-radius:13px;
+    background:#f8f8f5;
+}
+.form-section-label{
+    font-size:11px;
+    font-weight:850;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#777;
+}
+.form-help{
+    margin:-6px 0 0;
+    color:#777;
+    font-size:11px;
+    line-height:1.5;
+}
+.product-meta{
+    margin:9px 0 0;
+    color:#777;
+    font-size:11px;
+}
