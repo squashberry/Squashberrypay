@@ -523,6 +523,40 @@ function renderPayments(
                                 ?.email ||
                             "—"
                         )}
+
+                        ${
+                            payment.payment_type ===
+                            "donate" &&
+                            (
+                                payment.donor_name ||
+                                payment.donor_message
+                            )
+                                ? `
+                                    <div class="admin-donation-note">
+                                        ${
+                                            payment.donor_name
+                                                ? escapeHtml(
+                                                    payment.donor_anonymous
+                                                        ? "Anonymous donor"
+                                                        : payment.donor_name
+                                                )
+                                                : "Anonymous donor"
+                                        }
+                                        ${
+                                            payment.donor_message
+                                                ? `
+                                                    <div>
+                                                        ${escapeHtml(
+                                                            payment.donor_message
+                                                        )}
+                                                    </div>
+                                                `
+                                                : ""
+                                        }
+                                    </div>
+                                `
+                                : ""
+                        }
                     </td>
 
                     <td>
@@ -632,7 +666,7 @@ document.addEventListener(
 
             const confirmed =
                 window.confirm(
-                    "Approve this payment and send the one-time code to the customer?"
+                    "Approve this payment and complete the payment workflow?"
                 );
 
 
