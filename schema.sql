@@ -219,6 +219,49 @@ create unique index if not exists idx_payment_method_service_name
 on public.payment_methods(service_id, name);
 
 
+
+
+-- ============================================================
+-- HOSTED PAYMENT LINKS
+-- Public checkout links/buttons that work on any website/app
+-- ============================================================
+
+create table if not exists public.payment_links (
+    id uuid primary key default gen_random_uuid(),
+
+    service_id uuid not null
+        references public.services(id)
+        on delete cascade,
+
+    product_id uuid not null
+        references public.products(id)
+        on delete restrict,
+
+    slug text not null unique,
+
+    title text not null,
+
+    description text,
+
+    button_label text not null default 'Pay Now',
+
+    return_url text,
+
+    cancel_url text,
+
+    status text not null default 'active'
+        check (
+            status in (
+                'active',
+                'inactive'
+            )
+        ),
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now()
+);
+
 -- ============================================================
 -- PAYMENTS
 -- ============================================================
@@ -419,6 +462,15 @@ on public.service_users(service_id);
 create index if not exists idx_products_service
 on public.products(service_id);
 
+create index if not exists idx_payment_links_service
+on public.payment_links(service_id);
+
+create index if not exists idx_payment_links_product
+on public.payment_links(product_id);
+
+create index if not exists idx_payment_links_status
+on public.payment_links(status);
+
 create index if not exists idx_payments_service
 on public.payments(service_id);
 
@@ -448,6 +500,7 @@ alter table public.services enable row level security;
 alter table public.service_users enable row level security;
 alter table public.products enable row level security;
 alter table public.payment_methods enable row level security;
+alter table public.payment_links enable row level security;
 alter table public.payments enable row level security;
 alter table public.payment_sessions enable row level security;
 alter table public.payment_tokens enable row level security;
@@ -460,6 +513,7 @@ revoke all on public.services from anon, authenticated;
 revoke all on public.service_users from anon, authenticated;
 revoke all on public.products from anon, authenticated;
 revoke all on public.payment_methods from anon, authenticated;
+revoke all on public.payment_links from anon, authenticated;
 revoke all on public.payments from anon, authenticated;
 revoke all on public.payment_sessions from anon, authenticated;
 revoke all on public.payment_tokens from anon, authenticated;
