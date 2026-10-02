@@ -150,6 +150,24 @@ create table if not exists public.products (
         ),
 
     allow_custom_amount boolean not null default false,
+    
+    donation_goal numeric(12,2),
+
+    donation_minimum numeric(12,2),
+
+    donation_maximum numeric(12,2),
+
+    donation_presets jsonb not null default '[]'::jsonb,
+
+    donation_goal_message text,
+
+    donation_end_at timestamptz,
+
+    show_donation_goal boolean not null default true,
+
+    show_donor_count boolean not null default true,
+
+    close_on_goal boolean not null default false,
 
     status text not null default 'active'
         check (
@@ -166,7 +184,37 @@ create table if not exists public.products (
     unique (
         service_id,
         product_code
-    )
+    ),
+    
+    constraint products_donation_goal_positive
+        check (
+            donation_goal is null
+            or donation_goal > 0
+        ),
+
+    constraint products_donation_minimum_positive
+        check (
+            donation_minimum is null
+            or donation_minimum > 0
+        ),
+
+    constraint products_donation_maximum_positive
+        check (
+            donation_maximum is null
+            or donation_maximum > 0
+        ),
+
+    constraint products_donation_range_valid
+        check (
+            donation_minimum is null
+            or donation_maximum is null
+            or donation_maximum >= donation_minimum
+        ),
+
+    constraint products_donation_presets_array
+        check (
+            jsonb_typeof(donation_presets) = 'array'
+        )
 );
 
 
@@ -345,38 +393,8 @@ create table if not exists public.payments (
 
     created_at timestamptz not null default now(),
 
-    expires_at timestamptz,
+    expires_at timestamptz
 
-    constraint products_donation_goal_positive
-        check (
-            donation_goal is null
-            or donation_goal > 0
-        ),
-
-    constraint products_donation_minimum_positive
-        check (
-            donation_minimum is null
-            or donation_minimum > 0
-        ),
-
-    constraint products_donation_maximum_positive
-        check (
-            donation_maximum is null
-            or donation_maximum > 0
-        ),
-
-    constraint products_donation_range_valid
-        check (
-            donation_minimum is null
-            or donation_maximum is null
-            or donation_maximum >= donation_minimum
-        ),
-
-    constraint products_donation_presets_array
-        check (
-            jsonb_typeof(donation_presets) = 'array'
-        )
-);
 
 
 -- ============================================================
