@@ -4226,10 +4226,15 @@ app.post(
 
 
             if (
-                payment_type !==
-                    "donate" &&
+                (
+                    payment_type !==
+                        "donate" ||
+                    !allow_custom_amount
+                ) &&
                 (
                     amount === undefined ||
+                    amount === null ||
+                    amount === "" ||
                     Number(amount) <= 0
                 )
             ) {
