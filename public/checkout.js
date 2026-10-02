@@ -9,6 +9,9 @@ const state = {
                 .pop() || ""
         ),
     link:
+        null,
+
+    selectedDonationAmount:
         null
 };
 
@@ -280,7 +283,11 @@ function renderDonationCampaign(
             ? donation.presets
             : [];
 
+    state.selectedDonationAmount =
+        null;
+
     donationPresetsWrap.hidden =
+        !enabled ||
         presets.length === 0;
 
     presets.forEach(
@@ -306,8 +313,29 @@ function renderDonationCampaign(
             button.addEventListener(
                 "click",
                 () => {
+                    state.selectedDonationAmount =
+                        Number(value);
+
                     $("#customAmount").value =
                         String(value);
+
+                    if (
+                        product.allow_custom_amount
+                    ) {
+                        $("#amountLabel")
+                            .textContent =
+                            money(
+                                value,
+                                currency
+                            );
+                    } else {
+                        $("#amountLabel")
+                            .textContent =
+                            money(
+                                value,
+                                currency
+                            );
+                    }
 
                     document
                         .querySelectorAll(".preset-button")
@@ -447,9 +475,30 @@ function renderCheckout() {
             window.location.search
         );
 
-    if (custom && params.has("amount")) {
-        $("#customAmount").value =
-            params.get("amount");
+    if (
+        product.payment_type ===
+            "donate" &&
+        params.has("amount")
+    ) {
+        const presetAmount =
+            Number(
+                params.get("amount")
+            );
+
+        if (
+            Number.isFinite(
+                presetAmount
+            ) &&
+            presetAmount > 0
+        ) {
+            state.selectedDonationAmount =
+                presetAmount;
+
+            $("#customAmount").value =
+                String(
+                    presetAmount
+                );
+        }
     }
 
     loadingState.hidden = true;
@@ -495,7 +544,14 @@ async function startPayment(
         const amount =
             product.allow_custom_amount
                 ? Number($("#customAmount").value)
-                : Number(product.amount);
+                : (
+                    state.selectedDonationAmount !==
+                        null
+                        ? Number(
+                            state.selectedDonationAmount
+                        )
+                        : Number(product.amount)
+                );
 
         if (!Number.isFinite(amount) || amount <= 0) {
             setFormError("Enter a valid donation amount.");
