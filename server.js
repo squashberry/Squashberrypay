@@ -21,6 +21,11 @@ const {
 const app =
     express();
 
+app.set(
+    "trust proxy",
+    1
+);
+
 
 /* ============================================================
    CONFIG
@@ -461,6 +466,605 @@ function publicError(
         message;
 
     return error;
+}
+
+
+
+/* ============================================================
+   SECURITY / REDIRECT / SESSION HELPERS
+============================================================ */
+
+function parseBearerToken(req) {
+
+    const header =
+        String(
+            req.get("Authorization") ||
+            ""
+        ).trim();
+
+    if (
+        !header ||
+        !/^Bearer\s+/i.test(header)
+    ) {
+        return null;
+    }
+
+    return header
+        .replace(
+            /^Bearer\s+/i,
+            ""
+        )
+        .trim() || null;
+}
+
+
+function createAdminCookie() {
+
+    const issuedAt =
+        String(
+            Date.now()
+        );
+
+    const nonce =
+        randomToken();
+
+    const payload =
+        issuedAt +
+        "." +
+        nonce;
+
+    const signature =
+        crypto
+            .createHmac(
+                "sha256",
+                ADMIN_SECRET
+            )
+            .update(
+                payload
+            )
+            .digest(
+                "hex"
+            );
+
+    return Buffer
+        .from(
+            payload +
+            "." +
+            signature
+        )
+        .toString(
+            "base64url"
+        );
+}
+
+
+function verifyAdminCookie(value) {
+
+    try {
+
+        const decoded =
+            Buffer
+                .from(
+                    String(
+                        value ||
+                        ""
+                    ),
+                    "base64url"
+                )
+                .toString(
+                    "utf8"
+                );
+
+        const parts =
+            decoded.split(".");
+
+        if (
+            parts.length !==
+            3
+        ) {
+            return false;
+        }
+
+        const issuedAt =
+            parts[0];
+
+        const nonce =
+            parts[1];
+
+        const signature =
+            parts[2];
+
+        const issued =
+            Number(
+                issuedAt
+            );
+
+        if (
+            !Number.isFinite(
+                issued
+            )
+        ) {
+            return false;
+        }
+
+        const age =
+            Date.now() -
+            issued;
+
+        if (
+            age <
+                -5 * 60 * 1000 ||
+            age >
+                8 * 60 * 60 * 1000
+        ) {
+            return false;
+        }
+
+        const expected =
+            crypto
+                .createHmac(
+                    "sha256",
+                    ADMIN_SECRET
+                )
+                .update(
+                    issuedAt +
+                    "." +
+                    nonce
+                )
+                .digest(
+                    "hex"
+                );
+
+        const expectedBuffer =
+            Buffer.from(
+                expected,
+                "hex"
+            );
+
+        const actualBuffer =
+            Buffer.from(
+                signature,
+                "hex"
+            );
+
+        return (
+            expectedBuffer.length ===
+                actualBuffer.length &&
+            crypto.timingSafeEqual(
+                expectedBuffer,
+                actualBuffer
+            )
+        );
+
+    } catch {
+
+        return false;
+    }
+}
+
+
+function normalizeRedirectUrl(
+    value,
+    fieldName
+) {
+
+    const raw =
+        String(
+            value ||
+            ""
+        ).trim();
+
+    if (
+        !raw
+    ) {
+        return null;
+    }
+
+    let parsed;
+
+    try {
+
+        parsed =
+            new URL(
+                raw
+            );
+
+    } catch {
+
+        throw publicError(
+            (fieldName || "redirect_url") +
+            " is invalid."
+        );
+    }
+
+    const protocol =
+        String(
+            parsed.protocol ||
+            ""
+        ).toLowerCase();
+
+    if (
+        protocol ===
+        "https:"
+    ) {
+
+        return parsed.toString();
+    }
+
+    if (
+        protocol ===
+            "http:" &&
+        (
+            parsed.hostname ===
+                "localhost" ||
+            parsed.hostname ===
+                "127.0.0.1" ||
+            parsed.hostname ===
+                "::1"
+        )
+    ) {
+
+        return parsed.toString();
+    }
+
+    const blockedSchemes = [
+        "javascript:",
+        "data:",
+        "vbscript:"
+    ];
+
+    if (
+        /^[a-z][a-z0-9+.-]*:$/.test(
+            protocol
+        ) &&
+        !blockedSchemes.includes(
+            protocol
+        ) &&
+        protocol !==
+            "http:" &&
+        protocol !==
+            "https:"
+    ) {
+
+        return raw;
+    }
+
+    throw publicError(
+        (fieldName || "redirect_url") +
+        " must use HTTPS or a supported app deep-link scheme."
+    );
+}
+
+
+function generatePaymentLinkSlug(
+    serviceSlug,
+    productCode
+) {
+
+    const base =
+        cleanSlug(
+            String(
+                serviceSlug ||
+                ""
+            ) +
+            "-" +
+            String(
+                productCode ||
+                ""
+            )
+        ) ||
+        "payment";
+
+    return (
+        base +
+        "-" +
+        crypto
+            .randomBytes(
+                3
+            )
+            .toString(
+                "hex"
+            )
+    );
+}
+
+
+/* ============================================================
+   MERCHANT AUTHENTICATION
+============================================================ */
+
+async function authenticateMerchant(
+    req,
+    res,
+    next
+) {
+
+    try {
+
+        const token =
+            parseBearerToken(
+                req
+            );
+
+        if (
+            !token
+        ) {
+
+            return res.status(
+                401
+            ).json({
+                error:
+                    "Merchant authentication required."
+            });
+        }
+
+        const {
+            data,
+            error
+        } =
+            await authClient
+                .auth
+                .getUser(
+                    token
+                );
+
+        if (
+            error ||
+            !data?.user
+        ) {
+
+            return res.status(
+                401
+            ).json({
+                error:
+                    "Your merchant session is invalid or expired."
+            });
+        }
+
+        const {
+            data: merchant,
+            error:
+                merchantError
+        } =
+            await supabase
+                .from(
+                    "merchant_profiles"
+                )
+                .select(
+                    "*"
+                )
+                .eq(
+                    "owner_user_id",
+                    data.user.id
+                )
+                .maybeSingle();
+
+        if (
+            merchantError
+        ) {
+
+            console.error(
+                "Merchant authentication lookup error:",
+                merchantError
+            );
+
+            return res.status(
+                500
+            ).json({
+                error:
+                    "Could not verify your merchant account."
+            });
+        }
+
+        if (
+            !merchant
+        ) {
+
+            return res.status(
+                403
+            ).json({
+                error:
+                    "No merchant profile is attached to this account."
+            });
+        }
+
+        req.user =
+            data.user;
+
+        req.merchant =
+            merchant;
+
+        next();
+
+    } catch (error) {
+
+        console.error(
+            "Merchant authentication error:",
+            error
+        );
+
+        res.status(
+            500
+        ).json({
+            error:
+                "Could not authenticate merchant."
+        });
+    }
+}
+
+
+async function authenticateService(
+    req,
+    res,
+    next
+) {
+
+    try {
+
+        const clientId =
+            String(
+                req.get(
+                    "X-SquashberryPay-Client-ID"
+                ) ||
+                ""
+            ).trim();
+
+        const clientSecret =
+            String(
+                req.get(
+                    "X-SquashberryPay-Client-Secret"
+                ) ||
+                ""
+            ).trim();
+
+        if (
+            !clientId ||
+            !clientSecret
+        ) {
+
+            return res.status(
+                401
+            ).json({
+                error:
+                    "SquashberryPay client credentials are required."
+            });
+        }
+
+        const {
+            data: service,
+            error
+        } =
+            await supabase
+                .from(
+                    "services"
+                )
+                .select(
+                    "*"
+                )
+                .eq(
+                    "client_id",
+                    clientId
+                )
+                .maybeSingle();
+
+        if (
+            error
+        ) {
+
+            console.error(
+                "Service authentication lookup error:",
+                error
+            );
+
+            return res.status(
+                500
+            ).json({
+                error:
+                    "Could not authenticate application."
+            });
+        }
+
+        if (
+            !service
+        ) {
+
+            return res.status(
+                401
+            ).json({
+                error:
+                    "Invalid SquashberryPay client credentials."
+            });
+        }
+
+        if (
+            service.status !==
+            "active"
+        ) {
+
+            return res.status(
+                403
+            ).json({
+                error:
+                    "This application is not active."
+            });
+        }
+
+        const matches =
+            await bcrypt.compare(
+                clientSecret,
+                service.client_secret_hash
+            );
+
+        if (
+            !matches
+        ) {
+
+            return res.status(
+                401
+            ).json({
+                error:
+                    "Invalid SquashberryPay client credentials."
+            });
+        }
+
+        req.service =
+            service;
+
+        next();
+
+    } catch (error) {
+
+        console.error(
+            "Service authentication error:",
+            error
+        );
+
+        res.status(
+            500
+        ).json({
+            error:
+                "Could not authenticate application."
+        });
+    }
+}
+
+
+function requireAdmin(
+    req,
+    res,
+    next
+) {
+
+    const cookies =
+        String(
+            req.headers.cookie ||
+            ""
+        );
+
+    const match =
+        cookies.match(
+            /(?:^|;\s*)sbp_admin=([^;]+)/
+        );
+
+    if (
+        !match ||
+        !verifyAdminCookie(
+            match[1]
+        )
+    ) {
+
+        return res.status(
+            401
+        ).json({
+            error:
+                "Administrator authentication required."
+        });
+    }
+
+    req.admin =
+        true;
+
+    next();
 }
 
 
