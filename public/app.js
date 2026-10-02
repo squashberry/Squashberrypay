@@ -20,7 +20,9 @@ const state = {
 
     pollTimer: null,
 
-    notificationTimer: null
+    notificationTimer: null,
+
+    returning: false
 };
 
 
@@ -1357,12 +1359,16 @@ cancelPaymentBtn?.addEventListener(
             setTimeout(
                 () => {
 
+                    const cancelDestination =
+                        data.cancel_url ||
+                        data.return_url;
+
                     if (
-                        data.return_url
+                        cancelDestination
                     ) {
 
                         window.location.href =
-                            data.return_url;
+                            cancelDestination;
 
                     } else {
 
@@ -1484,14 +1490,65 @@ function showVerification(
         heading.textContent =
             "Payment completed.";
 
-        subtext.textContent =
-            "This payment has already been redeemed successfully.";
-
         waitingApprovalBox.hidden =
             true;
 
         approvedMessage.hidden =
             false;
+
+        if (
+            state.payment.payment_link_id
+        ) {
+
+            subtext.textContent =
+                "Your payment has been confirmed successfully.";
+
+            const messages =
+                approvedMessage.querySelectorAll(
+                    "p"
+                );
+
+            if (
+                messages[0]
+            ) {
+                messages[0].textContent =
+                    "Your payment has been confirmed.";
+            }
+
+            if (
+                messages[1]
+            ) {
+                messages[1].textContent =
+                    state.payment.return_url
+                        ? "Returning you to the merchant…"
+                        : "You may close this page.";
+            }
+
+            if (
+                state.payment.return_url &&
+                !state.returning
+            ) {
+
+                state.returning =
+                    true;
+
+                setTimeout(
+                    () => {
+
+                        window.location.href =
+                            state.payment.return_url;
+
+                    },
+                    900
+                );
+            }
+
+        } else {
+
+            subtext.textContent =
+                "This payment has already been redeemed successfully.";
+
+        }
 
         return;
     }
@@ -1734,12 +1791,16 @@ function handleAttemptExpired() {
     setTimeout(
         () => {
 
+            const expiryDestination =
+                state.payment?.cancel_url ||
+                state.payment?.return_url;
+
             if (
-                state.payment?.return_url
+                expiryDestination
             ) {
 
                 window.location.href =
-                    state.payment.return_url;
+                    expiryDestination;
 
             } else {
 

@@ -21,6 +21,11 @@ const {
 const app =
     express();
 
+app.set(
+    "trust proxy",
+    1
+);
+
 
 /* ============================================================
    CONFIG
@@ -461,6 +466,605 @@ function publicError(
         message;
 
     return error;
+}
+
+
+
+/* ============================================================
+   SECURITY / REDIRECT / SESSION HELPERS
+============================================================ */
+
+function parseBearerToken(req) {
+
+    const header =
+        String(
+            req.get("Authorization") ||
+            ""
+        ).trim();
+
+    if (
+        !header ||
+        !/^Bearer\s+/i.test(header)
+    ) {
+        return null;
+    }
+
+    return header
+        .replace(
+            /^Bearer\s+/i,
+            ""
+        )
+        .trim() || null;
+}
+
+
+function createAdminCookie() {
+
+    const issuedAt =
+        String(
+            Date.now()
+        );
+
+    const nonce =
+        randomToken();
+
+    const payload =
+        issuedAt +
+        "." +
+        nonce;
+
+    const signature =
+        crypto
+            .createHmac(
+                "sha256",
+                ADMIN_SECRET
+            )
+            .update(
+                payload
+            )
+            .digest(
+                "hex"
+            );
+
+    return Buffer
+        .from(
+            payload +
+            "." +
+            signature
+        )
+        .toString(
+            "base64url"
+        );
+}
+
+
+function verifyAdminCookie(value) {
+
+    try {
+
+        const decoded =
+            Buffer
+                .from(
+                    String(
+                        value ||
+                        ""
+                    ),
+                    "base64url"
+                )
+                .toString(
+                    "utf8"
+                );
+
+        const parts =
+            decoded.split(".");
+
+        if (
+            parts.length !==
+            3
+        ) {
+            return false;
+        }
+
+        const issuedAt =
+            parts[0];
+
+        const nonce =
+            parts[1];
+
+        const signature =
+            parts[2];
+
+        const issued =
+            Number(
+                issuedAt
+            );
+
+        if (
+            !Number.isFinite(
+                issued
+            )
+        ) {
+            return false;
+        }
+
+        const age =
+            Date.now() -
+            issued;
+
+        if (
+            age <
+                -5 * 60 * 1000 ||
+            age >
+                8 * 60 * 60 * 1000
+        ) {
+            return false;
+        }
+
+        const expected =
+            crypto
+                .createHmac(
+                    "sha256",
+                    ADMIN_SECRET
+                )
+                .update(
+                    issuedAt +
+                    "." +
+                    nonce
+                )
+                .digest(
+                    "hex"
+                );
+
+        const expectedBuffer =
+            Buffer.from(
+                expected,
+                "hex"
+            );
+
+        const actualBuffer =
+            Buffer.from(
+                signature,
+                "hex"
+            );
+
+        return (
+            expectedBuffer.length ===
+                actualBuffer.length &&
+            crypto.timingSafeEqual(
+                expectedBuffer,
+                actualBuffer
+            )
+        );
+
+    } catch {
+
+        return false;
+    }
+}
+
+
+function normalizeRedirectUrl(
+    value,
+    fieldName
+) {
+
+    const raw =
+        String(
+            value ||
+            ""
+        ).trim();
+
+    if (
+        !raw
+    ) {
+        return null;
+    }
+
+    let parsed;
+
+    try {
+
+        parsed =
+            new URL(
+                raw
+            );
+
+    } catch {
+
+        throw publicError(
+            (fieldName || "redirect_url") +
+            " is invalid."
+        );
+    }
+
+    const protocol =
+        String(
+            parsed.protocol ||
+            ""
+        ).toLowerCase();
+
+    if (
+        protocol ===
+        "https:"
+    ) {
+
+        return parsed.toString();
+    }
+
+    if (
+        protocol ===
+            "http:" &&
+        (
+            parsed.hostname ===
+                "localhost" ||
+            parsed.hostname ===
+                "127.0.0.1" ||
+            parsed.hostname ===
+                "::1"
+        )
+    ) {
+
+        return parsed.toString();
+    }
+
+    const blockedSchemes = [
+        "javascript:",
+        "data:",
+        "vbscript:"
+    ];
+
+    if (
+        /^[a-z][a-z0-9+.-]*:$/.test(
+            protocol
+        ) &&
+        !blockedSchemes.includes(
+            protocol
+        ) &&
+        protocol !==
+            "http:" &&
+        protocol !==
+            "https:"
+    ) {
+
+        return raw;
+    }
+
+    throw publicError(
+        (fieldName || "redirect_url") +
+        " must use HTTPS or a supported app deep-link scheme."
+    );
+}
+
+
+function generatePaymentLinkSlug(
+    serviceSlug,
+    productCode
+) {
+
+    const base =
+        cleanSlug(
+            String(
+                serviceSlug ||
+                ""
+            ) +
+            "-" +
+            String(
+                productCode ||
+                ""
+            )
+        ) ||
+        "payment";
+
+    return (
+        base +
+        "-" +
+        crypto
+            .randomBytes(
+                3
+            )
+            .toString(
+                "hex"
+            )
+    );
+}
+
+
+/* ============================================================
+   MERCHANT AUTHENTICATION
+============================================================ */
+
+async function authenticateMerchant(
+    req,
+    res,
+    next
+) {
+
+    try {
+
+        const token =
+            parseBearerToken(
+                req
+            );
+
+        if (
+            !token
+        ) {
+
+            return res.status(
+                401
+            ).json({
+                error:
+                    "Merchant authentication required."
+            });
+        }
+
+        const {
+            data,
+            error
+        } =
+            await authClient
+                .auth
+                .getUser(
+                    token
+                );
+
+        if (
+            error ||
+            !data?.user
+        ) {
+
+            return res.status(
+                401
+            ).json({
+                error:
+                    "Your merchant session is invalid or expired."
+            });
+        }
+
+        const {
+            data: merchant,
+            error:
+                merchantError
+        } =
+            await supabase
+                .from(
+                    "merchant_profiles"
+                )
+                .select(
+                    "*"
+                )
+                .eq(
+                    "owner_user_id",
+                    data.user.id
+                )
+                .maybeSingle();
+
+        if (
+            merchantError
+        ) {
+
+            console.error(
+                "Merchant authentication lookup error:",
+                merchantError
+            );
+
+            return res.status(
+                500
+            ).json({
+                error:
+                    "Could not verify your merchant account."
+            });
+        }
+
+        if (
+            !merchant
+        ) {
+
+            return res.status(
+                403
+            ).json({
+                error:
+                    "No merchant profile is attached to this account."
+            });
+        }
+
+        req.user =
+            data.user;
+
+        req.merchant =
+            merchant;
+
+        next();
+
+    } catch (error) {
+
+        console.error(
+            "Merchant authentication error:",
+            error
+        );
+
+        res.status(
+            500
+        ).json({
+            error:
+                "Could not authenticate merchant."
+        });
+    }
+}
+
+
+async function authenticateService(
+    req,
+    res,
+    next
+) {
+
+    try {
+
+        const clientId =
+            String(
+                req.get(
+                    "X-SquashberryPay-Client-ID"
+                ) ||
+                ""
+            ).trim();
+
+        const clientSecret =
+            String(
+                req.get(
+                    "X-SquashberryPay-Client-Secret"
+                ) ||
+                ""
+            ).trim();
+
+        if (
+            !clientId ||
+            !clientSecret
+        ) {
+
+            return res.status(
+                401
+            ).json({
+                error:
+                    "SquashberryPay client credentials are required."
+            });
+        }
+
+        const {
+            data: service,
+            error
+        } =
+            await supabase
+                .from(
+                    "services"
+                )
+                .select(
+                    "*"
+                )
+                .eq(
+                    "client_id",
+                    clientId
+                )
+                .maybeSingle();
+
+        if (
+            error
+        ) {
+
+            console.error(
+                "Service authentication lookup error:",
+                error
+            );
+
+            return res.status(
+                500
+            ).json({
+                error:
+                    "Could not authenticate application."
+            });
+        }
+
+        if (
+            !service
+        ) {
+
+            return res.status(
+                401
+            ).json({
+                error:
+                    "Invalid SquashberryPay client credentials."
+            });
+        }
+
+        if (
+            service.status !==
+            "active"
+        ) {
+
+            return res.status(
+                403
+            ).json({
+                error:
+                    "This application is not active."
+            });
+        }
+
+        const matches =
+            await bcrypt.compare(
+                clientSecret,
+                service.client_secret_hash
+            );
+
+        if (
+            !matches
+        ) {
+
+            return res.status(
+                401
+            ).json({
+                error:
+                    "Invalid SquashberryPay client credentials."
+            });
+        }
+
+        req.service =
+            service;
+
+        next();
+
+    } catch (error) {
+
+        console.error(
+            "Service authentication error:",
+            error
+        );
+
+        res.status(
+            500
+        ).json({
+            error:
+                "Could not authenticate application."
+        });
+    }
+}
+
+
+function requireAdmin(
+    req,
+    res,
+    next
+) {
+
+    const cookies =
+        String(
+            req.headers.cookie ||
+            ""
+        );
+
+    const match =
+        cookies.match(
+            /(?:^|;\s*)sbp_admin=([^;]+)/
+        );
+
+    if (
+        !match ||
+        !verifyAdminCookie(
+            match[1]
+        )
+    ) {
+
+        return res.status(
+            401
+        ).json({
+            error:
+                "Administrator authentication required."
+        });
+    }
+
+    req.admin =
+        true;
+
+    next();
 }
 
 
@@ -4062,6 +4666,403 @@ app.post(
 );
 
 
+
+/* ============================================================
+   MERCHANT HOSTED PAYMENT LINKS
+============================================================ */
+
+async function loadMerchantService(
+    req,
+    serviceId
+) {
+    const {
+        data: service,
+        error
+    } =
+        await supabase
+            .from("services")
+            .select("*")
+            .eq("id", serviceId)
+            .eq("merchant_id", req.merchant.id)
+            .maybeSingle();
+
+    return {
+        service,
+        error
+    };
+}
+
+
+app.get(
+    "/api/merchant/apps/:id/payment-links",
+    authenticateMerchant,
+    async (req, res) => {
+        try {
+            const result =
+                await loadMerchantService(
+                    req,
+                    req.params.id
+                );
+
+            if (result.error) {
+                console.error(
+                    "Payment-link service lookup error:",
+                    result.error
+                );
+                return res.status(500).json({
+                    error:
+                        "Could not load payment links."
+                });
+            }
+
+            if (!result.service) {
+                return res.status(404).json({
+                    error:
+                        "Application not found."
+                });
+            }
+
+            const {
+                data,
+                error
+            } =
+                await supabase
+                    .from("payment_links")
+                    .select(`
+                        id,
+                        slug,
+                        title,
+                        description,
+                        button_label,
+                        return_url,
+                        cancel_url,
+                        status,
+                        created_at,
+                        updated_at,
+                        products (
+                            id,
+                            name,
+                            product_code,
+                            amount,
+                            currency,
+                            payment_type,
+                            subscription_interval,
+                            allow_custom_amount
+                        )
+                    `)
+                    .eq(
+                        "service_id",
+                        result.service.id
+                    )
+                    .order(
+                        "created_at",
+                        {
+                            ascending:
+                                false
+                        }
+                    );
+
+            if (error) {
+                console.error(
+                    "Payment-link list error:",
+                    error
+                );
+                return res.status(500).json({
+                    error:
+                        "Could not load payment links."
+                });
+            }
+
+            res.json({
+                payment_links:
+                    data || []
+            });
+
+        } catch (error) {
+            console.error(
+                "Payment-link list route error:",
+                error
+            );
+            res.status(500).json({
+                error:
+                    "Could not load payment links."
+            });
+        }
+    }
+);
+
+
+app.post(
+    "/api/merchant/apps/:id/payment-links",
+    authenticateMerchant,
+    async (req, res) => {
+
+        try {
+
+            const result =
+                await loadMerchantService(
+                    req,
+                    req.params.id
+                );
+
+            if (result.error) {
+                console.error(
+                    "Payment-link service lookup error:",
+                    result.error
+                );
+                return res.status(500).json({
+                    error:
+                        "Could not create payment link."
+                });
+            }
+
+            if (!result.service) {
+                return res.status(404).json({
+                    error:
+                        "Application not found."
+                });
+            }
+
+            if (
+                result.service.status !==
+                "active"
+            ) {
+                return res.status(409).json({
+                    error:
+                        "The application must be approved before payment links can be used."
+                });
+            }
+
+            const productId =
+                String(
+                    req.body?.product_id ||
+                    ""
+                ).trim();
+
+            if (!productId) {
+                return res.status(400).json({
+                    error:
+                        "product_id is required."
+                });
+            }
+
+            const {
+                data: product,
+                error: productError
+            } =
+                await supabase
+                    .from("products")
+                    .select("*")
+                    .eq("id", productId)
+                    .eq(
+                        "service_id",
+                        result.service.id
+                    )
+                    .eq("status", "active")
+                    .maybeSingle();
+
+            if (
+                productError ||
+                !product
+            ) {
+                return res.status(404).json({
+                    error:
+                        "Active product not found for this application."
+                });
+            }
+
+            const {
+                data: existing,
+                error: existingError
+            } =
+                await supabase
+                    .from("payment_links")
+                    .select(`
+                        id,
+                        slug,
+                        title,
+                        description,
+                        button_label,
+                        return_url,
+                        cancel_url,
+                        status,
+                        created_at,
+                        updated_at
+                    `)
+                    .eq(
+                        "service_id",
+                        result.service.id
+                    )
+                    .eq(
+                        "product_id",
+                        product.id
+                    )
+                    .eq(
+                        "status",
+                        "active"
+                    )
+                    .order(
+                        "created_at",
+                        {
+                            ascending:
+                                false
+                        }
+                    )
+                    .limit(1)
+                    .maybeSingle();
+
+            if (existingError) {
+                console.error(
+                    "Payment-link existing lookup error:",
+                    existingError
+                );
+                return res.status(500).json({
+                    error:
+                        "Could not create payment link."
+                });
+            }
+
+            if (existing) {
+                return res.json({
+                    payment_link:
+                        existing,
+                    payment_url:
+                        BASE_URL +
+                        "/checkout/" +
+                        encodeURIComponent(
+                            existing.slug
+                        ),
+                    reused:
+                        true
+                });
+            }
+
+            let returnUrl =
+                null;
+
+            let cancelUrl =
+                null;
+
+            try {
+                returnUrl =
+                    normalizeRedirectUrl(
+                        req.body?.return_url,
+                        "return_url"
+                    );
+
+                cancelUrl =
+                    normalizeRedirectUrl(
+                        req.body?.cancel_url,
+                        "cancel_url"
+                    );
+
+            } catch (error) {
+                return res.status(400).json({
+                    error:
+                        error.publicMessage ||
+                        error.message
+                });
+            }
+
+            const defaultButtonLabel =
+                product.payment_type ===
+                    "subscribe"
+                    ? "Subscribe"
+                    : product.payment_type ===
+                        "donate"
+                        ? "Donate"
+                        : "Pay Now";
+
+            const slug =
+                generatePaymentLinkSlug(
+                    result.service.slug,
+                    product.product_code
+                );
+
+            const {
+                data,
+                error
+            } =
+                await supabase
+                    .from("payment_links")
+                    .insert({
+                        service_id:
+                            result.service.id,
+                        product_id:
+                            product.id,
+                        slug,
+                        title:
+                            String(
+                                req.body?.title ||
+                                product.name
+                            )
+                                .trim()
+                                .slice(0, 120),
+                        description:
+                            String(
+                                req.body?.description ||
+                                product.description ||
+                                ""
+                            )
+                                .trim()
+                                .slice(0, 500) ||
+                            null,
+                        button_label:
+                            String(
+                                req.body?.button_label ||
+                                defaultButtonLabel
+                            )
+                                .trim()
+                                .slice(0, 40) ||
+                            defaultButtonLabel,
+                        return_url:
+                            returnUrl,
+                        cancel_url:
+                            cancelUrl,
+                        status:
+                            "active"
+                    })
+                    .select("*")
+                    .single();
+
+            if (error) {
+                console.error(
+                    "Create payment-link database error:",
+                    error
+                );
+                return res.status(500).json({
+                    error:
+                        "Could not create payment link."
+                });
+            }
+
+            res.status(201).json({
+                payment_link:
+                    data,
+                payment_url:
+                    BASE_URL +
+                    "/checkout/" +
+                    encodeURIComponent(
+                        data.slug
+                    ),
+                reused:
+                    false
+            });
+
+        } catch (error) {
+            console.error(
+                "Create payment-link route error:",
+                error
+            );
+            res.status(500).json({
+                error:
+                    error.publicMessage ||
+                    "Could not create payment link."
+            });
+        }
+    }
+);
+
 /* ============================================================
    V1 REGISTER USER
 ============================================================ */
@@ -4633,6 +5634,396 @@ app.post(
 );
 
 
+
+/* ============================================================
+   PUBLIC HOSTED PAYMENT LINKS
+============================================================ */
+
+app.get(
+    "/api/public/links/:slug",
+    async (req, res) => {
+
+        try {
+
+            const {
+                data: link,
+                error
+            } =
+                await supabase
+                    .from("payment_links")
+                    .select(`
+                        id,
+                        slug,
+                        title,
+                        description,
+                        button_label,
+                        status,
+                        products (
+                            id,
+                            name,
+                            description,
+                            payment_type,
+                            amount,
+                            currency,
+                            subscription_interval,
+                            allow_custom_amount,
+                            status
+                        ),
+                        services (
+                            name,
+                            slug,
+                            status
+                        )
+                    `)
+                    .eq(
+                        "slug",
+                        String(
+                            req.params.slug ||
+                            ""
+                        ).trim().toLowerCase()
+                    )
+                    .eq(
+                        "status",
+                        "active"
+                    )
+                    .maybeSingle();
+
+            if (error) {
+                console.error(
+                    "Public payment-link lookup error:",
+                    error
+                );
+                return res.status(500).json({
+                    error:
+                        "Could not load this payment link."
+                });
+            }
+
+            if (
+                !link ||
+                link.services?.status !==
+                    "active" ||
+                link.products?.status !==
+                    "active"
+            ) {
+                return res.status(404).json({
+                    error:
+                        "This payment link is no longer available."
+                });
+            }
+
+            res.json({
+                payment_link: {
+                    id:
+                        link.id,
+                    slug:
+                        link.slug,
+                    title:
+                        link.title,
+                    description:
+                        link.description,
+                    button_label:
+                        link.button_label,
+                    product:
+                        link.products,
+                    service: {
+                        name:
+                            link.services.name,
+                        slug:
+                            link.services.slug
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error(
+                "Public payment-link lookup route error:",
+                error
+            );
+            res.status(500).json({
+                error:
+                    "Could not load this payment link."
+            });
+        }
+    }
+);
+
+
+app.post(
+    "/api/public/links/:slug/payments",
+    async (req, res) => {
+
+        try {
+
+            const email =
+                normalizeEmail(
+                    req.body?.email
+                );
+
+            if (
+                !email ||
+                !isValidEmail(email)
+            ) {
+                return res.status(400).json({
+                    error:
+                        "Enter a valid email address."
+                });
+            }
+
+            const {
+                data: link,
+                error
+            } =
+                await supabase
+                    .from("payment_links")
+                    .select(`
+                        id,
+                        service_id,
+                        return_url,
+                        cancel_url,
+                        status,
+                        products (
+                            id,
+                            name,
+                            description,
+                            payment_type,
+                            amount,
+                            currency,
+                            allow_custom_amount,
+                            status
+                        ),
+                        services (
+                            name,
+                            status
+                        )
+                    `)
+                    .eq(
+                        "slug",
+                        String(
+                            req.params.slug ||
+                            ""
+                        ).trim().toLowerCase()
+                    )
+                    .eq(
+                        "status",
+                        "active"
+                    )
+                    .maybeSingle();
+
+            if (error) {
+                console.error(
+                    "Hosted payment-link lookup error:",
+                    error
+                );
+                return res.status(500).json({
+                    error:
+                        "Could not start payment."
+                });
+            }
+
+            if (
+                !link ||
+                link.services?.status !==
+                    "active" ||
+                link.products?.status !==
+                    "active"
+            ) {
+                return res.status(404).json({
+                    error:
+                        "This payment link is no longer available."
+                });
+            }
+
+            const product =
+                link.products;
+
+            let amount =
+                Number(
+                    product.amount
+                );
+
+            if (
+                product.payment_type ===
+                    "donate" &&
+                product.allow_custom_amount
+            ) {
+                amount =
+                    Number(
+                        req.body?.amount
+                    );
+            }
+
+            if (
+                !Number.isFinite(amount) ||
+                amount <= 0 ||
+                amount > 100000000
+            ) {
+                return res.status(400).json({
+                    error:
+                        "Enter a valid payment amount."
+                });
+            }
+
+            amount =
+                Math.round(
+                    amount * 100
+                ) / 100;
+
+            const externalUserId =
+                "checkout_" +
+                hash(
+                    email
+                ).slice(
+                    0,
+                    32
+                );
+
+            const {
+                data: user,
+                error: userError
+            } =
+                await supabase
+                    .from("service_users")
+                    .upsert({
+                        service_id:
+                            link.service_id,
+                        external_user_id:
+                            externalUserId,
+                        email
+                    }, {
+                        onConflict:
+                            "service_id,external_user_id"
+                    })
+                    .select(
+                        "id,external_user_id,email"
+                    )
+                    .single();
+
+            if (
+                userError ||
+                !user
+            ) {
+                console.error(
+                    "Hosted payment-link customer error:",
+                    userError
+                );
+                return res.status(500).json({
+                    error:
+                        "Could not create customer checkout session."
+                });
+            }
+
+            const expiresAt =
+                addMinutes(
+                    PAYMENT_SESSION_MINUTES
+                );
+
+            const {
+                data: payment,
+                error: paymentError
+            } =
+                await supabase
+                    .from("payments")
+                    .insert({
+                        payment_reference:
+                            generateReference(),
+                        service_id:
+                            link.service_id,
+                        service_user_id:
+                            user.id,
+                        product_id:
+                            product.id,
+                        amount,
+                        currency:
+                            product.currency,
+                        payment_type:
+                            product.payment_type,
+                        status:
+                            "pending",
+                        return_url:
+                            link.return_url,
+                        cancel_url:
+                            link.cancel_url,
+                        payment_link_id:
+                            link.id,
+                        expires_at:
+                            expiresAt
+                    })
+                    .select(`
+                        id,
+                        payment_reference,
+                        amount,
+                        currency,
+                        payment_type,
+                        status,
+                        expires_at
+                    `)
+                    .single();
+
+            if (paymentError) {
+                console.error(
+                    "Hosted payment-link payment database error:",
+                    paymentError
+                );
+                return res.status(500).json({
+                    error:
+                        "Could not create payment session."
+                });
+            }
+
+            const rawSessionToken =
+                randomToken();
+
+            const {
+                error: sessionError
+            } =
+                await supabase
+                    .from("payment_sessions")
+                    .insert({
+                        payment_id:
+                            payment.id,
+                        session_token_hash:
+                            hash(
+                                rawSessionToken
+                            ),
+                        expires_at:
+                            expiresAt
+                    });
+
+            if (sessionError) {
+                console.error(
+                    "Hosted payment-link session error:",
+                    sessionError
+                );
+                return res.status(500).json({
+                    error:
+                        "Could not create payment session."
+                });
+            }
+
+            res.status(201).json({
+                payment,
+                payment_url:
+                    BASE_URL +
+                    "/pay/" +
+                    rawSessionToken
+            });
+
+        } catch (error) {
+            console.error(
+                "Hosted payment-link payment route error:",
+                error
+            );
+            res.status(500).json({
+                error:
+                    error.publicMessage ||
+                    "Could not start payment."
+            });
+        }
+    }
+);
+
+
 /* ============================================================
    PUBLIC PAYMENT SESSION
 ============================================================ */
@@ -4673,6 +6064,14 @@ app.get(
                         payment_started_at,
                         payment_deadline_at,
                         return_url,
+                        cancel_url,
+                        payment_link_id,
+
+                        payment_links (
+                            title,
+                            slug,
+                            button_label
+                        ),
 
                         products (
                             name,
@@ -5569,7 +6968,8 @@ app.post(
                     payments (
                         id,
                         status,
-                        return_url
+                        return_url,
+                        cancel_url
                     )
                     `
                 )
@@ -5709,6 +7109,10 @@ app.post(
                     true,
 
                 return_url:
+                    payment.return_url,
+
+                cancel_url:
+                    payment.cancel_url ||
                     payment.return_url
             });
 
@@ -6424,6 +7828,108 @@ app.post(
             }
 
 
+            if (
+                payment.payment_link_id
+            ) {
+
+                const {
+                    error:
+                        linkUpdateError
+                } =
+                    await supabase
+                        .from(
+                            "payments"
+                        )
+                        .update({
+                            status:
+                                "completed",
+                            approved_at:
+                                new Date()
+                                    .toISOString(),
+                            completed_at:
+                                new Date()
+                                    .toISOString()
+                        })
+                        .eq(
+                            "id",
+                            payment.id
+                        )
+                        .eq(
+                            "status",
+                            "awaiting_verification"
+                        );
+
+                if (linkUpdateError) {
+                    console.error(
+                        "Payment-link approval update error:",
+                        linkUpdateError
+                    );
+
+                    return res.status(500).json({
+                        error:
+                            "Could not complete payment."
+                    });
+                }
+
+                await supabase
+                    .from(
+                        "audit_logs"
+                    )
+                    .insert({
+                        actor_type:
+                            "admin",
+                        actor_id:
+                            "admin",
+                        action:
+                            "payment_link_completed",
+                        payment_id:
+                            payment.id,
+                        metadata: {
+                            payment_link_id:
+                                payment.payment_link_id
+                        }
+                    });
+
+                try {
+
+                    await sendPaymentLinkApprovedEmail({
+                        email:
+                            payment
+                                .service_users
+                                ?.email,
+                        serviceName:
+                            payment
+                                .services
+                                ?.name,
+                        amount:
+                            payment.amount,
+                        currency:
+                            payment.currency,
+                        reference:
+                            payment.payment_reference,
+                        returnUrl:
+                            payment.return_url
+                    });
+
+                } catch (emailError) {
+
+                    console.error(
+                        "Payment-link approval email error:",
+                        emailError
+                    );
+                }
+
+                return res.json({
+                    success:
+                        true,
+                    code:
+                        null,
+                    message:
+                        "Payment approved and checkout completed."
+                });
+            }
+
+
             const rawCode =
                 generatePaymentCode();
 
@@ -6431,50 +7937,48 @@ app.post(
             const {
                 error:
                     tokenError
-            } = await supabase
-                .from(
-                    "payment_tokens"
-                )
-                .upsert({
+            } =
+                await supabase
+                    .from(
+                        "payment_tokens"
+                    )
+                    .upsert({
 
-                    payment_id:
-                        payment.id,
+                        payment_id:
+                            payment.id,
 
-                    service_id:
-                        payment.service_id,
+                        service_id:
+                            payment.service_id,
 
-                    service_user_id:
-                        payment.service_user_id,
+                        service_user_id:
+                            payment.service_user_id,
 
-                    token_hash:
-                        hash(
-                            rawCode
-                        ),
+                        token_hash:
+                            hash(
+                                rawCode
+                            ),
 
-                    expires_at:
-                        addHours(
-                            PAYMENT_TOKEN_HOURS
-                        ),
+                        expires_at:
+                            addHours(
+                                PAYMENT_TOKEN_HOURS
+                            ),
 
-                    used_at:
-                        null
+                        used_at:
+                            null
 
-                }, {
+                    }, {
 
-                    onConflict:
-                        "payment_id"
-                });
+                        onConflict:
+                            "payment_id"
+                    });
 
 
-            if (
-                tokenError
-            ) {
+            if (tokenError) {
 
                 console.error(
                     "Payment token error:",
                     tokenError
                 );
-
 
                 return res.status(500).json({
                     error:
@@ -6486,34 +7990,30 @@ app.post(
             const {
                 error:
                     updateError
-            } = await supabase
-                .from(
-                    "payments"
-                )
-                .update({
+            } =
+                await supabase
+                    .from(
+                        "payments"
+                    )
+                    .update({
+                        status:
+                            "approved",
+                        approved_at:
+                            new Date()
+                                .toISOString()
+                    })
+                    .eq(
+                        "id",
+                        payment.id
+                    );
 
-                    status:
-                        "approved",
 
-                    approved_at:
-                        new Date()
-                            .toISOString()
-                })
-                .eq(
-                    "id",
-                    payment.id
-                );
-
-
-            if (
-                updateError
-            ) {
+            if (updateError) {
 
                 console.error(
                     "Approve payment update error:",
                     updateError
                 );
-
 
                 return res.status(500).json({
                     error:
@@ -6779,6 +8279,99 @@ app.get(
         }
     }
 );
+
+
+
+/* ============================================================
+   PAYMENT-LINK APPROVAL EMAIL
+============================================================ */
+
+async function sendPaymentLinkApprovedEmail({
+    email,
+    serviceName,
+    amount,
+    currency,
+    reference,
+    returnUrl
+}) {
+
+    if (!email) {
+        return;
+    }
+
+    const destination =
+        returnUrl ||
+        BASE_URL +
+        "/";
+
+    await sendResendEmail({
+        to:
+            email,
+
+        subject:
+            String(
+                serviceName ||
+                "SquashberryPay"
+            ) +
+            " payment confirmed — " +
+            String(
+                reference
+            ),
+
+        text:
+            "Your payment for " +
+            String(
+                serviceName ||
+                "the merchant"
+            ) +
+            " has been approved.\n\n" +
+            "Reference: " +
+            String(
+                reference
+            ) +
+            "\nAmount: " +
+            String(
+                currency
+            ) +
+            " " +
+            String(
+                amount
+            ) +
+            "\n\nContinue: " +
+            destination,
+
+        html:
+            `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Payment confirmed</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f2;font-family:Arial,Helvetica,sans-serif;color:#111">
+<div style="max-width:560px;margin:auto;padding:40px 18px">
+<div style="background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:32px">
+<div style="font-weight:900;font-size:18px">SquashberryPay</div>
+<div style="margin-top:24px;font-size:11px;font-weight:800;letter-spacing:2px;color:#777">PAYMENT CONFIRMED</div>
+<h1 style="margin:10px 0 12px;font-size:28px">Payment approved.</h1>
+<p style="color:#666;line-height:1.7">Your payment to ${escapeHtml(serviceName || "the merchant")} has been verified.</p>
+<div style="margin:22px 0;padding:18px;border:1px solid #e7e7e2;border-radius:14px;background:#fafaf7">
+<strong>Reference</strong><br>
+<span>${escapeHtml(reference)}</span>
+<br><br>
+<strong>Amount</strong><br>
+<span>${escapeHtml(currency)} ${escapeHtml(amount)}</span>
+</div>
+<a href="${escapeHtml(destination)}" style="display:inline-block;padding:13px 18px;border-radius:12px;background:#111;color:#fff;text-decoration:none;font-weight:800">Continue</a>
+<p style="margin-top:24px;color:#999;font-size:12px">This message was sent by SquashberryPay.</p>
+</div>
+</div>
+</body>
+</html>
+`
+    });
+}
 
 
 /* ============================================================
@@ -7139,6 +8732,20 @@ app.get(
 
 
 app.get(
+    "/checkout/:slug",
+    (req, res) => {
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "checkout.html"
+            )
+        );
+    }
+);
+
+
+app.get(
     "/pay/:token",
     (req, res) => {
 
@@ -7216,6 +8823,20 @@ app.get(
 /* ============================================================
    STATIC ASSET ROUTES
 ============================================================ */
+
+app.get(
+    "/squashberrypay.js",
+    (req, res) => {
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "squashberrypay.js"
+            )
+        );
+    }
+);
+
 
 app.get(
     "/styles.css",
