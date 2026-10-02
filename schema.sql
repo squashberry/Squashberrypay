@@ -683,3 +683,13 @@ begin
 
 end;
 $$;
+
+-- SECURITY: payment-token redemption is backend-only.
+revoke execute
+on function public.redeem_payment_token(uuid, text, text)
+from anon, authenticated;
+
+-- SECURITY: RLS helper is not a public RPC.
+revoke execute
+on function public.rls_auto_enable()
+from anon, authenticated;
