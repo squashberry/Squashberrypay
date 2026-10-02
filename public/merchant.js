@@ -1731,18 +1731,20 @@ function getButtonExample(
                 "/squashberrypay.js"
             ) +
             " defer></script>",
-        "<button type=\"button\" data-squashberrypay=" +
-            quotedSlug +
-            ">",
+        "<button id=\"squashberrypay-custom-button\" type=\"button\">",
         "    " +
             text,
         "</button>",
         "",
-        "<!-- Or open the hosted checkout from your own button -->",
+        "<!-- Or use the JavaScript API from your own button -->",
         "<script>",
-        "SquashberryPay.open(" +
+        "window.addEventListener(\"DOMContentLoaded\", function () {",
+        "    document.getElementById(\"squashberrypay-custom-button\").addEventListener(\"click\", function () {",
+        "        window.SquashberryPay.open(" +
             quotedSlug +
             ");",
+        "    });",
+        "});",
         "</script>",
         "",
         "<!-- Hosted checkout URL -->",
