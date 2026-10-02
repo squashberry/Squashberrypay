@@ -410,3 +410,74 @@ table th{background:#f0f0ed!important;color:#555!important}
     gap:15px;
   }
 }
+
+
+/* ---------- AUTH CONTROL NORMALIZATION ---------- */
+/* Covers simple sign-in/recovery fields that do not use signup's
+   .form-field/.input-shell wrappers. */
+.auth-card .auth-step > label{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:7px;
+  margin:0;
+  color:#555;
+  font-size:12px;
+  line-height:1.35;
+  font-weight:750;
+}
+.auth-card .auth-step > label:focus-within{
+  color:#111;
+}
+.auth-card .auth-step > label > input,
+.auth-card .auth-step > label > textarea,
+.auth-card .auth-step > label > select{
+  display:block;
+  width:100%;
+  min-width:0;
+  height:51px;
+  box-sizing:border-box;
+  padding:0 14px;
+  border:1px solid #d4d4cf!important;
+  border-radius:14px!important;
+  background:#fafaf8!important;
+  color:#111!important;
+  outline:none;
+  font:inherit;
+  font-size:14px;
+  line-height:1.2;
+  box-shadow:none;
+  transition:border-color .2s ease,box-shadow .2s ease,background .2s ease,transform .18s ease;
+}
+.auth-card .auth-step > label > textarea{
+  min-height:110px;
+  height:auto;
+  padding:12px 14px;
+  resize:vertical;
+}
+.auth-card .auth-step > label > input::placeholder,
+.auth-card .auth-step > label > textarea::placeholder{
+  color:#aaa;
+}
+.auth-card .auth-step > label > input:focus,
+.auth-card .auth-step > label > textarea:focus,
+.auth-card .auth-step > label > select:focus{
+  border-color:#111!important;
+  background:#fff!important;
+  box-shadow:0 0 0 4px rgba(0,0,0,.055)!important;
+  transform:translateY(-1px);
+}
+.auth-card .auth-step > label > input:disabled,
+.auth-card .auth-step > label > textarea:disabled,
+.auth-card .auth-step > label > select:disabled{
+  opacity:.58;
+  cursor:not-allowed;
+  background:#eee!important;
+}
+.auth-card .auth-step > .button.full{
+  width:100%;
+  margin-top:2px;
+}
+.auth-card .auth-step > h2 + form{
+  margin-top:20px;
+}
