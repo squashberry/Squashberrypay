@@ -144,23 +144,15 @@ function money(
     amount,
     currency
 ) {
+    const value=Number(amount);
+    if(!Number.isFinite(value)) return "—";
     try {
-        return new Intl.NumberFormat(
-            "en-GM",
-            {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }
-        ).format(
-            Number.isFinite(Number(amount))
-            ? Number(amount).toLocaleString("en-GM",{minimumFractionDigits:2,maximumFractionDigits:2})+" "+currency
-            : "—";
+        return new Intl.NumberFormat("en-GM",{
+            minimumFractionDigits:2,
+            maximumFractionDigits:2
+        }).format(value)+" "+currency;
     } catch {
-        return (
-            Number(amount).toFixed(2) +
-            " " +
-            currency
-        );
+        return value.toFixed(2)+" "+currency;
     }
 }
 
@@ -614,10 +606,12 @@ async function startPayment(
     const product =
         state.link.product;
 
+    const donation =
+        state.link.donation || { enabled: false };
 
     const body = {
-        email,
-            };
+        email
+    };
 
     if (
         product.payment_type ===
