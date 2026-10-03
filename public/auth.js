@@ -2116,7 +2116,7 @@ async function verifySignupOtp(
         setTimeout(
             () => {
 
-                window.location.replace(SITE_BASE + "/merchant.html");
+                window.location.replace(SITE_URL + "/merchant.html");
 
             },
             1000
@@ -2480,7 +2480,7 @@ function handleSignedOutNotice(){
     const params=new URLSearchParams(window.location.search);
     if(params.get("signed_out")==="1"){
         showMessage("Signed out successfully.","success");
-        history.replaceState(null,"",SITE_BASE+"/signin/");
+        history.replaceState(null,"",SITE_URL+"/signin/");
     }
 }
 handleSignedOutNotice();
