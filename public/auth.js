@@ -2116,8 +2116,7 @@ async function verifySignupOtp(
         setTimeout(
             () => {
 
-                window.location.href =
-                    "./merchant.html";
+                window.location.href = SITE_BASE + "/merchant.html";
 
             },
             1000
@@ -2618,8 +2617,7 @@ signinForm?.addEventListener(
 
             window.setTimeout(
                 () => {
-                    window.location.href =
-                        "./merchant.html";
+                    window.location.href = SITE_BASE + "/merchant.html";
                 },
                 650
             );
