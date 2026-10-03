@@ -317,8 +317,7 @@ function attachFieldValidation(
     }
 
 
-    input.addEventListener(
-        "input",
+    const validateField =
         () => {
 
             const value =
@@ -349,7 +348,18 @@ function attachFieldValidation(
                 result,
                 !result
             );
-        }
+        };
+
+
+    input.addEventListener(
+        "input",
+        validateField
+    );
+
+
+    input.addEventListener(
+        "change",
+        validateField
     );
 }
 
