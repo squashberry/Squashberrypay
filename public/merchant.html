@@ -47,7 +47,7 @@
   </aside>
 
   <main class="merchant-main">
-    <div id="merchantNotification" class="merchant-notification" hidden></div>
+    <div id="merchantNotification" class="merchant-notification" hidden></div><div id="workspaceReadiness" class="workspace-readiness" hidden></div>
 
     <section id="section-overview" class="merchant-section active">
       <div class="dashboard-welcome">
@@ -98,14 +98,9 @@
       <div class="panel capability-panel"><span class="capability-icon">◈</span><div><h3>Payouts are not enabled yet</h3><p>SquashberryPay currently records and verifies merchant payment activity. We will not display a fictional “available balance” or payout amount until a real settlement rail is connected.</p></div></div>
     </section>
 
-    <section id="section-payment-links" class="merchant-section" hidden>
-      <div class="section-title-row"><div><span class="eyebrow">PAYMENT LINKS</span><h2>Shareable checkout, ready anywhere.</h2><p>Create and manage hosted payment links for your products.</p></div></div><div class="merchant-form link-generator"><label>Application<select id="linkApp"></select></label><label>Product<select id="linkProduct"></select></label><button id="createPaymentLink" class="button primary">Create secure payment link</button></div>
-      <div id="paymentLinksGrid" class="links-grid"></div>
-    </section>
+    <section id="section-payment-links" class="merchant-section" hidden><div class="section-title-row"><div><span class="eyebrow">PAYMENT LINKS</span><h2>Payment links.</h2><p>Keep existing links visible first. Create a new hosted checkout only when you need one.</p></div></div><div class="workspace-tabs" role="tablist"><button class="workspace-tab active" data-workspace-tab="payment-links" data-workspace-target="payment-links-links" type="button">Your links</button><button class="workspace-tab" data-workspace-tab="payment-links" data-workspace-target="payment-links-create" type="button">Create link</button></div><div class="workspace-panels"><div class="workspace-panel active" data-workspace-panel="payment-links-links"><div id="paymentLinksGrid" class="links-grid"></div></div><div class="workspace-panel" data-workspace-panel="payment-links-create" hidden><div class="merchant-form link-generator"><label>Application<select id="linkApp"></select></label><label>Product<select id="linkProduct"></select></label><button id="createPaymentLink" class="button primary">Create secure payment link</button></div></div></div></section>
 
-    <section id="section-methods" class="merchant-section" hidden>
-  <div class="section-title-row"><div><span class="eyebrow">PAYMENT METHODS</span><h2>Where customers send money.</h2><p>Configure the payment destinations shown on hosted checkout.</p></div></div>
-  <div class="merchant-form">
+    <section id="section-methods" class="merchant-section" hidden><div class="section-title-row"><div><span class="eyebrow">PAYMENT METHODS</span><h2>Payment methods.</h2><p>Existing destinations stay visible; add a new payment destination only when needed.</p></div></div><div class="workspace-tabs" role="tablist"><button class="workspace-tab active" data-workspace-tab="methods" data-workspace-target="methods-configured" type="button">Configured methods</button><button class="workspace-tab" data-workspace-tab="methods" data-workspace-target="methods-add" type="button">Add payment method</button></div><div class="workspace-panels"><div class="workspace-panel active" data-workspace-panel="methods-configured"><div id="methodsList" class="method-list"></div></div><div class="workspace-panel" data-workspace-panel="methods-add" hidden><div class="merchant-form">
     <label>Application<select id="methodApp"></select></label>
     <label>Payment method name<input id="methodName" placeholder="Wave"></label>
     <label>Type<select id="methodType"><option value="wave">Wave</option><option value="aps">APS</option><option value="nada">NADA</option><option value="bank">Bank Transfer</option><option value="other">Other</option></select></label>
@@ -115,29 +110,16 @@
     <label>Account number<input id="methodAccountNumber" placeholder="Account number"></label>
     <label>Payment instructions<textarea id="methodInstructions" rows="5" placeholder="Explain exactly how customers should make the transfer."></textarea></label>
     <button id="saveMethod" class="button primary">Save payment method</button>
-  </div>
-  <div id="methodsList" class="method-list"></div>
-</section>
-    <section id="section-products" class="merchant-section" hidden>
-      <div class="section-title-row"><div><span class="eyebrow">PRODUCTS</span><h2>What customers can pay for.</h2><p>One-time payments, subscriptions and donation campaigns.</p></div></div>
-      <div class="merchant-form product-form">
+  </div></div></div></section>
+    <section id="section-products" class="merchant-section" hidden><div class="section-title-row"><div><span class="eyebrow">PRODUCTS</span><h2>Products.</h2><p>Review what customers can buy before opening the product creator.</p></div></div><div class="workspace-tabs" role="tablist"><button class="workspace-tab active" data-workspace-tab="products" data-workspace-target="products-products" type="button">Your products</button><button class="workspace-tab" data-workspace-tab="products" data-workspace-target="products-create" type="button">Create product</button></div><div class="workspace-panels"><div class="workspace-panel active" data-workspace-panel="products-products"><div id="productsList" class="product-list"></div></div><div class="workspace-panel" data-workspace-panel="products-create" hidden><div class="merchant-form product-form">
         <label>Application<select id="productApp"></select></label><label>Product name<input id="productName" placeholder="MediSquash Premium"></label><label>Product code<input id="productCode" placeholder="premium_monthly"></label><label>Description<textarea id="productDescription" rows="3" placeholder="Describe what the customer gets."></textarea></label><label>Offering type<select id="productType"><option value="pay_now">Pay Now — one-time</option><option value="subscribe">Subscribe — recurring</option><option value="donate">Donation campaign</option></select></label><label>Amount<input id="productAmount" type="number" min="0" step="0.01" placeholder="250"></label>
         <label id="subscriptionIntervalGroup" hidden>Billing period<select id="subscriptionInterval"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></label>
         <label class="checkbox-line"><input id="customDonation" type="checkbox" checked> Allow customer to choose the donation amount</label>
-        <div id="donationSettings" class="donation-settings" hidden><div class="form-section-label">Donation campaign</div><label>Target goal<input id="donationGoal" type="number" min="0.01" step="0.01"></label><label>Minimum donation<input id="donationMinimum" type="number" min="0.01" step="0.01"></label><label>Maximum donation<input id="donationMaximum" type="number" min="0.01" step="0.01"></label><label>Suggested amounts<input id="donationPresets" placeholder="50, 100, 250, 500"></label><label>Goal message<textarea id="donationGoalMessage" rows="3"></textarea></label><label>Campaign end date<input id="donationEndAt" type="datetime-local"></label><label class="checkbox-line"><input id="showDonationGoal" type="checkbox" checked> Show target and progress</label><label class="checkbox-line"><input id="showDonorCount" type="checkbox" checked> Show donor count</label><label class="checkbox-line"><input id="closeOnGoal" type="checkbox"> Stop accepting donations at goal</label></div>
-        <button id="saveProduct" class="button primary">Save product</button>
-      </div>
-      <div id="productsList" class="product-list"></div>
-    </section>
+        <div id="donationSettings" class="donation-settings" hidden><div class="form-section-label">Donation campaign</div></div></div></section>
 
-    <section id="section-subscriptions" class="merchant-section" hidden>
-      <div class="section-title-row"><div><span class="eyebrow">SUBSCRIPTIONS</span><h2>Recurring revenue.</h2><p>Subscription products are already supported. Recurring billing management will appear here as the billing rail is connected.</p></div></div>
-      <div id="subscriptionProducts" class="subscription-grid"></div>
-    </section>
+    <section id="section-subscriptions" class="merchant-section" hidden><div class="section-title-row"><div><span class="eyebrow">SUBSCRIPTIONS</span><h2>Subscriptions.</h2><p>Separate recurring products from future subscription activity and billing management.</p></div></div><div class="workspace-tabs" role="tablist"><button class="workspace-tab active" data-workspace-tab="subscriptions" data-workspace-target="subscriptions-products" type="button">Subscription products</button><button class="workspace-tab" data-workspace-tab="subscriptions" data-workspace-target="subscriptions-activity" type="button">Subscription activity</button></div><div class="workspace-panels"><div class="workspace-panel active" data-workspace-panel="subscriptions-products"><div id="subscriptionProducts" class="subscription-grid"></div></div><div class="workspace-panel" data-workspace-panel="subscriptions-activity" hidden><div class="state-card neutral"><span class="state-icon">↻</span><div><h3>Subscription activity</h3><p>Active subscriptions, pauses, cancellations and upcoming renewal reminders will appear here as billing activity is recorded.</p></div></div></div></div></section>
 
-    <section id="section-donations" class="merchant-section" hidden>
-      <div class="section-title-row"><div><span class="eyebrow">DONATIONS</span><h2>Standalone donations.</h2><p>Donations do not require application integration. Create a campaign, share its link, review receipts, and send the donor a success email after confirmation.</p></div></div>
-      <div class="merchant-form donation-standalone-form">
+    <section id="section-donations" class="merchant-section" hidden><div class="section-title-row"><div><span class="eyebrow">DONATIONS</span><h2>Donations.</h2><p>Three separate jobs: campaigns, payment destinations, and donation activity.</p></div></div><div class="workspace-tabs" role="tablist"><button class="workspace-tab active" data-workspace-tab="donations" data-workspace-target="donations-campaigns" type="button">Campaigns</button><button class="workspace-tab" data-workspace-tab="donations" data-workspace-target="donations-destination" type="button">Payment destination</button><button class="workspace-tab" data-workspace-tab="donations" data-workspace-target="donations-activity" type="button">Donation activity</button></div><div class="workspace-panels"><div class="workspace-panel active" data-workspace-panel="donations-campaigns"><div id="donationReadiness" class="workspace-status"></div><div id="donationGrid" class="donation-grid"></div><div class="workspace-inline-action"><button id="openDonationCreate" class="button primary small" type="button">Create donation campaign</button></div><div id="donationCampaignCreateWrap" class="workspace-collapsed" hidden><div class="merchant-form donation-standalone-form">
         <label>Campaign name<input id="donationCampaignName" placeholder="Support our campaign"></label>
         <label>Description<textarea id="donationCampaignDescription" rows="3" placeholder="What are donors supporting?"></textarea></label>
         <label>Fixed amount<input id="donationFixedAmount" type="number" min="0.01" step="0.01"></label>
@@ -147,13 +129,7 @@
         <label>Goal<input id="donationStandaloneGoal" type="number" min="0.01" step="0.01"></label>
         <label>Suggested amounts<input id="donationStandalonePresets" placeholder="50, 100, 250"></label>
         <button id="createDonationCampaign" class="button primary">Create donation campaign</button>
-      </div>
-      <div class="panel capability-panel" style="margin-top:12px"><div><h3>Donation payment destination</h3><p>Because standalone donations are not tied to an application, add the payment account/instructions donors should use.</p></div></div><div class="merchant-form"><label>Method name<input id="donationMethodName" placeholder="Wave"></label><label>Type<input id="donationMethodType" placeholder="Wave / Bank Transfer"></label><label>Account name<input id="donationMethodAccountName"></label><label>Phone / account number<input id="donationMethodPhone"></label><label>Instructions<textarea id="donationMethodInstructions" rows="4" placeholder="Tell donors exactly how to send the money."></textarea></label><button id="saveDonationMethod" class="button secondary">Save donation payment method</button></div><div id="donationMethodsList" class="method-list"></div><div id="standaloneDonationGrid" class="donation-grid"></div>
-    </section>
-
-      <div class="section-title-row"><div><span class="eyebrow">DONATIONS</span><h2>Campaigns with real progress.</h2><p>Track donation products and the completed payments recorded against them.</p></div></div>
-      <div id="donationGrid" class="donation-grid"></div>
-    </section>
+      </div></div></div><div class="workspace-panel" data-workspace-panel="donations-destination" hidden><div id="donationDestinationReadiness" class="workspace-status"></div><div class="panel capability-panel" style="margin-top:12px"><div><h3>Donation payment destination</h3><p>Because standalone donations are not tied to an application, add the payment account/instructions donors should use.</p></div></div><div class="merchant-form"><label>Method name<input id="donationMethodName" placeholder="Wave"></label><label>Type<input id="donationMethodType" placeholder="Wave / Bank Transfer"></label><label>Account name<input id="donationMethodAccountName"></label><label>Phone / account number<input id="donationMethodPhone"></label><label>Instructions<textarea id="donationMethodInstructions" rows="4" placeholder="Tell donors exactly how to send the money."></textarea></label><button id="saveDonationMethod" class="button secondary">Save donation payment method</button></div><div id="donationMethodsList" class="method-list"></div></div><div class="workspace-panel" data-workspace-panel="donations-activity" hidden><div id="standaloneDonationGrid" class="donation-grid"></div><div class="state-card neutral"><span class="state-icon">✓</span><div><h3>Donation verification</h3><p>Customer receipts and confirmed donation payments appear in Verify payments and Payments.</p><button class="text-link" data-section-jump="payment-requests">Open verification</button></div></div></div></div></section>
 
     <section id="section-analytics" class="merchant-section" hidden>
       <div class="section-title-row"><div><span class="eyebrow">ANALYTICS</span><h2>Understand your payment business.</h2><p>Use recorded transactions to see revenue, volume, products and payment health.</p></div><button class="button secondary small" id="exportAnalytics">Export CSV</button></div>
