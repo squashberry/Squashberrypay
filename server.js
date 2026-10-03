@@ -9576,7 +9576,7 @@ app.patch("/api/merchant/donation-campaigns/:id", authenticateMerchant, async (r
         if(!id||Object.keys(patch).length===0)return res.status(400).json({error:"Nothing to update."});
         const {data,error}=await supabase.from("donation_campaigns").update(patch).eq("id",id).eq("merchant_id",req.merchant.id).select("*").single();
         if(error||!data)return res.status(404).json({error:"Donation campaign not found."});
-        res.json({campaign:data,payment_url:BASE_URL+"/donate/"+data.slug});
+        res.json({campaign:data,payment_url:PUBLIC_SITE_URL+"/donate/"+data.slug});
     }catch(e){console.error(e);res.status(500).json({error:"Could not update donation campaign."});}
 });
 app.delete("/api/merchant/donation-campaigns/:id", authenticateMerchant, async (req,res) => {
