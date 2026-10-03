@@ -2474,6 +2474,15 @@ async function authRequest(
 const signinSuccess =
     $("#signinSuccess");
 
+function handleSignedOutNotice(){
+    const params=new URLSearchParams(window.location.search);
+    if(params.get("signed_out")==="1"){
+        showMessage("Signed out successfully.","success");
+        history.replaceState(null,"","/signin/");
+    }
+}
+handleSignedOutNotice();
+
 
 function hideSignin() {
     if (signinEmailStep) {
