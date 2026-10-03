@@ -1,6 +1,12 @@
 "use strict";
 
 
+const apiBase =
+    String(
+        window.SQUASHBERRYPAY_API_BASE ||
+        "https://squashberrypay.squashberrypay.workers.dev"
+    ).replace(/\/+$/, "");
+
 const token =
     sessionStorage.getItem(
         "sbp_access_token"
@@ -119,7 +125,7 @@ async function api(
 
     const response =
         await fetch(
-            url,
+            apiBase + url,
             {
                 ...options,
 
