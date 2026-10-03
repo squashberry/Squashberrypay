@@ -368,3 +368,4 @@ textarea:focus{
         grid-template-columns:repeat(2,minmax(0,1fr));
     }
 }
+\n.donation-continue{width:100%;margin-top:16px}#checkoutForm[hidden]{display:none!important}\n
