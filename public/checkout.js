@@ -1,5 +1,12 @@
 "use strict";
 
+const apiBase =
+    String(
+        window.SQUASHBERRYPAY_API_BASE ||
+        "https://squashberrypay.squashberrypay.workers.dev"
+    ).replace(/\/+$/, "");
+
+
 const state = {
     slug:
         decodeURIComponent(
@@ -138,7 +145,7 @@ async function loadCheckout() {
     try {
         const response =
             await fetch(
-                "/api/public/links/" +
+                apiBase + "/api/public/links/" +
                 encodeURIComponent(
                     state.slug
                 )
@@ -613,7 +620,7 @@ async function startPayment(
     try {
         const response =
             await fetch(
-                "/api/public/links/" +
+                apiBase + "/api/public/links/" +
                 encodeURIComponent(state.slug) +
                 "/payments",
                 {
