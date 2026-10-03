@@ -459,7 +459,7 @@ async function loadSession() {
             window.history.replaceState(
                 {},
                 "",
-                "/"
+                SITE_BASE + "/"
             );
 
 
@@ -1857,7 +1857,7 @@ function expirePage() {
     window.history.replaceState(
         {},
         "",
-        "/"
+        SITE_BASE + "/"
     );
 
 
