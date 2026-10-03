@@ -1,5 +1,8 @@
 "use strict";
 
+// Remove any legacy checkout-session overlay left by an older cached build.
+document.querySelectorAll(".checkout-session-overlay").forEach(el=>el.remove());
+
 async function fetchWithTimeout(input, init={}, timeoutMs=20000){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),timeoutMs);try{return await fetch(input,{...init,signal:controller.signal})}finally{clearTimeout(timer)}}
 
 const apiBase =
@@ -104,6 +107,7 @@ function setCheckoutLoading(title,detail){
 function setError(
     message
 ) {
+    document.querySelectorAll(".checkout-session-overlay").forEach(el=>el.remove());
     loadingState.hidden = true;
     checkoutState.hidden = true;
     errorState.hidden = false;
