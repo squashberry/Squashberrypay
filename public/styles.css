@@ -2576,3 +2576,4 @@ a {
             .001ms !important;
     }
 }
+.processing-receipt-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.processing-receipt-actions .button{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;min-height:42px;padding:0 14px;border-radius:12px}.processing-receipt-actions .button.secondary{border:1px solid #d8d8d2;background:#fff;color:#111}@media(max-width:600px){.processing-receipt-actions{flex-direction:column}.processing-receipt-actions .button{width:100%}}
