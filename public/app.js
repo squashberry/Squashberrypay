@@ -1,5 +1,12 @@
 "use strict";
 
+const apiBase =
+    String(
+        window.SQUASHBERRYPAY_API_BASE ||
+        "https://squashberrypay.squashberrypay.workers.dev"
+    ).replace(/\/+$/, "");
+
+
 
 const state = {
     token: null,
@@ -408,7 +415,7 @@ async function loadSession() {
 
         const response =
             await fetch(
-                `/api/public/session/${encodeURIComponent(
+                apiBase + `/api/public/session/${encodeURIComponent(
                     token
                 )}`
             );
@@ -773,7 +780,7 @@ async function openMethod(
 
         const response =
             await fetch(
-                `/api/public/session/${encodeURIComponent(
+                apiBase + `/api/public/session/${encodeURIComponent(
                     state.token
                 )}/method/${encodeURIComponent(
                     method.id
@@ -1056,7 +1063,7 @@ function showExistingAttempt() {
          */
 
         fetch(
-            `/api/public/session/${encodeURIComponent(
+            apiBase + `/api/public/session/${encodeURIComponent(
                 state.token
             )}/method/${encodeURIComponent(
                 method.id
@@ -1214,7 +1221,7 @@ async function submitReceipt() {
 
         const response =
             await fetch(
-                `/api/public/session/${encodeURIComponent(
+                apiBase + `/api/public/session/${encodeURIComponent(
                     state.token
                 )}/receipt`,
                 {
@@ -1886,7 +1893,7 @@ function startPolling() {
 
                     const response =
                         await fetch(
-                            `/api/public/session/${encodeURIComponent(
+                            apiBase + `/api/public/session/${encodeURIComponent(
                                 state.token
                             )}`
                         );
