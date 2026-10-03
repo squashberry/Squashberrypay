@@ -9147,6 +9147,40 @@ app.get("/api/merchant/analytics", authenticateMerchant, async (req,res) => {
     } catch(e){console.error(e);res.status(500).json({error:"Could not load analytics."});}
 });
 
+app.patch("/api/merchant/products/:id", authenticateMerchant, async (req,res) => {
+    try {
+        const id=String(req.params.id||"").trim();
+        const {data:owned,error:oe}=await supabase.from("products").select("id,service_id").eq("id",id).maybeSingle();
+        if(oe||!owned)return res.status(404).json({error:"Product not found."});
+        const {data:service}=await supabase.from("services").select("id").eq("id",owned.service_id).eq("merchant_id",req.merchant.id).maybeSingle();
+        if(!service)return res.status(404).json({error:"Product not found."});
+        const patch={};
+        for(const key of ["name","description","payment_type","currency","subscription_interval","donation_goal_message"]){if(req.body?.[key]!==undefined)patch[key]=String(req.body[key]||"").trim()||null;}
+        for(const key of ["amount","donation_goal","donation_minimum","donation_maximum"]){if(req.body?.[key]!==undefined)patch[key]=req.body[key]===null||req.body[key]===""?null:Number(req.body[key]);}
+        for(const key of ["allow_custom_amount","show_donation_goal","show_donor_count","close_on_goal"]){if(req.body?.[key]!==undefined)patch[key]=Boolean(req.body[key]);}
+        if(req.body?.donation_presets!==undefined)patch.donation_presets=Array.isArray(req.body.donation_presets)?req.body.donation_presets.map(Number).filter(x=>Number.isFinite(x)&&x>0).slice(0,12):[];
+        if(req.body?.donation_end_at!==undefined)patch.donation_end_at=req.body.donation_end_at||null;
+        if(req.body?.status!==undefined)patch.status=["active","inactive"].includes(String(req.body.status))?String(req.body.status):"inactive";
+        if(!Object.keys(patch).length)return res.status(400).json({error:"Nothing to update."});
+        const {data,error}=await supabase.from("products").update(patch).eq("id",id).eq("service_id",service.id).select("*").single();
+        if(error||!data)return res.status(404).json({error:"Product not found."});
+        res.json({product:data});
+    }catch(error){console.error("Update product error:",error);res.status(500).json({error:"Could not update product."});}
+});
+app.delete("/api/merchant/products/:id", authenticateMerchant, async (req,res) => {
+    try{
+        const id=String(req.params.id||"").trim();
+        const {data:owned,error:oe}=await supabase.from("products").select("id,service_id").eq("id",id).maybeSingle();
+        if(oe||!owned)return res.status(404).json({error:"Product not found."});
+        const {data:service}=await supabase.from("services").select("id").eq("id",owned.service_id).eq("merchant_id",req.merchant.id).maybeSingle();
+        if(!service)return res.status(404).json({error:"Product not found."});
+        const {data,error}=await supabase.from("products").update({status:"inactive",updated_at:new Date().toISOString()}).eq("id",id).eq("service_id",service.id).select("id,status").single();
+        if(error||!data)return res.status(404).json({error:"Product not found."});
+        await supabase.from("payment_links").update({status:"inactive"}).eq("product_id",id);
+        res.json({success:true,product:data});
+    }catch(error){console.error("Disable product error:",error);res.status(500).json({error:"Could not disable product."});}
+});
+
 app.get("/api/merchant/payment-links", authenticateMerchant, async (req,res) => {
     try {
         const {data:services,error:se}=await merchantServices(req); if(se) return res.status(500).json({error:"Could not load links."});
