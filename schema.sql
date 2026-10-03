@@ -499,6 +499,93 @@ create table if not exists public.admin_users (
 );
 
 
+
+-- ============================================================
+-- MERCHANT DASHBOARD OPERATIONS
+-- ============================================================
+
+create table if not exists public.merchant_refunds (
+    id uuid primary key default gen_random_uuid(),
+    merchant_id uuid not null references public.merchant_profiles(id) on delete cascade,
+    payment_id uuid not null references public.payments(id) on delete restrict,
+    amount numeric(12,2) not null check(amount > 0),
+    currency text not null default 'GMD',
+    reason text,
+    status text not null default 'requested'
+        check(status in ('requested','approved','rejected','completed')),
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+create table if not exists public.merchant_disputes (
+    id uuid primary key default gen_random_uuid(),
+    merchant_id uuid not null references public.merchant_profiles(id) on delete cascade,
+    payment_id uuid not null references public.payments(id) on delete restrict,
+    reason text not null,
+    description text,
+    status text not null default 'open'
+        check(status in ('open','under_review','resolved','closed')),
+    due_at timestamptz,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+create table if not exists public.merchant_notifications (
+    id uuid primary key default gen_random_uuid(),
+    merchant_id uuid not null references public.merchant_profiles(id) on delete cascade,
+    title text not null,
+    message text not null,
+    type text not null default 'info',
+    read_at timestamptz,
+    created_at timestamptz not null default now()
+);
+
+create table if not exists public.merchant_webhooks (
+    id uuid primary key default gen_random_uuid(),
+    merchant_id uuid not null references public.merchant_profiles(id) on delete cascade,
+    url text not null,
+    secret_hash text,
+    events jsonb not null default '["payment.completed","payment.failed"]'::jsonb,
+    enabled boolean not null default true,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+create table if not exists public.merchant_team_invitations (
+    id uuid primary key default gen_random_uuid(),
+    merchant_id uuid not null references public.merchant_profiles(id) on delete cascade,
+    email text not null,
+    role text not null default 'viewer'
+        check(role in ('viewer','developer','finance','admin')),
+    status text not null default 'pending'
+        check(status in ('pending','accepted','revoked')),
+    created_at timestamptz not null default now(),
+    unique(merchant_id,email)
+);
+
+alter table public.merchant_refunds enable row level security;
+alter table public.merchant_disputes enable row level security;
+alter table public.merchant_notifications enable row level security;
+alter table public.merchant_webhooks enable row level security;
+alter table public.merchant_team_invitations enable row level security;
+
+revoke all on public.merchant_refunds from anon, authenticated;
+revoke all on public.merchant_disputes from anon, authenticated;
+revoke all on public.merchant_notifications from anon, authenticated;
+revoke all on public.merchant_webhooks from anon, authenticated;
+revoke all on public.merchant_team_invitations from anon, authenticated;
+
+create index if not exists idx_merchant_refunds_merchant
+on public.merchant_refunds(merchant_id,created_at desc);
+create index if not exists idx_merchant_disputes_merchant
+on public.merchant_disputes(merchant_id,created_at desc);
+create index if not exists idx_merchant_notifications_merchant
+on public.merchant_notifications(merchant_id,created_at desc);
+create index if not exists idx_merchant_webhooks_merchant
+on public.merchant_webhooks(merchant_id);
+create index if not exists idx_merchant_team_merchant
+on public.merchant_team_invitations(merchant_id);
+
 -- ============================================================
 -- INDEXES
 -- ============================================================
