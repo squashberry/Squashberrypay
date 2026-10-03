@@ -1126,55 +1126,18 @@ async function sendSignupOtp() {
         collectSignupData();
 
 
-    const response =
-        await fetch(
-            "/api/public/auth/signup/send-otp",
-            {
+    return authRequest(
+        "/api/public/auth/signup/send-otp",
+        {
+            method:
+                "POST",
 
-                method:
-                    "POST",
-
-                headers: {
-
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body:
-                    JSON.stringify(
-                        data
-                    )
-            }
-        );
-
-
-    let result = {};
-
-
-    try {
-
-        result =
-            await response.json();
-
-    } catch {
-
-        result =
-            {};
-    }
-
-
-    if (
-        !response.ok
-    ) {
-
-        throw new Error(
-            result.error ||
-            "Could not send verification code."
-        );
-    }
-
-
-    return result;
+            body:
+                JSON.stringify(
+                    data
+                )
+        }
+    );
 }
 
 
@@ -1892,23 +1855,15 @@ async function verifySignupOtp(
 
     try {
 
-        const response =
-            await fetch(
+        const data =
+            await authRequest(
                 "/api/public/auth/signup/verify-otp",
                 {
-
                     method:
                         "POST",
 
-                    headers: {
-
-                        "Content-Type":
-                            "application/json"
-                    },
-
                     body:
                         JSON.stringify({
-
                             email:
                                 state.signupEmail,
 
@@ -1919,33 +1874,6 @@ async function verifySignupOtp(
                         })
                 }
             );
-
-
-        let data =
-            {};
-
-
-        try {
-
-            data =
-                await response.json();
-
-        } catch {
-
-            data =
-                {};
-        }
-
-
-        if (
-            !response.ok
-        ) {
-
-            throw new Error(
-                data.error ||
-                "That verification code is incorrect or expired."
-            );
-        }
 
 
         signupOtpContainer
@@ -2057,7 +1985,7 @@ async function verifySignupOtp(
             () => {
 
                 window.location.href =
-                    "/merchant";
+                    "./merchant.html";
 
             },
             1000
@@ -2132,43 +2060,19 @@ $("#resendSignupButton")
 
             try {
 
-                const response =
-                    await fetch(
-                        "/api/public/auth/signup/resend-otp",
-                        {
+                await authRequest(
+                    "/api/public/auth/signup/resend-otp",
+                    {
+                        method:
+                            "POST",
 
-                            method:
-                                "POST",
-
-                            headers: {
-
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body:
-                                JSON.stringify({
-
-                                    email:
-                                        state.signupEmail
-                                })
-                        }
-                    );
-
-
-                const data =
-                    await response.json();
-
-
-                if (
-                    !response.ok
-                ) {
-
-                    throw new Error(
-                        data.error ||
-                        "Could not resend verification code."
-                    );
-                }
+                        body:
+                            JSON.stringify({
+                                email:
+                                    state.signupEmail
+                            })
+                    }
+                );
 
 
                 clearSignupOtp();
