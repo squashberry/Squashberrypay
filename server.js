@@ -9190,7 +9190,7 @@ async function sendPaymentCodeEmail({
                                 `${serviceName} payment approved — verification code`,
 
                             text:
-                                `Your payment for ${serviceName} has been approved.\n\nReference: ${reference}\nAmount: ${currency} ${amount}\n\nYour one-time payment code is: ${code}\n\nEnter this code in the application or website where you started the payment. Do not share this code.`,
+                                `Your payment for ${serviceName} has been approved.\n\nReference: ${reference}\nAmount: ${currency} ${amount}\n\nYour one-time payment code is: ${code}\n\nProcessing receipt: ${BASE_URL}/receipt/${encodeURIComponent(reference)}\n\nEnter this code in the application or website where you started the payment. Do not share this code.`,
 
                             html:
                                 `
