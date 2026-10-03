@@ -9511,6 +9511,7 @@ app.get("/api/merchant/donation-payment-methods", authenticateMerchant, async (r
             .from("donation_payment_methods")
             .select("*")
             .eq("merchant_id", req.merchant.id)
+            .eq("enabled", true)
             .order("created_at", { ascending: false });
         if (error) {
             console.error("Load donation payment methods error:", error);
