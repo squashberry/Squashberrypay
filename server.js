@@ -59,11 +59,9 @@ const configuredPublicSiteUrl =
 const githubPagesOrigin = "https://squashberry.github.io";
 const githubPagesBase = githubPagesOrigin + "/Squashberrypay";
 const PUBLIC_SITE_URL =
-    !configuredPublicSiteUrl ||
-    configuredPublicSiteUrl === githubPagesOrigin ||
-    configuredPublicSiteUrl.toLowerCase() === githubPagesOrigin + "/squashberrypay"
+    configuredPublicSiteUrl.toLowerCase().startsWith(githubPagesOrigin)
         ? githubPagesBase
-        : configuredPublicSiteUrl;
+        : (configuredPublicSiteUrl || githubPagesBase);
 
 const PAYMENT_SESSION_MINUTES =
     Number(
@@ -6957,6 +6955,9 @@ app.post("/api/public/donations/:slug/payments",async(req,res)=>{
     const email=normalizeEmail(req.body?.email);if(!isValidEmail(email))return res.status(400).json({error:"Enter a valid email address."});
     const {data:c,error}=await supabase.from("donation_campaigns").select("*").eq("slug",String(req.params.slug||"").trim().toLowerCase()).eq("status","active").maybeSingle();if(error)throw error;if(!c)return res.status(404).json({error:"Donation campaign not found."});
     if(c.end_at&&new Date(c.end_at)<=new Date())return res.status(410).json({error:"This donation campaign has ended."});
+    const {data:configuredMethods, error:methodsError}=await supabase.from("donation_payment_methods").select("id").eq("merchant_id",c.merchant_id).eq("enabled",true).limit(1);
+    if(methodsError)throw methodsError;
+    if(!configuredMethods?.length)return res.status(409).json({error:"This donation campaign is temporarily unavailable because the merchant has no active donation payment destination."});
     const amount=c.allow_custom_amount?Number(req.body?.amount):Number(c.fixed_amount);
     if(!Number.isFinite(amount)||amount<=0)return res.status(400).json({error:"Enter a valid donation amount."});
     if(c.minimum_amount!==null&&amount<Number(c.minimum_amount))return res.status(400).json({error:"Donation is below the minimum allowed amount."});
