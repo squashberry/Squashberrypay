@@ -26,8 +26,8 @@
       <div class="business-switcher"><span class="business-avatar" id="businessAvatar">B</span><span><strong id="sidebarBusinessName">Business</strong><small id="sidebarBusinessStatus">Loading…</small></span><b>⌄</b></div>
     </div>
     <nav class="dashboard-nav" aria-label="Dashboard">
-      <button data-section="overview" class="side-link active"><span>⌂</span>Overview</button>
-      <button data-section="payments" class="side-link"><span>↗</span>Payments <em id="navPaymentCount">0</em></button>
+      <button data-section="overview" class="side-link active"><span>⌂</span>Overview</button><button data-section="applications" class="side-link"><span>▣</span>Applications</button>
+      <button data-section="payment-requests" class="side-link"><span>✓</span>Verify payments <em id="navVerificationCount">0</em></button><button data-section="payments" class="side-link"><span>↗</span>Payments <em id="navPaymentCount">0</em></button>
       <button data-section="customers" class="side-link"><span>♙</span>Customers</button>
       <button data-section="balances" class="side-link"><span>◈</span>Balances</button>
       <button data-section="payment-links" class="side-link"><span>↗</span>Payment Links</button>
@@ -67,6 +67,15 @@
         <article class="panel"><div class="panel-heading"><div><span class="eyebrow">ACTIVITY</span><h3>Recent payments</h3></div><button class="text-link" data-section-jump="payments">View all</button></div><div id="recentPayments" class="compact-list"></div></article>
       </div>
       <div class="dashboard-two-col lower"><article class="panel"><div class="panel-heading"><div><span class="eyebrow">PERFORMANCE</span><h3>Payment health</h3></div></div><div class="health-grid"><div><strong id="successRate">0%</strong><span>Success rate</span></div><div><strong id="failedCount">0</strong><span>Failed</span></div><div><strong id="refundCount">0</strong><span>Refunded</span></div></div></article><article class="panel"><div class="panel-heading"><div><span class="eyebrow">QUICK ACTIONS</span><h3>Manage your business</h3></div></div><div class="quick-actions"><button data-section-jump="payment-links">Create a payment link</button><button data-section-jump="customers">Find a customer</button><button data-section-jump="analytics">Open analytics</button><button data-section-jump="developers">API & webhooks</button></div></article></div>
+    </section>
+
+    <section id="section-applications" class="merchant-section" hidden>
+      <div class="section-title-row"><div><span class="eyebrow">APPLICATIONS</span><h2>Your applications.</h2><p>Create an application first. Products, payment requests, credentials and code redemption all belong to an application.</p></div><button id="openAddAppPrimary" class="button primary small">+ Add application</button></div>
+      <div id="applicationsListPrimary" class="app-list"></div>
+    </section>
+    <section id="section-payment-requests" class="merchant-section" hidden>
+      <div class="section-title-row"><div><span class="eyebrow">VERIFICATION</span><h2>Payments waiting for you.</h2><p>Review the customer's receipt, then confirm or reject the payment.</p></div></div>
+      <div id="paymentRequestsList" class="app-list"></div>
     </section>
 
     <section id="section-payments" class="merchant-section" hidden>
@@ -126,6 +135,21 @@
     </section>
 
     <section id="section-donations" class="merchant-section" hidden>
+      <div class="section-title-row"><div><span class="eyebrow">DONATIONS</span><h2>Standalone donations.</h2><p>Donations do not require application integration. Create a campaign, share its link, review receipts, and send the donor a success email after confirmation.</p></div></div>
+      <div class="merchant-form donation-standalone-form">
+        <label>Campaign name<input id="donationCampaignName" placeholder="Support our campaign"></label>
+        <label>Description<textarea id="donationCampaignDescription" rows="3" placeholder="What are donors supporting?"></textarea></label>
+        <label>Fixed amount<input id="donationFixedAmount" type="number" min="0.01" step="0.01"></label>
+        <label class="checkbox-line"><input id="donationAllowCustom" type="checkbox" checked> Allow donor to choose amount</label>
+        <label>Minimum amount<input id="donationMin" type="number" min="0.01" step="0.01"></label>
+        <label>Maximum amount<input id="donationMax" type="number" min="0.01" step="0.01"></label>
+        <label>Goal<input id="donationStandaloneGoal" type="number" min="0.01" step="0.01"></label>
+        <label>Suggested amounts<input id="donationStandalonePresets" placeholder="50, 100, 250"></label>
+        <button id="createDonationCampaign" class="button primary">Create donation campaign</button>
+      </div>
+      <div id="standaloneDonationGrid" class="donation-grid"></div>
+    </section>
+
       <div class="section-title-row"><div><span class="eyebrow">DONATIONS</span><h2>Campaigns with real progress.</h2><p>Track donation products and the completed payments recorded against them.</p></div></div>
       <div id="donationGrid" class="donation-grid"></div>
     </section>
