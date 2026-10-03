@@ -1,8 +1,5 @@
 "use strict";
 
-// Remove any legacy checkout-session overlay left by an older cached build.
-document.querySelectorAll(".checkout-session-overlay").forEach(el=>el.remove());
-
 async function fetchWithTimeout(input, init={}, timeoutMs=20000){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),timeoutMs);try{return await fetch(input,{...init,signal:controller.signal})}finally{clearTimeout(timer)}}
 
 const apiBase =
@@ -237,6 +234,10 @@ async function loadCheckout() {
     }
 }
 
+function displayTitle(value){
+    const text=String(value||"").trim();
+    return text ? text.charAt(0).toUpperCase()+text.slice(1) : "Checkout";
+}
 function renderDonationCampaign(
     product,
     donation
@@ -302,9 +303,13 @@ function renderDonationCampaign(
         !showGoal;
 
     if (showGoal) {
+        const remaining =
+            Number.isFinite(Number(donation.remaining))
+                ? Number(donation.remaining)
+                : Math.max(0, Number(goal) - raised);
         donationRemaining.textContent =
             money(
-                donation.remaining,
+                remaining,
                 currency
             );
 
@@ -327,13 +332,7 @@ function renderDonationCampaign(
     donationGoalMessage.textContent =
         donation.goal_message || "";
 
-    donorCountStat.hidden =
-        !donation.show_donor_count;
-
-    donorCount.textContent =
-        String(
-            donation.donor_count || 0
-        );
+    if (donorCountStat) donorCountStat.hidden = true;
 
     donationPresets.innerHTML =
         "";
@@ -462,7 +461,7 @@ function renderCheckout() {
         product.name;
 
     $("#checkoutTitle").textContent =
-        link.title;
+        displayTitle(link.title);
 
     $("#checkoutDescription").textContent =
         link.description ||
@@ -584,7 +583,7 @@ function renderCheckout() {
     loadingState.hidden=true;
     errorState.hidden=true;
     checkoutState.hidden=false;
-    setCheckoutStage(1);
+    setCheckoutStage(state.isDonation ? 1 : 2);
 }
 
 function normalizePublicUrl(u){
