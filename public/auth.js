@@ -2295,7 +2295,7 @@ $("#signinForgotLink")?.addEventListener(
 const authApiBase =
     String(
         window.SQUASHBERRYPAY_API_BASE ||
-        ""
+        "https://squashberrypay.squashberrypay.workers.dev"
     ).replace(
         /\/+$/,
         ""
