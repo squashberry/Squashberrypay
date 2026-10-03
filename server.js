@@ -7991,7 +7991,7 @@ app.get("/api/merchant/developer", authenticateMerchant, async (req,res) => {
 });
 
 app.post("/api/merchant/webhooks", authenticateMerchant, async (req,res) => {
-    const url=String(req.body?.url||"").trim(); if(!/^https?:\\/\\//i.test(url))return res.status(400).json({error:"Enter a valid HTTPS webhook URL."});
+    const url=String(req.body?.url||"").trim(); if(!/^https?:\/\//i.test(url))return res.status(400).json({error:"Enter a valid HTTPS webhook URL."});
     const {data,error}=await supabase.from("merchant_webhooks").insert({merchant_id:req.merchant.id,url,events:Array.isArray(req.body?.events)?req.body.events:["payment.completed","payment.failed"]}).select("id,url,events,enabled,created_at").single();
     if(error)return res.status(500).json({error:"Could not save webhook."}); res.status(201).json({webhook:data});
 });
