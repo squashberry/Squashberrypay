@@ -1,5 +1,7 @@
 "use strict";
 
+async function fetchWithTimeout(input, init={}, timeoutMs=20000){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),timeoutMs);try{return await fetch(input,{...init,signal:controller.signal})}finally{clearTimeout(timer)}}
+
 const apiBase =
     String(
         window.SQUASHBERRYPAY_API_BASE ||
@@ -165,7 +167,7 @@ async function loadCheckout() {
     try {
         setCheckoutLoading("Checking payment details…","Verifying the payment link and product.");
         const response =
-            await fetch(
+            await fetchWithTimeout(
                 apiBase + (state.isDonation ? "/api/public/donations/" : "/api/public/links/") +
                 encodeURIComponent(
                     state.slug
@@ -663,7 +665,7 @@ async function startPayment(
     try {
         showSessionStep(2,"Preparing payment details…","Saving your payment request and preparing the next step.");
         const response =
-            await fetch(
+            await fetchWithTimeout(
                 apiBase + (state.isDonation ? "/api/public/donations/" : "/api/public/links/") +
                 encodeURIComponent(state.slug) +
                 "/payments",
