@@ -335,6 +335,10 @@ create table if not exists public.payments (
         references public.payment_methods(id)
         on delete restrict,
 
+    donation_payment_method_id uuid
+        references public.donation_payment_methods(id)
+        on delete restrict,
+
     amount numeric(12,2) not null
         check (amount > 0),
 
