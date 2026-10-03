@@ -10,11 +10,12 @@
 (function(){
   document.documentElement.classList.add("sbp-routing");
   const B="/Squashberrypay";
+  const DEST=B+"/checkout.html";
   const p=location.pathname;
   const r=p.startsWith(B+"/")?p.slice(B.length+1):p.replace(/^\//,"");
   const a=r.split("/").filter(Boolean),k=a[0],s=a[1];
-  if(k==="donate"&&s)return location.replace(B+"/checkout.html?donation="+encodeURIComponent(s));
-  if(k==="checkout"&&s)return location.replace(B+"/checkout.html?checkout="+encodeURIComponent(s));
+  if(k==="donate"&&s)return location.replace(DEST+"?donation="+encodeURIComponent(s));
+  if(k==="checkout"&&s)return location.replace(DEST+"?checkout="+encodeURIComponent(s));
   if(k==="pay"&&s)return location.replace(B+"/index.html?pay="+encodeURIComponent(s));
   if(k==="signin")return location.replace(B+"/signin/index.html"+location.search);
   if(k==="signup")return location.replace(B+"/signup.html"+location.search);
