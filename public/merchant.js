@@ -86,6 +86,7 @@ function profile(){const e=$("#merchantProfile");if(e)e.innerHTML="<div class=\"
 
 // --- Workspace organization + live readiness --------------------------------
 let donationPaymentMethods = [];
+let donationMethodsLoadError = "";
 function activateWorkspaceTab(group,target){
   $$('[data-workspace-tab="'+group+'"]').forEach(b=>{const on=b.dataset.workspaceTarget===target;b.classList.toggle("active",on);b.setAttribute("aria-selected",on?"true":"false")});
   $$('[data-workspace-panel^="'+group+'-"]').forEach(p=>{const on=p.dataset.workspacePanel===target;p.classList.toggle("active",on);p.hidden=!on});
@@ -95,7 +96,14 @@ document.addEventListener("click",e=>{
   if(tab){activateWorkspaceTab(tab.dataset.workspaceTab,tab.dataset.workspaceTarget);return}
 });
 async function loadDonationPaymentMethods(){
-  try{const d=await api("/api/merchant/donation-payment-methods");donationPaymentMethods=Array.isArray(d.methods)?d.methods:[]}catch(_){donationPaymentMethods=[]}
+  try{
+    const d=await api("/api/merchant/donation-payment-methods");
+    donationPaymentMethods=Array.isArray(d.methods)?d.methods:[];
+    donationMethodsLoadError="";
+  }catch(err){
+    donationMethodsLoadError=err?.message||"Could not load donation payment methods.";
+    console.error("Donation payment methods load failed:",err);
+  }
 }
 
 function renderDonationPaymentMethods(){
@@ -119,7 +127,7 @@ function renderReadiness(){
     :'<div class="state-card warning"><span class="state-icon">!</span><div><strong>Add a donation payment method before sharing a campaign.</strong><p>You can create the campaign, but customers need a configured destination before you send the link.</p><button class="button secondary small" data-workspace-tab="donations" data-workspace-target="donations-destination">Add payment destination</button></div></div>';
   renderDonationPaymentMethods();
   if(dbox)dbox.innerHTML=msg;
-  if(dbox2)dbox2.innerHTML=activeDonationMethods.length?'<div class="state-card success"><span class="state-icon">✓</span><div><strong>Destination configured.</strong><p>Standalone donation checkout has somewhere to direct customers.</p></div></div>':'<div class="state-card warning"><span class="state-icon">!</span><div><strong>No donation payment destination yet.</strong><p>Add Wave, bank transfer or another supported destination before sending the campaign link to donors.</p></div></div>';
+  if(dbox2)dbox2.innerHTML=donationMethodsLoadError&&!donationPaymentMethods.length?'<div class="state-card warning"><span class="state-icon">!</span><div><strong>Could not refresh donation destinations.</strong><p>'+esc(donationMethodsLoadError)+' Try refreshing again.</p></div></div>':activeDonationMethods.length?'<div class="state-card success"><span class="state-icon">✓</span><div><strong>Destination configured.</strong><p>Standalone donation checkout has somewhere to direct customers.</p></div></div>':'<div class="state-card warning"><span class="state-icon">!</span><div><strong>No donation payment destination yet.</strong><p>Add Wave, bank transfer or another supported destination before sending the campaign link to donors.</p></div></div>';
 }
 
 async function refresh(){const r=await Promise.all([api("/api/merchant/dashboard"),api("/api/merchant/payment-requests"),loadDonationPaymentMethods()]);dashboard=r[0];dashboard.payment_requests=r[1].payments||[];apps=dashboard.apps||dashboard.services||[];all();renderReadiness()}
