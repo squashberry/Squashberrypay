@@ -539,7 +539,9 @@ function renderCheckout() {
     checkoutState.hidden = false;
 }
 
-function normalizePublicUrl(u){try{const x=new URL(String(u||""),window.location.origin);if(x.hostname==="squashberry.github.io"&&!x.pathname.startsWith("/Squashberrypay/"))x.pathname="/Squashberrypay"+(x.pathname.startsWith("/")?x.pathname:"/"+x.pathname);return x.href}catch{return String(u||"")}}\n\nasync function startPayment(
+function normalizePublicUrl(u){try{const x=new URL(String(u||""),window.location.origin);if(x.hostname==="squashberry.github.io"&&!x.pathname.startsWith("/Squashberrypay/"))x.pathname="/Squashberrypay"+(x.pathname.startsWith("/")?x.pathname:"/"+x.pathname);return x.href}catch{return String(u||"")}}
+
+async function startPayment(
     event
 ) {
     event.preventDefault();
