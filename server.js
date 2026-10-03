@@ -7531,8 +7531,8 @@ app.post(
                 payment,
                 payment_url:
                     PUBLIC_SITE_URL +
-                    "/index.html?pay=" +
-                    rawSessionToken
+                    "/pay/" +
+                    encodeURIComponent(rawSessionToken)
             });
 
         } catch (error) {
