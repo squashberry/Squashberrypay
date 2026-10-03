@@ -96,19 +96,7 @@ function escapeHtml(
 ============================================================ */
 
 const authMessage =
-    $("#authMessage")
-
-  function showSessionExpiredNotice() {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("reason") !== "session_expired") return;
-      showMessage(
-        "Your session expired because you were inactive for a while. Please sign in again to continue.",
-        "error"
-      );
-    } catch (_) {}
-  }
-  window.addEventListener("DOMContentLoaded", showSessionExpiredNotice);;
+    $("#authMessage");
 
 
 function showAuthErrorAlert(
@@ -1330,7 +1318,7 @@ signupForm?.addEventListener(
 
         setButtonLoading(
             signupButton,
-            "Sending codeâ¦"
+            "Sending code…¦"
         );
 
 
@@ -1967,7 +1955,7 @@ async function verifySignupOtp(
      *
      * then
      *
-     *        â
+     *        ✓
      */
 
     signupOtpContainer
@@ -2195,7 +2183,7 @@ $("#resendSignupButton")
 
             setButtonLoading(
                 button,
-                "Sendingâ¦"
+                "Sending…¦"
             );
 
 
@@ -2318,7 +2306,7 @@ function saveMerchantSession(
 
 /* ============================================================
    SIGN-IN TWO-STATE FLOW
-   Email â Continue â Password â Sign in
+   Email → Continue → Password → Sign in
 ============================================================ */
 
 const signinState = {
@@ -2582,7 +2570,7 @@ signinForm?.addEventListener(
 
         setButtonLoading(
             button,
-            "Signing inâ¦"
+            "Signing in…¦"
         );
 
         try {
@@ -3071,7 +3059,7 @@ async function sendPasswordResetOtp() {
 
     setButtonLoading(
         sendResetButton,
-        "Sending codeâ¦"
+        "Sending code…¦"
     );
 
     try {
@@ -3201,7 +3189,7 @@ async function verifyResetOtp() {
 
     setButtonLoading(
         verifyResetOtpButton,
-        "Verifyingâ¦"
+        "Verifying…¦"
     );
 
     try {
@@ -3379,7 +3367,7 @@ saveNewPasswordButton?.addEventListener(
 
         setButtonLoading(
             saveNewPasswordButton,
-            "Updating passwordâ¦"
+            "Updating password…¦"
         );
 
         try {
