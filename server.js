@@ -9477,6 +9477,20 @@ app.get(
 
 
 app.get(
+    "/donate/:slug",
+    (req, res) => {
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "checkout.html"
+            )
+        );
+    }
+);
+
+
+app.get(
     "/pay/:token",
     (req, res) => {
 
