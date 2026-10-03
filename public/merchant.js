@@ -51,7 +51,7 @@ $("#createPaymentLink")?.addEventListener("click",async()=>{
     try{
         const d=await api("/api/merchant/apps/"+encodeURIComponent(appId)+"/payment-links",{method:"POST",body:JSON.stringify({product_id:productId})});
         await refresh();
-        renderLinks();
+        activateWorkspaceTab("payment-links","payment-links-links");
         if(d.payment_url){
             await navigator.clipboard.writeText(d.payment_url).catch(()=>{});
             notify(d.reused?"Existing payment link loaded and copied.":"Payment link created and copied.","success");
