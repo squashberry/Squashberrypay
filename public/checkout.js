@@ -107,8 +107,6 @@ const checkoutOverview =
 const checkoutDetails =
     $("#checkoutDetails");
 
-const checkoutProcessing =
-    $("#checkoutProcessing");
 
 const checkoutStepOne =
     $("#checkoutStepOne");
@@ -116,8 +114,6 @@ const checkoutStepOne =
 const checkoutStepTwo =
     $("#checkoutStepTwo");
 
-const checkoutStepThree =
-    $("#checkoutStepThree");
 
 const donorFields =
     $("#donorFields");
@@ -126,13 +122,13 @@ function setCheckoutLoading(title,detail){
     if($("#checkoutLoadingDetail"))$("#checkoutLoadingDetail").textContent=detail;
 }
 function setCheckoutStage(step){
-    if(!checkoutOverview || !checkoutDetails || !checkoutProcessing)return;
-    checkoutOverview.hidden = step !== 1;
-    checkoutDetails.hidden = step !== 2;
-    checkoutProcessing.hidden = step !== 3;
-    [checkoutStepOne,checkoutStepTwo,checkoutStepThree].forEach((el,i)=>{
-        if(el)el.classList.toggle("active",i+1===step);
-        if(el)el.classList.toggle("complete",i+1<step);
+    if(!checkoutOverview || !checkoutDetails)return;
+    const normalized=state.isDonation ? Math.max(1,Math.min(2,Number(step)||1)) : 2;
+    checkoutOverview.hidden = !state.isDonation || normalized !== 1;
+    checkoutDetails.hidden = normalized !== 2;
+    [checkoutStepOne,checkoutStepTwo].forEach((el,i)=>{
+        if(el)el.classList.toggle("active",i+1===normalized);
+        if(el)el.classList.toggle("complete",i+1<normalized);
     });
 }
 function setError(message){
@@ -156,10 +152,9 @@ function money(
                 maximumFractionDigits: 2
             }
         ).format(
-            Number(amount)
-        ) +
-        " " +
-        currency;
+            Number.isFinite(Number(amount))
+            ? Number(amount).toLocaleString("en-GM",{minimumFractionDigits:2,maximumFractionDigits:2})+" "+currency
+            : "—";
     } catch {
         return (
             Number(amount).toFixed(2) +
@@ -219,7 +214,7 @@ async function loadCheckout() {
                 button_label:"Donate",
                 service:{name:data.merchant?.name||"Merchant"},
                 product:{name:d.name,description:d.description||"",payment_type:"donate",amount:d.fixed_amount,currency:d.currency,allow_custom_amount:d.allow_custom_amount},
-                donation:{enabled:true,goal:d.goal,raised:d.raised,donor_count:d.donor_count,minimum:d.minimum_amount,maximum:d.maximum_amount,presets:d.presets||[],goal_message:d.goal_message,end_at:d.end_at,show_goal:d.goal!==null,show_donor_count:true,close_on_goal:false,goal_reached:d.goal!==null&&Number(d.raised||0)>=Number(d.goal)}
+                donation:{enabled:true,goal:d.goal,raised:d.raised,donor_count:d.donor_count,remaining:d.remaining,progress_percent:d.progress_percent,minimum:d.minimum_amount,maximum:d.maximum_amount,presets:d.presets||[],goal_message:d.goal_message,end_at:d.end_at,show_goal:d.goal!==null,show_donor_count:true,close_on_goal:false,goal_reached:d.goal!==null&&Number(d.raised||0)>=Number(d.goal)}
             };
         } else {
             if (!data.payment_link) throw new Error(data.error || "This payment link is unavailable.");
@@ -260,12 +255,9 @@ function renderDonationCampaign(
     const currency =
         product.currency;
 
-    const goal =
-        donation.goal;
+    const goal=Number(donation.goal);
 
-    const showGoal =
-        donation.show_goal &&
-        goal !== null;
+    const showGoal=donation.show_goal && Number.isFinite(goal);
 
     donationProgressPercent.hidden =
         !showGoal;
@@ -306,7 +298,9 @@ function renderDonationCampaign(
         const remaining =
             Number.isFinite(Number(donation.remaining))
                 ? Number(donation.remaining)
-                : Math.max(0, Number(goal) - raised);
+                : Number.isFinite(goal)
+                    ? Math.max(0, goal-raised)
+                    : NaN;
         donationRemaining.textContent =
             money(
                 remaining,
@@ -482,10 +476,7 @@ function renderCheckout() {
         overviewContinue.hidden=state.isDonation;
         overviewContinue.textContent=product.payment_type==="donate"?(link.button_label||"Continue"):(link.button_label||"Continue to payment");
     }
-    const donation =
-        link.donation || {
-            enabled: false
-        };
+    const donation=link.donation||{enabled:false};
 
     renderDonationCampaign(
         product,
@@ -623,13 +614,10 @@ async function startPayment(
     const product =
         state.link.product;
 
-    const donation =
-        state.link.donation || { enabled: false };
 
     const body = {
         email,
-        customer_reference: ($("#customerReference")?.value || "").trim().slice(0,160)
-    };
+            };
 
     if (
         product.payment_type ===
@@ -697,8 +685,7 @@ async function startPayment(
 
     const originalText=$("#buttonText").textContent;
     continueButton.disabled=true;
-    setCheckoutStage(3);
-    $("#processingDetail").textContent="Creating your secure payment session…";
+    $("#buttonText").textContent="Opening payment…";
 
     try {
         const response =
@@ -733,7 +720,6 @@ async function startPayment(
         }
 
         const target=normalizePublicUrl(data.payment_url);
-        $("#processingDetail").textContent="Opening the secure payment page…";
         window.location.replace(target);
 
     } catch (error) {
