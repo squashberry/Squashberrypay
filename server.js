@@ -1551,7 +1551,7 @@ async function issueAuthOtp({
 
 
         purposeLabel =
-            "BUSINESS ACCOUNT";
+            "SQUASHBERRYPAY ACCOUNT";
     }
 
 
@@ -2003,7 +2003,7 @@ app.post(
 
                 return res.status(400).json({
                     error:
-                        "Enter your business name."
+                        "Enter your profile name."
                 });
             }
 
@@ -2545,7 +2545,7 @@ app.post(
                 return res.status(500).json({
 
                     error:
-                        "Your email was verified, but we couldn't finish creating your business account."
+                        "Your email was verified, but we couldn't finish creating your SquashberryPay account."
                 });
             }
 
@@ -2619,7 +2619,7 @@ app.post(
                     merchant,
 
                     message:
-                        "Your business account has been created. Please sign in."
+                        "Your SquashberryPay account has been created. Please sign in."
                 });
             }
 
@@ -2647,7 +2647,7 @@ app.post(
                 merchant,
 
                 message:
-                    "Your business account is active."
+                    "Your SquashberryPay account is active."
             });
 
         } catch (error) {
@@ -2806,7 +2806,7 @@ app.post(
 
                 return res.status(500).json({
                     error:
-                        "We couldn't load your business account right now. Please try again."
+                        "We couldn't load your SquashberryPay account right now. Please try again."
                 });
             }
 
@@ -2817,7 +2817,7 @@ app.post(
 
                 return res.status(403).json({
                     error:
-                        "This account does not have a SquashberryPay business profile."
+                        "This account does not have a SquashberryPay profile."
                 });
             }
 
@@ -2829,7 +2829,7 @@ app.post(
 
                 return res.status(403).json({
                     error:
-                        "Your SquashberryPay business account is currently unavailable."
+                        "Your SquashberryPay account is currently unavailable."
                 });
             }
 
