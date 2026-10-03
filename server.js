@@ -9480,6 +9480,60 @@ app.get("/api/merchant/donations", authenticateMerchant, async (req,res) => {
 });
 
 /* ============================================================
+   MERCHANT DONATION PAYMENT METHODS
+   ============================================================ */
+app.get("/api/merchant/donation-payment-methods", authenticateMerchant, async (req,res) => {
+    try {
+        const { data, error } = await supabase
+            .from("donation_payment_methods")
+            .select("*")
+            .eq("merchant_id", req.merchant.id)
+            .order("created_at", { ascending: false });
+        if (error) {
+            console.error("Load donation payment methods error:", error);
+            return res.status(500).json({ error: "Could not load donation payment methods." });
+        }
+        res.json({ methods: data || [] });
+    } catch (error) {
+        console.error("Load donation payment methods exception:", error);
+        res.status(500).json({ error: "Could not load donation payment methods." });
+    }
+});
+
+app.post("/api/merchant/donation-payment-methods", authenticateMerchant, async (req,res) => {
+    try {
+        const name = String(req.body?.name || "").trim().slice(0, 120);
+        const type = String(req.body?.type || "").trim().slice(0, 80);
+        const account_name = String(req.body?.account_name || "").trim().slice(0, 160) || null;
+        const phone_number = String(req.body?.phone_number || "").trim().slice(0, 80) || null;
+        const instructions = String(req.body?.instructions || "").trim().slice(0, 2000);
+        if (!name || !type || !instructions) {
+            return res.status(400).json({ error: "Enter the payment method name, type and instructions." });
+        }
+        const { data, error } = await supabase
+            .from("donation_payment_methods")
+            .insert({
+                merchant_id: req.merchant.id,
+                name,
+                type,
+                account_name,
+                phone_number,
+                instructions
+            })
+            .select("*")
+            .single();
+        if (error) {
+            console.error("Create donation payment method error:", error);
+            return res.status(500).json({ error: "Could not save donation payment method." });
+        }
+        res.status(201).json({ method: data });
+    } catch (error) {
+        console.error("Create donation payment method exception:", error);
+        res.status(500).json({ error: "Could not save donation payment method." });
+    }
+});
+
+/* ============================================================
    MERCHANT CREATE STANDALONE DONATION CAMPAIGN
    ============================================================ */
 app.post("/api/merchant/donation-campaigns", authenticateMerchant, async (req,res) => {
