@@ -9825,21 +9825,26 @@ export async function runSubscriptionReminderJob(){
   const now=new Date();
   const horizon=new Date(now.getTime()+7*86400000);
   const cutoff=new Date(now.getTime()-23*3600000);
-  const {data:contracts,error}=await supabase.from("subscription_contracts").select("*,services(name,status),products(name,amount,currency,subscription_interval),service_users(email),payments:current_payment_id(id,payment_reference,status,amount,currency)").eq("status","active").lte("next_due_at",horizon.toISOString());
+  const {data:contracts,error}=await supabase.from("subscription_contracts").select("*,services(name,status),products(name,amount,currency,subscription_interval),service_users(email)").eq("status","active").lte("next_due_at",horizon.toISOString());
   if(error){console.error("Subscription reminder query error:",error);return{sent:0,error:true};}
   let sent=0;
   for(const c of contracts||[]){
     try{
-      let payment=c.payments;
-      const newNeeded=!payment||["completed","rejected","cancelled","expired"].includes(payment.status);
-      if(newNeeded){
+      let payment=null;
+      if(c.current_payment_id){
+        const result=await supabase.from("payments").select("id,payment_reference,status,amount,currency").eq("id",c.current_payment_id).maybeSingle();
+        payment=result.data;
+      }
+      const needsNew=!payment||["completed","rejected","cancelled","expired"].includes(payment.status);
+      if(needsNew){
         const expiresAt=new Date(now.getTime()+7*86400000).toISOString();
         const {data:p,error:pe}=await supabase.from("payments").insert({payment_reference:generateReference(),processing_page_id:"SPP-"+randomHex(10).toUpperCase(),service_id:c.service_id,service_user_id:c.service_user_id,product_id:c.product_id,amount:c.products.amount,currency:c.products.currency,payment_type:"subscribe",status:"pending",expires_at:expiresAt}).select("id,payment_reference,amount,currency,status").single();
         if(pe)throw pe;
         const raw=randomToken();const {error:se}=await supabase.from("payment_sessions").insert({payment_id:p.id,session_token_hash:hash(raw),expires_at:expiresAt});if(se)throw se;
         await supabase.from("subscription_contracts").update({current_payment_id:p.id,last_reminded_at:now.toISOString(),reminder_count:(c.reminder_count||0)+1,updated_at:now.toISOString()}).eq("id",c.id);
         await sendResendEmail({to:c.service_users?.email,subject:"Your "+c.services?.name+" subscription is due soon",text:"Your "+c.products?.name+" subscription payment is due "+new Date(c.next_due_at).toLocaleDateString()+".\n\nAmount: "+c.products.currency+" "+c.products.amount+"\n\nPay here: "+BASE_URL+"/pay/"+raw,html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><h1>Subscription payment due</h1><p>Your next "+escapeHtml(c.products?.name||"subscription")+" payment is due soon.</p><p><b>Amount:</b> "+escapeHtml(c.products.currency)+" "+Number(c.products.amount).toFixed(2)+"</p><p><a href=\""+escapeHtml(BASE_URL+"/pay/"+raw)+"\">Continue subscription payment</a></p></div></div>"});
-        sent++;continue;
+        sent++;
+        continue;
       }
       if(c.last_reminded_at&&new Date(c.last_reminded_at)>cutoff)continue;
       if(["pending","awaiting_receipt","awaiting_verification","approved"].includes(payment.status)){
@@ -9853,7 +9858,6 @@ export async function runSubscriptionReminderJob(){
   }
   return{sent};
 }
-
 /* ============================================================
    START
 ============================================================ */
