@@ -674,8 +674,7 @@ function normalizePublicUrl(u){try{const x=new URL(String(u||""),window.location
             );
         }
 
-        window.location.href =
-            data.payment_url;
+        window.location.href = normalizePublicUrl(data.payment_url);
 
     } catch (error) {
         setFormError(error.name==="AbortError"?"The payment service took too long to respond. Please try again.":error.message);
@@ -684,7 +683,11 @@ function normalizePublicUrl(u){try{const x=new URL(String(u||""),window.location
             originalText;
     }
 }
-donationContinue.addEventListener("click",()=>{state.donationStarted=true;donationContinue.hidden=true;checkoutForm.hidden=false;setTimeout(()=>$("#email")?.focus(),40)});\n\nretryButton.addEventListener(
+function normalizePublicUrl(u){try{const x=new URL(String(u||""),window.location.origin);if(x.hostname==="squashberry.github.io"&&!x.pathname.startsWith("/Squashberrypay/"))x.pathname="/Squashberrypay"+(x.pathname.startsWith("/")?x.pathname:"/"+x.pathname);return x.href}catch{return String(u||"")}}
+
+donationContinue.addEventListener("click",()=>{state.donationStarted=true;donationContinue.hidden=true;checkoutForm.hidden=false;setTimeout(()=>$("#email")?.focus(),40)});
+
+retryButton.addEventListener(
     "click",
     loadCheckout
 );
