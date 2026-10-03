@@ -1,5 +1,8 @@
 "use strict";
 
+const SITE_BASE="/Squashberrypay";
+const SITE_URL=location.origin+SITE_BASE;
+
 const apiBase =
     String(
         window.SQUASHBERRYPAY_API_BASE ||
@@ -1375,8 +1378,7 @@ cancelPaymentBtn?.addEventListener(
 
                     } else {
 
-                        window.location.href =
-                            "/";
+                        window.location.href=SITE_BASE+"/";
                     }
 
                 },
@@ -1418,7 +1420,7 @@ function renderProcessingReceiptActions(){
         box.className="processing-receipt-actions";
         host.appendChild(box);
     }
-    const url=window.location.origin+"/receipt/"+encodeURIComponent(state.payment.processing_page_id);
+    const url=SITE_URL+"/receipt/"+encodeURIComponent(state.payment.processing_page_id);
     box.innerHTML='<a class="button secondary" href="'+escapeHtml(url)+'" target="_blank" rel="noopener">View processing receipt</a><button class="button secondary" type="button" id="copyProcessingReceipt">Copy receipt ID</button>';
     document.getElementById("copyProcessingReceipt")?.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(state.payment.processing_page_id);notify("Processing receipt ID copied.","success",2200)}catch{notify("Could not copy the receipt ID.","error",2200)}});
 }
@@ -1824,8 +1826,7 @@ function handleAttemptExpired() {
 
             } else {
 
-                window.location.href =
-                    "/";
+                window.location.href=SITE_BASE+"/";
             }
 
         },
