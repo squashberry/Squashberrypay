@@ -17,9 +17,9 @@
   if(k==="donate"&&s)return location.replace(DEST+"?donation="+encodeURIComponent(s));
   if(k==="checkout"&&s)return location.replace(DEST+"?checkout="+encodeURIComponent(s));
   if(k==="pay"&&s)return location.replace(B+"/index.html?pay="+encodeURIComponent(s));
-  if(k==="signin")return location.replace(B+"/signin/index.html"+location.search);
-  if(k==="signup")return location.replace(B+"/signup.html"+location.search);
-  if(k==="merchant")return location.replace(B+"/merchant.html"+location.search);
+  if(k==="signin"||k==="signin.html"||k==="sign-in")return location.replace(B+"/signin/index.html"+location.search);
+  if(k==="signup"||k==="signup.html")return location.replace(B+"/signup.html"+location.search);
+  if(k==="merchant"||k==="merchant.html")return location.replace(B+"/merchant.html"+location.search);
   document.documentElement.classList.remove("sbp-routing");
 })();
 </script>
