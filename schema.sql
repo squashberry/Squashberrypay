@@ -724,3 +724,81 @@ alter table public.payments add constraint payments_donation_campaign_fk foreign
 create table if not exists public.donation_payment_methods (id uuid primary key default gen_random_uuid(),merchant_id uuid not null references public.merchant_profiles(id) on delete cascade,name text not null,type text not null,instructions text not null,account_name text,account_number text,bank_name text,phone_number text,enabled boolean not null default true,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
 create index if not exists idx_donation_payment_methods_merchant on public.donation_payment_methods(merchant_id,enabled);
 alter table public.subscription_contracts enable row level security;alter table public.donation_campaigns enable row level security;alter table public.donation_payment_methods enable row level security;revoke all on public.subscription_contracts from anon,authenticated;revoke all on public.donation_campaigns from anon,authenticated;revoke all on public.donation_payment_methods from anon,authenticated;
+
+-- ============================================================
+-- APPLICATION CONFIGURATION / PAYMENT LIFECYCLE EXTENSION
+-- ============================================================
+
+alter table public.services
+  add column if not exists environment text not null default 'live';
+
+alter table public.services
+  add column if not exists allowed_origins jsonb not null default '[]'::jsonb;
+
+alter table public.services
+  add column if not exists allowed_package_ids jsonb not null default '[]'::jsonb;
+
+alter table public.services
+  add column if not exists webhook_url text;
+
+alter table public.services
+  drop constraint if exists services_environment_check;
+
+alter table public.services
+  add constraint services_environment_check
+  check(environment in ('live','test'));
+
+alter table public.services
+  add column if not exists last_api_used_at timestamptz;
+
+alter table public.payments
+  add column if not exists payment_state text;
+
+alter table public.payments
+  add column if not exists code_issued_at timestamptz;
+
+alter table public.payments
+  add column if not exists redeemed_at timestamptz;
+
+alter table public.payments
+  drop constraint if exists payments_payment_state_check;
+
+alter table public.payments
+  add constraint payments_payment_state_check
+  check(payment_state in (
+    'created','awaiting_payment','payment_submitted',
+    'awaiting_verification','approved','code_issued',
+    'redeemed','completed','rejected','expired','cancelled'
+  ));
+
+create table if not exists public.payment_verification_attempts (
+  id uuid primary key default gen_random_uuid(),
+  service_id uuid not null references public.services(id) on delete cascade,
+  service_user_id uuid references public.service_users(id) on delete cascade,
+  attempt_key_hash text,
+  success boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.payment_verification_attempts enable row level security;
+revoke all on public.payment_verification_attempts from anon, authenticated;
+
+create index if not exists idx_payment_verification_attempts_key_time
+on public.payment_verification_attempts(attempt_key_hash,created_at desc);
+
+create index if not exists idx_payments_payment_state
+on public.payments(payment_state);
+
+create index if not exists idx_services_last_api_used
+on public.services(last_api_used_at);
+
+-- Receipt uploads are private; the Worker serves signed merchant/admin links.
+update storage.buckets
+set
+  public = false,
+  file_size_limit = 8388608,
+  allowed_mime_types = array[
+    'image/jpeg','image/png','image/webp','image/jpg','application/pdf'
+  ]::text[]
+where id = 'payment-receipts';
+
