@@ -9479,6 +9479,63 @@ app.get("/api/merchant/donations", authenticateMerchant, async (req,res) => {
     }catch(e){console.error(e);res.status(500).json({error:"Could not load donations."});}
 });
 
+/* ============================================================
+   MERCHANT CREATE STANDALONE DONATION CAMPAIGN
+   ============================================================ */
+app.post("/api/merchant/donation-campaigns", authenticateMerchant, async (req,res) => {
+    try {
+        const name = String(req.body?.name || "").trim().slice(0, 160);
+        const description = String(req.body?.description || "").trim().slice(0, 1000) || null;
+        const allowCustomAmount = Boolean(req.body?.allow_custom_amount);
+        const fixedAmount = req.body?.fixed_amount === null || req.body?.fixed_amount === undefined || req.body?.fixed_amount === "" ? null : Number(req.body.fixed_amount);
+        const minimumAmount = req.body?.minimum_amount === null || req.body?.minimum_amount === undefined || req.body?.minimum_amount === "" ? null : Number(req.body.minimum_amount);
+        const maximumAmount = req.body?.maximum_amount === null || req.body?.maximum_amount === undefined || req.body?.maximum_amount === "" ? null : Number(req.body.maximum_amount);
+        const goal = req.body?.goal === null || req.body?.goal === undefined || req.body?.goal === "" ? null : Number(req.body.goal);
+        const presets = Array.isArray(req.body?.presets) ? req.body.presets.map(Number).filter(x => Number.isFinite(x) && x > 0).slice(0, 12) : [];
+
+        if (!name) return res.status(400).json({ error: "Campaign name is required." });
+        if (!allowCustomAmount && (!Number.isFinite(fixedAmount) || fixedAmount <= 0)) return res.status(400).json({ error: "A positive fixed donation amount is required when custom amounts are disabled." });
+        if (allowCustomAmount && fixedAmount !== null && (!Number.isFinite(fixedAmount) || fixedAmount <= 0)) return res.status(400).json({ error: "Fixed amount must be positive when provided." });
+        if (minimumAmount !== null && (!Number.isFinite(minimumAmount) || minimumAmount <= 0)) return res.status(400).json({ error: "Minimum donation must be positive." });
+        if (maximumAmount !== null && (!Number.isFinite(maximumAmount) || maximumAmount <= 0)) return res.status(400).json({ error: "Maximum donation must be positive." });
+        if (minimumAmount !== null && maximumAmount !== null && minimumAmount > maximumAmount) return res.status(400).json({ error: "Minimum donation cannot exceed the maximum donation." });
+        if (goal !== null && (!Number.isFinite(goal) || goal <= 0)) return res.status(400).json({ error: "Donation goal must be positive." });
+        if (fixedAmount !== null && minimumAmount !== null && fixedAmount < minimumAmount) return res.status(400).json({ error: "Fixed amount cannot be below the minimum donation." });
+        if (fixedAmount !== null && maximumAmount !== null && fixedAmount > maximumAmount) return res.status(400).json({ error: "Fixed amount cannot exceed the maximum donation." });
+
+        let slug = cleanSlug(name) || "donation";
+        const { data: existingSlug } = await supabase.from("donation_campaigns").select("id").eq("slug", slug).maybeSingle();
+        if (existingSlug) slug = slug + "-" + randomHex(3);
+
+        const { data: campaign, error } = await supabase.from("donation_campaigns").insert({
+            merchant_id: req.merchant.id,
+            slug,
+            name,
+            description,
+            currency: "GMD",
+            allow_custom_amount: allowCustomAmount,
+            fixed_amount: fixedAmount,
+            minimum_amount: minimumAmount,
+            maximum_amount: maximumAmount,
+            presets,
+            goal,
+            goal_message: null,
+            end_at: null,
+            status: "active"
+        }).select("*").single();
+
+        if (error) {
+            console.error("Create donation campaign database error:", error);
+            return res.status(500).json({ error: "Could not create donation campaign." });
+        }
+
+        res.status(201).json({ campaign, payment_url: BASE_URL + "/donate/" + campaign.slug });
+    } catch (error) {
+        console.error("Create donation campaign error:", error);
+        res.status(500).json({ error: "Could not create donation campaign." });
+    }
+});
+
 app.get("/api/merchant/refunds", authenticateMerchant, async (req,res) => {
     const {data,error}=await supabase.from("merchant_refunds").select("*,payments(payment_reference,amount,currency,status)").eq("merchant_id",req.merchant.id).order("created_at",{ascending:false}).limit(500);
     if(error)return res.status(500).json({error:"Could not load refunds."}); res.json({refunds:data||[]});
