@@ -3589,3 +3589,13 @@ showSigninState(
 showSignupStep(
     1
 );
+
+/* Session-expiry / sign-out return state */
+(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reason") === "session_expired") {
+        window.setTimeout(() => showMessage("Your session expired because you were inactive for a while. Please sign in again to continue."), 0);
+    } else if (params.get("signed_out") === "1") {
+        window.setTimeout(() => showMessage("You have been signed out.", "success"), 0);
+    }
+})();
