@@ -1,5 +1,12 @@
 "use strict";
 
+const apiBase =
+    String(
+        window.SQUASHBERRYPAY_API_BASE ||
+        "https://squashberrypay.squashberrypay.workers.dev"
+    ).replace(/\/+$/, "");
+
+
 
 const $ =
     selector =>
@@ -112,7 +119,7 @@ async function api(
 
     const response =
         await fetch(
-            url,
+            apiBase + url,
             {
                 credentials:
                     "same-origin",
