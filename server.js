@@ -7828,306 +7828,143 @@ app.get(
 
 app.get(
     "/api/public/session/:token/method/:methodId",
-    async (
-        req,
-        res
-    ) => {
-
+    async (req, res) => {
         try {
+            const token = String(req.params.token || "").trim();
+            const methodId = String(req.params.methodId || "").trim();
+            if (!token || !methodId) {
+                return res.status(400).json({ error: "Payment session and method are required." });
+            }
 
-            const {
-                data: session,
-                error
-            } = await supabase
-                .from(
-                    "payment_sessions"
-                )
-                .select(
-                    `
-                    payment_id,
-                    expires_at,
-
-                    payments (
-                        id,
-                        service_id,
-                        status,
-                        payment_method_id,
-                        donation_campaign_id,
-                        payment_started_at,
-                        payment_deadline_at,
-
-                        services (
-                            status
-                        ),
-                        donation_campaigns (
-                            merchant_id,
-                            status
-                        )
-                    )
-                    `
-                )
-                .eq(
-                    "session_token_hash",
-                    hash(
-                        req.params.token
-                    )
-                )
+            const { data: session, error: sessionError } = await supabase
+                .from("payment_sessions")
+                .select("payment_id,expires_at")
+                .eq("session_token_hash", hash(token))
                 .maybeSingle();
 
+            if (sessionError) {
+                console.error("Payment method session query error:", sessionError);
+                return res.status(500).json({ error: "Could not load payment method." });
+            }
+            if (!session) return res.status(404).json({ error: "Payment session not found." });
+            if (new Date(session.expires_at) <= new Date()) return res.status(410).json({ expired: true });
 
-            if (
-                error
-            ) {
+            const { data: payment, error: paymentError } = await supabase
+                .from("payments")
+                .select("id,service_id,status,payment_method_id,donation_campaign_id,payment_started_at,payment_deadline_at")
+                .eq("id", session.payment_id)
+                .maybeSingle();
 
-                console.error(
-                    "Payment method session query error:",
-                    error
-                );
+            if (paymentError) {
+                console.error("Payment method payment query error:", paymentError);
+                return res.status(500).json({ error: "Could not load payment." });
+            }
+            if (!payment) return res.status(404).json({ error: "Payment not found." });
 
-
-                return res.status(500).json({
-                    error:
-                        "Could not load payment method."
-                });
+            if (!["pending", "awaiting_receipt"].includes(payment.status)) {
+                return res.status(409).json({ error: "This payment is no longer at the payment stage." });
             }
 
-
-            if (
-                !session
-            ) {
-
-                return res.status(404).json({
-                    error:
-                        "Payment session not found."
-                });
-            }
-
-
-            if (
-                new Date(
-                    session.expires_at
-                ) <=
-                new Date()
-            ) {
-
-                return res.status(410).json({
-                    expired:
-                        true
-                });
-            }
-
-
-            const payment =
-                session.payments;
-
-
-            if (
-                !payment
-            ) {
-
-                return res.status(404).json({
-                    error:
-                        "Payment not found."
-                });
-            }
-
-
+            let methodQuery;
             if (payment.donation_campaign_id) {
-                if (!payment.donation_campaigns || payment.donation_campaigns.status !== "active") return res.status(403).json({error:"This donation campaign is no longer active."});
-            } else if (payment.services?.status !== "active") {
-                return res.status(403).json({error:"This application is no longer active."});
-            }
+                const { data: campaign, error: campaignError } = await supabase
+                    .from("donation_campaigns")
+                    .select("merchant_id,status")
+                    .eq("id", payment.donation_campaign_id)
+                    .maybeSingle();
 
+                if (campaignError) {
+                    console.error("Donation campaign lookup failed:", campaignError);
+                    return res.status(500).json({ error: "Could not verify the donation campaign." });
+                }
+                if (!campaign || campaign.status !== "active") {
+                    return res.status(403).json({ error: "This donation campaign is no longer active." });
+                }
 
-            if (
-                ![
-                    "pending",
-                    "awaiting_receipt"
-                ].includes(
-                    payment.status
-                )
-            ) {
-
-                return res.status(409).json({
-                    error:
-                        "This payment is no longer at the payment stage."
-                });
-            }
-
-
-            let method;
-            let methodError;
-            if (payment.donation_campaign_id) {
-                const result = await supabase.from("donation_payment_methods").select("id,name,type,icon_path,instructions,account_name,account_number,bank_name,phone_number").eq("id",req.params.methodId).eq("merchant_id",payment.donation_campaigns.merchant_id).eq("enabled",true).maybeSingle();
-                method=result.data; methodError=result.error;
+                methodQuery = await supabase
+                    .from("donation_payment_methods")
+                    .select("id,name,type,icon_path,instructions,account_name,account_number,bank_name,phone_number")
+                    .eq("id", methodId)
+                    .eq("merchant_id", campaign.merchant_id)
+                    .eq("enabled", true)
+                    .maybeSingle();
             } else {
-                const result = await supabase.from("payment_methods").select("id,name,type,icon_path,instructions,account_name,account_number,bank_name,phone_number").eq("id",req.params.methodId).eq("service_id",payment.service_id).eq("enabled",true).maybeSingle();
-                method=result.data; methodError=result.error;
+                const { data: service, error: serviceError } = await supabase
+                    .from("services")
+                    .select("status")
+                    .eq("id", payment.service_id)
+                    .maybeSingle();
+
+                if (serviceError) {
+                    console.error("Service lookup failed:", serviceError);
+                    return res.status(500).json({ error: "Could not verify the application." });
+                }
+                if (!service || service.status !== "active") {
+                    return res.status(403).json({ error: "This application is no longer active." });
+                }
+
+                methodQuery = await supabase
+                    .from("payment_methods")
+                    .select("id,name,type,icon_path,instructions,account_name,account_number,bank_name,phone_number")
+                    .eq("id", methodId)
+                    .eq("service_id", payment.service_id)
+                    .eq("enabled", true)
+                    .maybeSingle();
             }
 
-            if (
-                methodError
-            ) {
-
-                console.error(
-                    "Payment method lookup error:",
-                    methodError
-                );
-
-
-                return res.status(500).json({
-                    error:
-                        "Could not load payment method."
-                });
+            if (methodQuery.error) {
+                console.error("Payment method lookup error:", methodQuery.error);
+                return res.status(500).json({ error: "Could not load payment method." });
+            }
+            if (!methodQuery.data) {
+                return res.status(404).json({ error: "Payment method not found or disabled." });
             }
 
+            let startedAt = payment.payment_started_at;
+            let deadlineAt = payment.payment_deadline_at;
 
-            if (
-                !method
-            ) {
+            if (!startedAt) {
+                startedAt = new Date().toISOString();
+                deadlineAt = addMinutes(PAYMENT_ATTEMPT_MINUTES);
 
-                return res.status(404).json({
-                    error:
-                        "Payment method not found."
-                });
-            }
-
-
-            let startedAt =
-                payment.payment_started_at;
-
-
-            let deadlineAt =
-                payment.payment_deadline_at;
-
-
-            /*
-             * Start payment attempt countdown
-             * when account details are opened.
-             */
-
-            if (
-                !startedAt
-            ) {
-
-                startedAt =
-                    new Date()
-                        .toISOString();
-
-
-                deadlineAt =
-                    addMinutes(
-                        PAYMENT_ATTEMPT_MINUTES
-                    );
-
-
-                const {
-                    error:
-                        updateError
-                } = await supabase
-                    .from(
-                        "payments"
-                    )
+                const { error: updateError } = await supabase
+                    .from("payments")
                     .update({
-
-                        payment_method_id:
-                            method.id,
-
-                        payment_started_at:
-                            startedAt,
-
-                        payment_deadline_at:
-                            deadlineAt,
-
-                        status:
-                            "awaiting_receipt",
-
-                        payment_state:
-                            "awaiting_payment"
+                        payment_method_id: methodQuery.data.id,
+                        payment_started_at: startedAt,
+                        payment_deadline_at: deadlineAt,
+                        status: "awaiting_receipt",
+                        payment_state: "awaiting_payment"
                     })
-                    .eq(
-                        "id",
-                        payment.id
-                    )
-                    .eq(
-                        "status",
-                        "pending"
-                    );
+                    .eq("id", payment.id)
+                    .eq("status", "pending");
 
-
-                if (
-                    updateError
-                ) {
-
-                    console.error(
-                        "Start payment attempt error:",
-                        updateError
-                    );
-
-
-                    return res.status(500).json({
-                        error:
-                            "Could not start payment."
-                    });
+                if (updateError) {
+                    console.error("Start payment attempt error:", updateError);
+                    return res.status(500).json({ error: "Could not start payment." });
                 }
             }
 
-
-            if (
-                new Date(
-                    deadlineAt
-                ) <=
-                new Date()
-            ) {
-
+            if (!deadlineAt || new Date(deadlineAt) <= new Date()) {
                 await supabase
-                    .from(
-                        "payments"
-                    )
-                    .update({
+                    .from("payments")
+                    .update({ status: "expired", payment_state: "expired" })
+                    .eq("id", payment.id)
+                    .in("status", ["pending", "awaiting_receipt"]);
 
-                        status:
-                            "expired"
-                    })
-                    .eq(
-                        "id",
-                        payment.id
-                    );
-
-
-                return res.status(410).json({
-                    expired:
-                        true
-                });
+                return res.status(410).json({ expired: true });
             }
 
-
-            res.json({
-
-                method,
-
+            return res.json({
+                method: methodQuery.data,
                 payment_attempt: {
-
-                    started_at:
-                        startedAt,
-
-                    deadline_at:
-                        deadlineAt
+                    started_at: startedAt,
+                    deadline_at: deadlineAt
                 }
             });
-
         } catch (error) {
-
-            console.error(
-                "Public payment method error:",
-                error
-            );
-
-
-            res.status(500).json({
-                error:
-                    "Could not load payment method."
-            });
+            console.error("Public payment method error:", error);
+            return res.status(500).json({ error: "Could not load payment method." });
         }
     }
 );
@@ -8135,6 +7972,9 @@ app.get(
 
 /* ============================================================
    RECEIPT UPLOAD
+============================================================ */
+
+
 ============================================================ */
 
 app.post(
