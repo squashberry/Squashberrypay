@@ -5660,75 +5660,65 @@ app.post(
             if (
                 return_url
             ) {
-
                 try {
-
-                    const parsed =
-                        new URL(
-                            return_url
+                    const normalized =
+                        normalizeRedirectUrl(
+                            return_url,
+                            "return_url"
                         );
 
-
                     if (
-                        parsed.protocol !==
-                            "https:" &&
-                        parsed.hostname !==
-                            "localhost" &&
-                        parsed.hostname !==
-                            "127.0.0.1"
+                        /^https?:$/i.test(
+                            new URL(normalized).protocol
+                        )
                     ) {
+                        const allowedOrigins =
+                            Array.isArray(
+                                req.service.allowed_origins
+                            )
+                                ? req.service.allowed_origins
+                                    .map(
+                                        value =>
+                                            String(
+                                                value || ""
+                                            )
+                                                .trim()
+                                                .replace(
+                                                    /\/$/,
+                                                    ""
+                                                )
+                                    )
+                                    .filter(Boolean)
+                                : [];
 
-                        return res.status(400).json({
-                            error:
-                                "return_url must use HTTPS in production."
-                        });
+                        if (
+                            allowedOrigins.length &&
+                            !allowedOrigins.includes(
+                                new URL(
+                                    normalized
+                                ).origin.replace(
+                                    /\/$/,
+                                    ""
+                                )
+                            )
+                        ) {
+                            return res.status(400).json({
+                                error:
+                                    "return_url is not allowed for this application."
+                            });
+                        }
                     }
-
 
                     normalizedReturnUrl =
-                        parsed.toString();
-
-                    const allowedOrigins =
-                        Array.isArray(
-                            req.service.allowed_origins
-                        )
-                            ? req.service.allowed_origins
-                                .map(
-                                    value =>
-                                        String(
-                                            value || ""
-                                        ).trim().replace(
-                                            /\/$/,
-                                            ""
-                                        )
-                                )
-                                .filter(Boolean)
-                            : [];
-
-                    if (
-                        allowedOrigins.length &&
-                        !allowedOrigins.includes(
-                            parsed.origin.replace(
-                                /\/$/,
-                                ""
-                            )
-                        )
-                    ) {
-                        return res.status(400).json({
-                            error:
-                                "return_url is not allowed for this application."
-                        });
-                    }
-
-                } catch {
-
+                        normalized;
+                } catch (error) {
                     return res.status(400).json({
                         error:
+                            error.publicMessage ||
                             "Invalid return_url."
                     });
                 }
             }
-
 
             const expiresAt =
                 addMinutes(
