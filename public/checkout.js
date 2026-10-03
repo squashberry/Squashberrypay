@@ -419,6 +419,14 @@ function renderDonationCampaign(
     }
 }
 
+function updateCheckoutSeo(){
+ const title=state.link?.title||"Secure checkout — SquashberryPay";
+ const description=state.link?.description||"Complete your payment securely with SquashberryPay.";
+ document.title=title+" — SquashberryPay";
+ const setMeta=(selector,attr,value)=>{let m=document.querySelector(selector);if(!m){m=document.createElement("meta");m.setAttribute(attr,"");document.head.appendChild(m)}m.setAttribute(attr==="property"?"content":"content",value);};
+ const set=(key,attr,value)=>{let m=document.querySelector('meta['+attr+'="'+key+'"]');if(!m){m=document.createElement("meta");m.setAttribute(attr,key);document.head.appendChild(m)}m.setAttribute("content",value)};
+ set("og:title","property",title+" — SquashberryPay");set("og:description","property",description);set("og:url","property",window.location.href);set("twitter:title","name",title+" — SquashberryPay");set("twitter:description","name",description);
+}
 function renderCheckout() {
     const link =
         state.link;
@@ -443,6 +451,8 @@ function renderCheckout() {
         product.payment_type === "donate"
             ? (link.button_label || "Donate")
             : (link.button_label || "Continue to payment");
+
+    updateCheckoutSeo();
 
     const donation =
         link.donation || {
