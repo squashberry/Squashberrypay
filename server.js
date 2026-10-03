@@ -54,6 +54,10 @@ const BASE_URL =
     process.env.SQUASHBERRYPAY_URL ||
     `http://localhost:${PORT}`;
 
+const PUBLIC_SITE_URL =
+    process.env.SQUASHBERRYPAY_PUBLIC_URL ||
+    "https://squashberry.github.io";
+
 const PAYMENT_SESSION_MINUTES =
     Number(
         process.env.PAYMENT_SESSION_MINUTES || 60
@@ -5578,7 +5582,7 @@ app.post(
                 payment_link:
                     data,
                 payment_url:
-                    BASE_URL +
+                    PUBLIC_SITE_URL +
                     "/checkout/" +
                     encodeURIComponent(
                         data.slug
@@ -9537,7 +9541,7 @@ app.post("/api/merchant/donation-campaigns", authenticateMerchant, async (req,re
             return res.status(500).json({ error: "Could not create donation campaign." });
         }
 
-        res.status(201).json({ campaign, payment_url: BASE_URL + "/donate/" + campaign.slug });
+        res.status(201).json({ campaign, payment_url: PUBLIC_SITE_URL + "/donate/" + campaign.slug });
     } catch (error) {
         console.error("Create donation campaign error:", error);
         res.status(500).json({ error: "Could not create donation campaign." });
@@ -9592,7 +9596,7 @@ app.patch("/api/merchant/payment-links/:id", authenticateMerchant, async (req,re
         if(!Object.keys(patch).length)return res.status(400).json({error:"Nothing to update."});
         const {data,error}=await supabase.from("payment_links").update(patch).eq("id",id).select("*").single();
         if(error||!data)return res.status(404).json({error:"Payment link not found."});
-        res.json({payment_link:data,payment_url:BASE_URL+"/checkout/"+encodeURIComponent(data.slug)});
+        res.json({payment_link:data,payment_url:PUBLIC_SITE_URL+"/checkout/"+encodeURIComponent(data.slug)});
     }catch(e){console.error(e);res.status(500).json({error:"Could not update payment link."});}
 });
 app.delete("/api/merchant/payment-links/:id", authenticateMerchant, async (req,res) => {
