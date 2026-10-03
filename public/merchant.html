@@ -13,6 +13,23 @@
 <meta name="site-base" content="/Squashberrypay/">
 <link rel="icon" href="/Squashberrypay/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/Squashberrypay/favicon.svg">
+<script>
+(function(){
+  try{
+    var m=JSON.parse(sessionStorage.getItem("sbp_merchant")||"null");
+    var n=m&&m.business_name?String(m.business_name).trim():"";
+    if(n){
+      document.documentElement.dataset.cachedMerchantName=n;
+      window.addEventListener("DOMContentLoaded",function(){
+        ["merchantName","sidebarBusinessName","overviewName"].forEach(function(id){
+          var e=document.getElementById(id); if(e)e.textContent=n;
+        });
+        var a=document.getElementById("businessAvatar"); if(a)a.textContent=n.charAt(0).toUpperCase();
+      },{once:true});
+    }
+  }catch(_){}
+})();
+</script>
 </head>
 <body class="merchant-page">
 <header class="merchant-header">
