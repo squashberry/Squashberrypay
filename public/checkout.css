@@ -176,6 +176,7 @@ input:focus{
     color:#a72a20;
     font-size:12px;
 }
+.state[hidden]{display:none!important}
 .state{
     min-height:240px;
     display:grid;
@@ -187,6 +188,7 @@ input:focus{
     color:var(--muted);
 }
 .error-state{place-items:center}
+#checkoutState[hidden]{display:none!important}
 .error-state h1{
     font-size:27px;
 }
