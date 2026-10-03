@@ -434,7 +434,7 @@ function renderCheckout() {
             ? (link.button_label || "Donate")
             : (link.button_label || "Continue to payment");
 
-    updateCheckoutSeo();
+    updateCheckoutSeo(); state.donationStarted=false;
 
     const donation =
         link.donation || {
@@ -539,7 +539,7 @@ function renderCheckout() {
     checkoutState.hidden = false;
 }
 
-async function startPayment(
+function normalizePublicUrl(u){try{const x=new URL(String(u||""),window.location.origin);if(x.hostname==="squashberry.github.io"&&!x.pathname.startsWith("/Squashberrypay/"))x.pathname="/Squashberrypay"+(x.pathname.startsWith("/")?x.pathname:"/"+x.pathname);return x.href}catch{return String(u||"")}}\n\nasync function startPayment(
     event
 ) {
     event.preventDefault();
@@ -684,7 +684,7 @@ async function startPayment(
             originalText;
     }
 }
-retryButton.addEventListener(
+donationContinue.addEventListener("click",()=>{state.donationStarted=true;donationContinue.hidden=true;checkoutForm.hidden=false;setTimeout(()=>$("#email")?.focus(),40)});\n\nretryButton.addEventListener(
     "click",
     loadCheckout
 );
