@@ -600,3 +600,128 @@ table th{background:#f0f0ed!important;color:#555!important}
     margin-bottom:19px;
   }
 }
+
+
+
+/* ---------- AUTH INTERACTION STATES ---------- */
+
+.auth-page .auth-step[hidden],
+.auth-page .auth-success[hidden],
+.auth-page #signinEmailStep[hidden],
+.auth-page #signinPasswordStep[hidden]{
+  display:none!important;
+}
+
+.auth-page .auth-link{
+  appearance:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:auto;
+  min-height:38px;
+  margin:16px auto 0;
+  padding:7px 10px;
+  border:0;
+  border-radius:10px;
+  background:transparent;
+  color:#111!important;
+  font:inherit;
+  font-size:12px;
+  line-height:1;
+  font-weight:800;
+  text-decoration:none;
+  cursor:pointer;
+  transition:background .18s ease,color .18s ease,transform .18s ease;
+}
+
+.auth-page .auth-link:hover{
+  background:#f0f0ed;
+  transform:translateY(-1px);
+}
+
+.auth-page .auth-link:active{
+  transform:translateY(0) scale(.98);
+}
+
+.auth-page .auth-link:focus-visible{
+  outline:2px solid #111;
+  outline-offset:2px;
+}
+
+.auth-page .auth-back{
+  appearance:none;
+  border:0;
+  background:transparent;
+  color:#666!important;
+  font:inherit;
+  font-size:12px;
+  line-height:1.2;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.auth-page .auth-back:hover{
+  color:#111!important;
+}
+
+.auth-page .auth-message{
+  margin-bottom:18px;
+  min-height:0;
+}
+
+.auth-page .auth-message.error{
+  border-color:#d9b6b6;
+  background:#fffafa;
+  color:#7b1f1f;
+}
+
+.auth-page .auth-message.success{
+  border-color:#c8d9cc;
+  background:#f8fbf9;
+  color:#176b3a;
+}
+
+.auth-page .signin-state-form input.is-invalid,
+.auth-page .auth-step > label > input.is-invalid{
+  border-color:#9d3737!important;
+  background:#fffafa!important;
+  box-shadow:0 0 0 4px rgba(157,55,55,.08)!important;
+}
+
+.auth-page .signin-state-form input.is-valid,
+.auth-page .auth-step > label > input.is-valid{
+  border-color:#4f7d5b!important;
+  background:#fbfffc!important;
+}
+
+.auth-page .button.is-loading{
+  cursor:wait;
+}
+
+.auth-page .button:disabled{
+  cursor:not-allowed;
+}
+
+.auth-page .auth-step.state-enter,
+.auth-page .auth-success.state-enter{
+  animation:uiStepIn .32s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.auth-page #resetOtpContainer.error-shake{
+  animation:authErrorShake .42s ease;
+}
+
+@keyframes authErrorShake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-7px)}
+  40%{transform:translateX(6px)}
+  60%{transform:translateX(-4px)}
+  80%{transform:translateX(3px)}
+}
+
+@media (max-width:620px){
+  .auth-page .auth-link{
+    min-height:40px;
+    padding:8px 12px;
+  }
+}
