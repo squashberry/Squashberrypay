@@ -136,4 +136,26 @@ $("#cancelDonationCreate")?.addEventListener("click",()=>setDonationCreateState(
 $("#createDonationCampaign")?.addEventListener("click",async()=>{const b=$("#createDonationCampaign");if(!donationPaymentMethods.length){setDonationCreateState(false);activateWorkspaceTab("donations","donations-destination");notify("Add a donation payment method before creating a shareable campaign.","error");return}const p={name:$("#donationCampaignName").value.trim(),description:$("#donationCampaignDescription").value.trim(),fixed_amount:$("#donationFixedAmount").value?Number($("#donationFixedAmount").value):null,allow_custom_amount:$("#donationAllowCustom").checked,minimum_amount:$("#donationMin").value?Number($("#donationMin").value):null,maximum_amount:$("#donationMax").value?Number($("#donationMax").value):null,goal:$("#donationStandaloneGoal").value?Number($("#donationStandaloneGoal").value):null,presets:($("#donationStandalonePresets").value||"").split(",").map(Number).filter(x=>Number.isFinite(x)&&x>0)};if(!p.name){notify("Enter a campaign name.","error");return}loadBtn(b,"Creating…¦");try{const d=await api("/api/merchant/donation-campaigns",{method:"POST",body:JSON.stringify(p)});setDonationCreateState(false);await refresh();if(d.payment_url){await navigator.clipboard.writeText(d.payment_url).catch(()=>{});notify("Donation campaign created and link copied.","success")}}catch(x){notify(x.message,"error")}finally{resetBtn(b)}});
 $("#exportPayments")?.addEventListener("click",()=>exportCsv("squashberrypay-payments.csv",dashboard.payments||[]));$("#exportAnalytics")?.addEventListener("click",()=>exportCsv("squashberrypay-payments.csv",dashboard.payments||[]));
 function exportCsv(name,rows){if(!rows.length){notify("There is no data to export yet.","error");return}const keys=["payment_reference","amount","currency","status","payment_type","created_at"],csv=[keys.join(","),...rows.map(p=>keys.map(k=>"\""+String(p[k]??"").replace(/"/g,'""')+"\"").join(","))].join("\n"),u=URL.createObjectURL(new Blob([csv],{type:"text/csv"})),a=document.createElement("a");a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);notify("CSV exported.","success")}
-$("#signOut")?.addEventListener("click",()=>{sessionStorage.clear();location.href="/"});$("#settingsSignOut")?.addEventListener("click",()=>{sessionStorage.clear();location.href="/"});load();
+function openSignOutConfirm(){
+  let modal=$("#signOutConfirm");
+  if(!modal){
+    modal=document.createElement("div");
+    modal.id="signOutConfirm";
+    modal.className="merchant-modal";
+    modal.hidden=true;
+    modal.innerHTML='<div class="merchant-modal-backdrop" data-signout-cancel></div><div class="merchant-modal-card" role="dialog" aria-modal="true" aria-labelledby="signOutTitle"><div class="merchant-modal-icon">↪</div><span class="eyebrow">SIGN OUT</span><h3 id="signOutTitle">Sign out of SquashberryPay?</h3><p>Your current merchant session will be cleared from this browser.</p><div class="merchant-modal-actions"><button class="button secondary" type="button" data-signout-cancel>Cancel</button><button class="button primary" type="button" id="confirmSignOut">Sign out</button></div></div>';
+    document.body.appendChild(modal);
+    modal.addEventListener("click",e=>{
+      if(e.target.closest("[data-signout-cancel]")) modal.hidden=true;
+      if(e.target.closest("#confirmSignOut")){
+        sessionStorage.clear();
+        modal.hidden=true;
+        location.href="/signin/?signed_out=1";
+      }
+    });
+  }
+  modal.hidden=false;
+  setTimeout(()=>modal.querySelector("#confirmSignOut")?.focus(),30);
+}
+$("#signOut")?.addEventListener("click",openSignOutConfirm);
+$("#settingsSignOut")?.addEventListener("click",openSignOutConfirm);load();
