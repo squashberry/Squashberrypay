@@ -46,11 +46,20 @@
             </div>
 
             <div id="checkoutState" hidden>
-                <div class="eyebrow">PAYMENT</div>
-                <h1 id="checkoutTitle">Checkout</h1>
-                <p id="checkoutDescription" class="description"></p>
+                <div class="checkout-progress" aria-label="Checkout progress">
+                    <span id="checkoutStepOne" class="active">1</span>
+                    <i></i>
+                    <span id="checkoutStepTwo">2</span>
+                    <i></i>
+                    <span id="checkoutStepThree">3</span>
+                </div>
 
-                <div class="summary-card">
+                <div id="checkoutOverview" class="checkout-stage">
+                    <div class="eyebrow">PAYMENT</div>
+                    <h1 id="checkoutTitle">Checkout</h1>
+                    <p id="checkoutDescription" class="description"></p>
+
+                    <div class="summary-card">
                     <div>
                         <span>Merchant</span>
                         <strong id="merchantName">—</strong>
@@ -63,9 +72,9 @@
                         <span>Amount</span>
                         <strong id="amountLabel">—</strong>
                     </div>
-                </div>
+                    </div>
 
-                <section id="donationCampaign" class="donation-campaign" hidden aria-live="polite">
+                    <section id="donationCampaign" class="donation-campaign" hidden aria-live="polite">
                     <div class="donation-heading">
                         <div>
                             <span class="eyebrow">DONATION CAMPAIGN</span>
@@ -104,12 +113,23 @@
                         This donation campaign is no longer accepting donations.
                     </div>
 
-                    <button id="donationContinue" class="button primary" type="button" hidden>
-                        Continue to donation
-                    </button>
-                </section>
+                        <button id="donationContinue" class="button primary" type="button" hidden>
+                            Continue to donation
+                        </button>
+                    </section>
 
-                <form id="checkoutForm" novalidate>
+                    <button id="overviewContinue" class="button primary stage-continue" type="button" hidden>
+                        Continue
+                    </button>
+                </div>
+
+                <div id="checkoutDetails" class="checkout-stage" hidden>
+                    <button id="backToOverview" class="back-button" type="button">← Back</button>
+                    <div class="eyebrow">YOUR DETAILS</div>
+                    <h2 class="stage-title">Complete your payment</h2>
+                    <p class="description">Enter the details needed to start your secure payment.</p>
+
+                    <form id="checkoutForm" novalidate>
                     <label>
                         Email address
                         <input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required>
@@ -153,8 +173,16 @@
                     </button>
 
                     <p class="security-note">You’ll be redirected to the SquashberryPay payment page to choose an available payment method and complete the transfer.</p>
-                    <p id="formError" class="form-error" role="alert" hidden></p>
-                </form>
+                        <p id="formError" class="form-error" role="alert" hidden></p>
+                    </form>
+                </div>
+
+                <div id="checkoutProcessing" class="checkout-stage processing-stage" hidden aria-live="polite">
+                    <span class="spinner large" aria-hidden="true"></span>
+                    <div class="eyebrow">SECURE CHECKOUT</div>
+                    <h2>Opening payment</h2>
+                    <p id="processingDetail">Preparing your secure payment session.</p>
+                </div>
             </div>
         </section>
     </main>
