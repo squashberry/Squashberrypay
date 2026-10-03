@@ -623,7 +623,7 @@ async function startPayment(
     try {
         const response =
             await fetch(
-                apiBase + "/api/public/links/" +
+                apiBase + (state.isDonation ? "/api/public/donations/" : "/api/public/links/") +
                 encodeURIComponent(state.slug) +
                 "/payments",
                 {
