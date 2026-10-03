@@ -6622,6 +6622,12 @@ app.get(
                             name,
                             slug,
                             status
+                        ),
+                        donation_campaigns (
+                            name,
+                            slug,
+                            merchant_id,
+                            status
                         )
                     )
                     `
