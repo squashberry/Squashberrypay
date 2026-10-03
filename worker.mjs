@@ -1,5 +1,5 @@
 import { httpServerHandler } from "cloudflare:node";
-import { runSubscriptionReminderJob } from "./server.js";
+import { runSubscriptionReminderJob, runWebhookDeliveryJob } from "./server.js";
 
 export default httpServerHandler({ port: 3000 });
 
@@ -8,5 +8,11 @@ export const scheduled = async () => {
     await runSubscriptionReminderJob();
   } catch (error) {
     console.error("Subscription reminder scheduled job failed:", error);
+  }
+
+  try {
+    await runWebhookDeliveryJob();
+  } catch (error) {
+    console.error("Webhook delivery scheduled job failed:", error);
   }
 };

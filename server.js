@@ -905,6 +905,203 @@ async function authenticateMerchant(
 }
 
 
+
+async function authenticateSdk(req,res,next){
+  try{
+    const clientId=String(
+      req.get("X-SquashberryPay-Client-ID")||
+      req.get("X-SquashberryPay-Publishable-Key")||
+      ""
+    ).trim();
+    if(!clientId){
+      return res.status(401).json({error:"SquashberryPay client ID is required."});
+    }
+    const {data:service,error}=await supabase
+      .from("services")
+      .select("*")
+      .eq("client_id",clientId)
+      .maybeSingle();
+    if(error)throw error;
+    if(!service)return res.status(401).json({error:"Invalid SquashberryPay client ID."});
+    if(service.status!=="active")return res.status(403).json({error:"This application is not active."});
+
+    const allowed=Array.isArray(service.allowed_origins)?
+      service.allowed_origins.map(x=>String(x||"").trim().replace(/\/$/,"")).filter(Boolean):[];
+    let origin=String(req.get("Origin")||"").trim().replace(/\/$/,"");
+    if(!origin){
+      const ref=String(req.get("Referer")||"").trim();
+      if(ref){try{origin=new URL(ref).origin}catch{}}
+    }
+    if(origin&&allowed.length&&!allowed.includes(origin)){
+      return res.status(403).json({error:"This application is not authorized for this origin."});
+    }
+
+    req.service=service;
+    next();
+  }catch(error){
+    console.error("SDK authentication error:",error);
+    return res.status(500).json({error:"Could not authenticate application."});
+  }
+}
+
+async function persistPaymentEvent(payment,eventType,fromState,toState,metadata={}){
+  try{
+    await supabase.from("payment_events").insert({
+      payment_id:payment?.id,
+      service_id:payment?.service_id||null,
+      event_type:eventType,
+      from_state:fromState||null,
+      to_state:toState||null,
+      actor_type:"system",
+      metadata
+    });
+  }catch(error){console.error("Payment event error:",error);}
+}
+
+async function enqueueWebhookEvent(eventType,payment,metadata={}){
+  try{
+    const serviceId=payment?.service_id;
+    if(!serviceId)return;
+    const {data:service}=await supabase.from("services")
+      .select("id,merchant_id,environment,webhook_url,webhook_secret")
+      .eq("id",serviceId).maybeSingle();
+    if(!service?.webhook_url||!service?.webhook_secret)return;
+
+    const eventId="evt_"+randomHex(16);
+    const payload={
+      id:eventId,
+      type:eventType,
+      created_at:new Date().toISOString(),
+      livemode:service.environment!=="test",
+      data:{
+        payment_id:payment.id,
+        payment_reference:payment.payment_reference,
+        processing_page_id:payment.processing_page_id||null,
+        amount:payment.amount,
+        currency:payment.currency,
+        payment_type:payment.payment_type,
+        status:payment.status,
+        payment_state:payment.payment_state||null,
+        product_id:payment.product_id||null,
+        service_id:serviceId,
+        ...metadata
+      }
+    };
+
+    await supabase.from("webhook_deliveries").insert({
+      merchant_id:service.merchant_id,
+      service_id:serviceId,
+      event_id:eventId,
+      event_type:eventType,
+      url:service.webhook_url,
+      secret_value:service.webhook_secret,
+      payload,
+      status:"pending",
+      attempts:0,
+      next_attempt_at:new Date().toISOString()
+    });
+  }catch(error){console.error("Webhook enqueue error:",error);}
+}
+
+export async function runWebhookDeliveryJob(){
+  const {data:rows,error}=await supabase.from("webhook_deliveries")
+    .select("*")
+    .in("status",["pending","failed"])
+    .lte("next_attempt_at",new Date().toISOString())
+    .order("created_at",{ascending:true})
+    .limit(50);
+  if(error){console.error("Webhook query error:",error);return{delivered:0,failed:0};}
+
+  let delivered=0,failed=0;
+  for(const row of rows||[]){
+    const attempt=Number(row.attempts||0)+1;
+    try{
+      if(attempt>8)throw new Error("Maximum webhook attempts exceeded.");
+      const timestamp=Math.floor(Date.now()/1000);
+      const body=JSON.stringify(row.payload);
+      const signature=crypto.createHmac("sha256",String(row.secret_value||""))
+        .update(String(timestamp)+"."+body).digest("hex");
+      const response=await fetch(row.url,{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "X-SquashberryPay-Event-ID":row.event_id,
+          "X-SquashberryPay-Event":row.event_type,
+          "X-SquashberryPay-Timestamp":String(timestamp),
+          "X-SquashberryPay-Signature":"sha256="+signature
+        },
+        body
+      });
+      if(!response.ok)throw new Error("HTTP "+response.status);
+      await supabase.from("webhook_deliveries").update({
+        status:"delivered",
+        attempts:attempt,
+        delivered_at:new Date().toISOString(),
+        last_error:null
+      }).eq("id",row.id);
+      delivered++;
+    }catch(error){
+      failed++;
+      const delay=Math.min(240,Math.pow(2,Math.max(0,attempt-1)));
+      await supabase.from("webhook_deliveries").update({
+        status:"failed",
+        attempts:attempt,
+        last_error:String(error?.message||error).slice(0,1000),
+        next_attempt_at:new Date(Date.now()+delay*60000).toISOString()
+      }).eq("id",row.id);
+    }
+  }
+  return{delivered,failed};
+}
+
+function idempotencyMiddleware(route){
+  return async(req,res,next)=>{
+    const key=String(req.get("Idempotency-Key")||"").trim();
+    if(!key)return next();
+    const serviceId=req.service?.id;
+    if(!serviceId)return next();
+    if(key.length>255)return res.status(400).json({error:"Idempotency-Key is too long."});
+    const keyHash=hash(key);
+    const reqHash=hash(JSON.stringify(req.body||{}));
+    const lookup=await supabase.from("api_idempotency_keys")
+      .select("request_hash,response_status,response_body")
+      .eq("service_id",serviceId)
+      .eq("route",route)
+      .eq("idempotency_key_hash",keyHash)
+      .maybeSingle();
+    if(lookup.error)return res.status(500).json({error:"Could not process idempotent request."});
+    if(lookup.data){
+      if(lookup.data.request_hash!==reqHash)return res.status(409).json({error:"This Idempotency-Key was already used with a different request."});
+      if(lookup.data.response_body!==null&&lookup.data.response_status){
+        return res.status(lookup.data.response_status).json(lookup.data.response_body);
+      }
+    }else{
+      const inserted=await supabase.from("api_idempotency_keys").insert({
+        service_id:serviceId,route,idempotency_key_hash:keyHash,request_hash:reqHash
+      });
+      if(inserted.error){
+        const retry=await supabase.from("api_idempotency_keys")
+          .select("request_hash,response_status,response_body")
+          .eq("service_id",serviceId).eq("route",route).eq("idempotency_key_hash",keyHash)
+          .maybeSingle();
+        if(retry.data?.response_body!==null&&retry.data?.response_status){
+          return res.status(retry.data.response_status).json(retry.data.response_body);
+        }
+      }
+    }
+    const oldJson=res.json.bind(res);
+    res.json=async body=>{
+      if(res.statusCode<500){
+        await supabase.from("api_idempotency_keys").update({
+          response_status:res.statusCode,response_body:body
+        }).eq("service_id",serviceId).eq("route",route).eq("idempotency_key_hash",keyHash);
+      }
+      return oldJson(body);
+    };
+    next();
+  };
+}
+
 async function authenticateService(
     req,
     res,
@@ -3663,6 +3860,11 @@ app.post(
                     clientSecret,
                     12
                 );
+            
+            const generatedWebhookSecret =
+                webhook_url
+                    ? "whsec_" + randomHex(32)
+                    : null;
 
 
             const {
@@ -3723,6 +3925,9 @@ app.post(
 
                     client_secret_hash:
                         clientSecretHash,
+
+                    webhook_secret:
+                        generatedWebhookSecret,
 
                     status:
                         "pending"
@@ -3805,7 +4010,10 @@ app.post(
                         clientId,
 
                     client_secret:
-                        clientSecret
+                        clientSecret,
+
+                    webhook_secret:
+                        generatedWebhookSecret
                 },
 
                 message:
@@ -3943,6 +4151,57 @@ app.post(
     }
 );
 
+
+
+app.post(
+    "/api/merchant/apps/:id/rotate-webhook-secret",
+    authenticateMerchant,
+    async (req,res)=>{
+        try{
+            const {data:service,error}=await supabase
+                .from("services")
+                .select("id,webhook_url")
+                .eq("id",req.params.id)
+                .eq("merchant_id",req.merchant.id)
+                .maybeSingle();
+
+            if(error)throw error;
+            if(!service){
+                return res.status(404).json({
+                    error:"Application not found."
+                });
+            }
+            if(!service.webhook_url){
+                return res.status(400).json({
+                    error:"Configure the application webhook URL first."
+                });
+            }
+
+            const secret="whsec_"+randomHex(32);
+            const {error:updateError}=await supabase
+                .from("services")
+                .update({
+                    webhook_secret:secret,
+                    updated_at:new Date().toISOString()
+                })
+                .eq("id",service.id)
+                .eq("merchant_id",req.merchant.id);
+
+            if(updateError)throw updateError;
+
+            res.json({
+                success:true,
+                webhook_secret:secret,
+                message:"Webhook secret rotated. Update your endpoint before the next event."
+            });
+        }catch(error){
+            console.error("Rotate webhook secret error:",error);
+            res.status(500).json({
+                error:"Could not rotate webhook secret."
+            });
+        }
+    }
+);
 
 /* ============================================================
    MERCHANT REMOVE APP
@@ -5509,13 +5768,10 @@ app.post(
    V1 CREATE PAYMENT
 ============================================================ */
 
-app.post(
-    "/api/v1/payments",
-    authenticateService,
-    async (
-        req,
-        res
-    ) => {
+async function handleV1CreatePayment(
+    req,
+    res
+) {
 
         try {
 
@@ -5851,6 +6107,30 @@ app.post(
             }
 
 
+            await persistPaymentEvent(
+                {
+                    ...payment,
+                    service_id:
+                        req.service.id,
+                    payment_state:
+                        "awaiting_payment"
+                },
+                "payment.created",
+                "created",
+                "awaiting_payment"
+            );
+
+            await enqueueWebhookEvent(
+                "payment.created",
+                {
+                    ...payment,
+                    service_id:
+                        req.service.id,
+                    payment_state:
+                        "awaiting_payment"
+                }
+            );
+
             res.status(201).json({
 
                 payment: {
@@ -5878,22 +6158,148 @@ app.post(
                     "Could not create payment session."
             });
         }
+}
+
+
+app.post(
+    "/api/v1/payments",
+    authenticateService,
+    idempotencyMiddleware(
+        "/api/v1/payments"
+    ),
+    handleV1CreatePayment
+);
+
+app.post(
+    "/api/v1/public/payments",
+    authenticateSdk,
+    idempotencyMiddleware(
+        "/api/v1/public/payments"
+    ),
+    async (req,res)=>{
+        try{
+            const externalUserId=String(
+                req.body?.external_user_id||""
+            ).trim();
+            const email=normalizeEmail(req.body?.email);
+
+            if(
+                !externalUserId||
+                !email||
+                !isValidEmail(email)
+            ){
+                return res.status(400).json({
+                    error:
+                        "external_user_id and a valid email are required."
+                });
+            }
+
+            const {error:userError}=await supabase
+                .from("service_users")
+                .upsert(
+                    {
+                        service_id:req.service.id,
+                        external_user_id:externalUserId,
+                        email
+                    },
+                    {
+                        onConflict:
+                            "service_id,external_user_id"
+                    }
+                );
+
+            if(userError)throw userError;
+
+            req.body={
+                ...(req.body||{}),
+                external_user_id:
+                    externalUserId
+            };
+
+            return handleV1CreatePayment(
+                req,
+                res
+            );
+        }catch(error){
+            console.error(
+                "Public SDK payment creation error:",
+                error
+            );
+            return res.status(500).json({
+                error:
+                    "Could not create payment."
+            });
+        }
     }
 );
 
+app.get(
+    "/api/v1/public/payments/:paymentId",
+    authenticateSdk,
+    async(req,res)=>{
+        try{
+            const {data:payment,error}=await supabase
+                .from("payments")
+                .select(
+                    "id,payment_reference,processing_page_id,customer_reference,amount,currency,payment_type,status,payment_state,receipt_uploaded_at,approved_at,completed_at,code_issued_at,redeemed_at,rejection_reason,cancelled_at,expires_at,return_url,service_id,product_id,products(name,product_code,subscription_interval)"
+                )
+                .eq("id",req.params.paymentId)
+                .eq("service_id",req.service.id)
+                .maybeSingle();
+
+            if(error)throw error;
+            if(!payment){
+                return res.status(404).json({
+                    error:"Payment not found."
+                });
+            }
+
+            const {data:token}=await supabase
+                .from("payment_tokens")
+                .select("expires_at")
+                .eq("payment_id",payment.id)
+                .maybeSingle();
+
+            res.json({
+                payment:{
+                    ...payment,
+                    receipt_url:
+                        payment.processing_page_id
+                            ? BASE_URL+"/receipt/"+encodeURIComponent(payment.processing_page_id)
+                            : null,
+                    code_expires_at:
+                        token?.expires_at||null
+                }
+            });
+        }catch(error){
+            console.error(
+                "Public payment status error:",
+                error
+            );
+            res.status(500).json({
+                error:
+                    "Could not load payment status."
+            });
+        }
+    }
+);
 
 /* ============================================================
    V1 VERIFY PAYMENT
 ============================================================ */
 
 
-app.post(
-    "/api/v1/verify-payment",
-    authenticateService,
-    async (req, res) => {
+async function handleVerifyPayment(
+    req,
+    res
+) {
         try {
             const externalUserId = String(req.body?.external_user_id || "").trim();
             const rawToken = String(req.body?.token || "").trim().toUpperCase();
+
+            const requestedPaymentId = String(
+                req.body?.payment_id || ""
+            ).trim();
 
             if (!externalUserId || !rawToken) {
                 return res.status(400).json({
@@ -5910,6 +6316,25 @@ app.post(
                     verified:false,
                     reason:"INVALID_TOKEN_FORMAT"
                 });
+            }
+
+            if(requestedPaymentId){
+                const {data:boundToken}=await supabase
+                    .from("payment_tokens")
+                    .select("payment_id")
+                    .eq("service_id",req.service.id)
+                    .eq("token_hash",hash(rawToken))
+                    .maybeSingle();
+
+                if(
+                    !boundToken ||
+                    boundToken.payment_id!==requestedPaymentId
+                ){
+                    return res.status(400).json({
+                        verified:false,
+                        reason:"PAYMENT_CODE_MISMATCH"
+                    });
+                }
             }
 
             const {data:serviceUser} = await supabase
@@ -6043,6 +6468,36 @@ app.post(
                             "Payment verification completed but could not finalize the payment state."
                     });
                 }
+
+                const {
+                    data:completedPayment
+                } = await supabase
+                    .from("payments")
+                    .select("*")
+                    .eq("id",result.data.payment_id)
+                    .maybeSingle();
+
+                if(completedPayment){
+                    await persistPaymentEvent(
+                        completedPayment,
+                        "payment.redeemed",
+                        "approved",
+                        "completed",
+                        {
+                            external_user_id:
+                                externalUserId
+                        }
+                    );
+
+                    await enqueueWebhookEvent(
+                        "payment.completed",
+                        completedPayment,
+                        {
+                            external_user_id:
+                                externalUserId
+                        }
+                    );
+                }
             }
 
             await supabase
@@ -6098,9 +6553,33 @@ app.post(
                     "Payment verification failed."
             });
         }
-    }
+}
+
+
+app.post(
+    "/api/v1/verify-payment",
+    authenticateService,
+    idempotencyMiddleware(
+        "/api/v1/verify-payment"
+    ),
+    handleVerifyPayment
 );
 
+app.post(
+    "/api/v1/public/payments/:paymentId/redeem",
+    authenticateSdk,
+    idempotencyMiddleware(
+        "/api/v1/public/payments/:paymentId/redeem"
+    ),
+    async(req,res)=>{
+        req.body={
+            ...(req.body||{}),
+            payment_id:
+                req.params.paymentId
+        };
+        return handleVerifyPayment(req,res);
+    }
+);
 
 /* ============================================================
    V1 PAYMENT LOOKUP
@@ -6171,10 +6650,10 @@ app.get(
    V1 CANCEL PAYMENT
 ============================================================ */
 
-app.post(
-    "/api/v1/payments/:paymentId/cancel",
-    authenticateService,
-    async (req,res) => {
+async function handleV1CancelPayment(
+    req,
+    res
+) {
         try{
             const {
                 data:payment,
@@ -6264,6 +6743,50 @@ app.post(
                     }
                 });
 
+            await persistPaymentEvent(
+                {
+                    id:
+                        payment.id,
+                    service_id:
+                        req.service.id,
+                    status:
+                        "cancelled",
+                    payment_state:
+                        "cancelled"
+                },
+                "payment.cancelled",
+                payment.status,
+                "cancelled"
+            );
+
+            await enqueueWebhookEvent(
+                "payment.cancelled",
+                {
+                    id:
+                        payment.id,
+                    service_id:
+                        req.service.id,
+                    payment_reference:
+                        null,
+                    status:
+                        "cancelled",
+                    payment_state:
+                        "cancelled",
+                    payment_type:
+                        null,
+                    amount:
+                        null,
+                    currency:
+                        null,
+                    product_id:
+                        null
+                },
+                {
+                    reason:
+                        "service_cancelled"
+                }
+            );
+
             return res.json({
                 success:true,
                 status:
@@ -6293,9 +6816,26 @@ app.post(
                     "Could not cancel payment."
             });
         }
-    }
+}
+
+
+app.post(
+    "/api/v1/payments/:paymentId/cancel",
+    authenticateService,
+    idempotencyMiddleware(
+        "/api/v1/payments/:paymentId/cancel"
+    ),
+    handleV1CancelPayment
 );
 
+app.post(
+    "/api/v1/public/payments/:paymentId/cancel",
+    authenticateSdk,
+    idempotencyMiddleware(
+        "/api/v1/public/payments/:paymentId/cancel"
+    ),
+    handleV1CancelPayment
+);
 
 /* ============================================================
    DONATION CAMPAIGN HELPERS
@@ -7720,6 +8260,8 @@ app.post(
                 .select(
                     `
                     id,
+                    processing_page_id,
+                    service_id,
                     status,
                     payment_deadline_at
                     `
@@ -7918,6 +8460,30 @@ app.post(
                 });
 
 
+            await persistPaymentEvent(
+                {
+                    ...payment,
+                    service_id:
+                        payment.service_id,
+                    payment_state:
+                        "payment_submitted"
+                },
+                "payment.receipt_submitted",
+                "awaiting_payment",
+                "payment_submitted"
+            );
+
+            await enqueueWebhookEvent(
+                "payment.receipt_submitted",
+                {
+                    ...payment,
+                    payment_state:
+                        "payment_submitted",
+                    status:
+                        "awaiting_verification"
+                }
+            );
+
             res.json({
 
                 success:
@@ -7927,7 +8493,13 @@ app.post(
                     "Receipt submitted for verification.",
 
                 receipt_url:
-                    BASE_URL + "/receipt/" + encodeURIComponent(payment.id)
+                    payment.processing_page_id
+                        ? BASE_URL +
+                          "/receipt/" +
+                          encodeURIComponent(
+                              payment.processing_page_id
+                          )
+                        : null
             });
 
         } catch (error) {
@@ -8294,6 +8866,7 @@ async function approveMerchantPayment(paymentId,merchantId){
   if(tokenError) throw tokenError;
 
   const {
+    data:approvedPayment,
     error:
       approveError
   } = await supabase
@@ -8315,7 +8888,9 @@ async function approveMerchantPayment(paymentId,merchantId){
     .eq(
       "status",
       "awaiting_verification"
-    );
+    )
+    .select("id,status,payment_state")
+    .maybeSingle();
 
   if(approveError){
     await supabase
@@ -8328,6 +8903,26 @@ async function approveMerchantPayment(paymentId,merchantId){
 
     throw approveError;
   }
+
+  if(!approvedPayment){
+    return {
+      status:409,
+      body:{
+        error:
+          "This payment has already been processed."
+      }
+    };
+  }
+
+  await persistPaymentEvent(
+    p,
+    "payment.approved",
+    "awaiting_verification",
+    "approved",
+    {
+      merchant_id:merchantId
+    }
+  );
 
   try{
     if(
@@ -8385,6 +8980,39 @@ async function approveMerchantPayment(paymentId,merchantId){
     throw emailError;
   }
 
+  await enqueueWebhookEvent(
+    "payment.approved",
+    {
+      ...p,
+      status:"approved",
+      payment_state:"approved"
+    }
+  );
+
+  await persistPaymentEvent(
+    p,
+    "payment.code_issued",
+    "approved",
+    "code_issued",
+    {
+      code_expires_at:
+        tokenExpiresAt
+    }
+  );
+
+  await enqueueWebhookEvent(
+    "payment.code_issued",
+    {
+      ...p,
+      status:"approved",
+      payment_state:"code_issued"
+    },
+    {
+      code_expires_at:
+        tokenExpiresAt
+    }
+  );
+
   return {
     status:200,
     body:{
@@ -8401,7 +9029,14 @@ async function approveMerchantPayment(paymentId,merchantId){
 app.get("/api/merchant/payment-requests",authenticateMerchant,async(req,res)=>{try{const {data:services}=await merchantServices(req);const ids=(services||[]).map(s=>s.id);const {data:campaigns}=await supabase.from("donation_campaigns").select("id").eq("merchant_id",req.merchant.id);const cids=(campaigns||[]).map(c=>c.id);const qs=[];if(ids.length)qs.push(supabase.from("payments").select("*,service_users(email,external_user_id),services(name,slug),products(name,product_code,subscription_interval),payment_methods(name,type)").in("service_id",ids).eq("status","awaiting_verification"));if(cids.length)qs.push(supabase.from("payments").select("*,service_users(email,external_user_id),donation_campaigns(name,slug)").in("donation_campaign_id",cids).eq("status","awaiting_verification"));const rs=await Promise.all(qs);res.json({payments:rs.flatMap(x=>x.data||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))});}catch(e){console.error(e);res.status(500).json({error:"Could not load payment requests."})}});
 app.get("/api/merchant/payments/:paymentId/receipt",authenticateMerchant,async(req,res)=>{try{const {data:p}=await supabase.from("payments").select("id,service_id,donation_campaign_id,receipt_path").eq("id",req.params.paymentId).maybeSingle();if(!p?.receipt_path)return res.status(404).json({error:"Receipt not found."});let allowed=false;if(p.service_id){const {data:x}=await supabase.from("services").select("id").eq("id",p.service_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(p.donation_campaign_id){const {data:x}=await supabase.from("donation_campaigns").select("id").eq("id",p.donation_campaign_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(!allowed)return res.status(404).json({error:"Receipt not found."});const {data,error}=await supabase.storage.from("payment-receipts").createSignedUrl(p.receipt_path,300);if(error)throw error;res.json({url:data?.signedUrl||data?.signedURL});}catch(e){console.error(e);res.status(500).json({error:"Could not open receipt."})}});
 app.post("/api/merchant/payments/:paymentId/approve",authenticateMerchant,async(req,res)=>{try{const r=await approveMerchantPayment(req.params.paymentId,req.merchant.id);res.status(r.status).json(r.body)}catch(e){console.error(e);res.status(500).json({error:"Could not approve payment."})}});
-app.post("/api/merchant/payments/:paymentId/reject",authenticateMerchant,async(req,res)=>{try{const reason=String(req.body?.reason||"Payment could not be verified.").trim().slice(0,500);const {data:p}=await supabase.from("payments").select("id,service_id,donation_campaign_id,status").eq("id",req.params.paymentId).maybeSingle();if(!p)return res.status(404).json({error:"Payment not found."});let allowed=false;if(p.service_id){const {data:x}=await supabase.from("services").select("id").eq("id",p.service_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(p.donation_campaign_id){const {data:x}=await supabase.from("donation_campaigns").select("id").eq("id",p.donation_campaign_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(!allowed)return res.status(404).json({error:"Payment not found."});if(p.status!=="awaiting_verification")return res.status(409).json({error:"Only payments awaiting verification can be rejected."});const {error}=await supabase.from("payments").update({status:"rejected",payment_state:"rejected",rejection_reason:reason}).eq("id",p.id).eq("status","awaiting_verification");if(error)throw error;res.json({success:true});}catch(e){console.error(e);res.status(500).json({error:"Could not reject payment."})}});
+app.post("/api/merchant/payments/:paymentId/reject",authenticateMerchant,async(req,res)=>{try{const reason=String(req.body?.reason||"Payment could not be verified.").trim().slice(0,500);const {data:p}=await supabase.from("payments").select("id,service_id,donation_campaign_id,status").eq("id",req.params.paymentId).maybeSingle();if(!p)return res.status(404).json({error:"Payment not found."});let allowed=false;if(p.service_id){const {data:x}=await supabase.from("services").select("id").eq("id",p.service_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(p.donation_campaign_id){const {data:x}=await supabase.from("donation_campaigns").select("id").eq("id",p.donation_campaign_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(!allowed)return res.status(404).json({error:"Payment not found."});if(p.status!=="awaiting_verification")return res.status(409).json({error:"Only payments awaiting verification can be rejected."});const {error}=await supabase.from("payments").update({status:"rejected",payment_state:"rejected",rejection_reason:reason}).eq("id",p.id).eq("status","awaiting_verification");if(error)throw error;try{
+  const {data:ep}=await supabase.from("payments").select("id,service_id,payment_reference,customer_email").eq("id",req.params.paymentId).maybeSingle();
+  if(ep){
+    await persistPaymentEvent(ep,"payment.rejected","awaiting_verification","rejected",{reason});
+    await enqueueWebhookEvent("payment.rejected",{...ep,status:"rejected",payment_state:"rejected"},{reason});
+  }
+}catch(eventError){console.error("Reject event error:",eventError);}
+res.json({success:true});}catch(e){console.error(e);res.status(500).json({error:"Could not reject payment."})}});
 
 /* ============================================================
    ADMIN LOGIN
@@ -8720,6 +9355,117 @@ app.get("/api/merchant/subscriptions", authenticateMerchant, async (req,res) => 
         if(error)return res.status(500).json({error:"Could not load subscriptions."});
         res.json({subscriptions:data||[],note:"Recurring billing automation is not yet connected; these are subscription payment records."});
     }catch(e){console.error(e);res.status(500).json({error:"Could not load subscriptions."});}
+});
+
+
+async function getMerchantSubscription(req,id){
+  const {data,error}=await supabase.from("subscription_contracts")
+    .select("*")
+    .eq("id",id)
+    .eq("merchant_id",req.merchant.id)
+    .maybeSingle();
+  if(error)throw error;
+  return data;
+}
+
+app.post("/api/merchant/subscriptions/:subscriptionId/pause",authenticateMerchant,async(req,res)=>{
+  try{
+    const sub=await getMerchantSubscription(req,req.params.subscriptionId);
+    if(!sub)return res.status(404).json({error:"Subscription not found."});
+    if(sub.status!=="active")return res.status(409).json({error:"Only active subscriptions can be paused."});
+    const {data,error}=await supabase.from("subscription_contracts")
+      .update({status:"paused",updated_at:new Date().toISOString()})
+      .eq("id",sub.id).eq("status","active").select("*").single();
+    if(error)throw error;
+    await persistPaymentEvent({paymentId:sub.current_payment_id,serviceId:sub.service_id,eventType:"subscription.paused",fromState:"active",toState:"paused",actorType:"merchant",actorId:req.merchant.id,metadata:{subscription_id:sub.id}});
+res.json({success:true,subscription:data});
+  }catch(error){
+    console.error("Pause subscription error:",error);
+    res.status(500).json({error:"Could not pause subscription."});
+  }
+});
+
+app.post("/api/merchant/subscriptions/:subscriptionId/resume",authenticateMerchant,async(req,res)=>{
+  try{
+    const sub=await getMerchantSubscription(req,req.params.subscriptionId);
+    if(!sub)return res.status(404).json({error:"Subscription not found."});
+    if(sub.status!=="paused")return res.status(409).json({error:"Only paused subscriptions can be resumed."});
+    const {data:product}=await supabase.from("products")
+      .select("subscription_interval,status")
+      .eq("id",sub.product_id).maybeSingle();
+    const interval=product?.subscription_interval||sub.interval;
+    const due=new Date();
+    if(interval==="yearly")due.setFullYear(due.getFullYear()+1);
+    else due.setMonth(due.getMonth()+1);
+    const {data,error}=await supabase.from("subscription_contracts")
+      .update({status:"active",interval,next_due_at:due.toISOString(),updated_at:new Date().toISOString()})
+      .eq("id",sub.id).eq("status","paused").select("*").single();
+    if(error)throw error;
+    await persistPaymentEvent({paymentId:sub.current_payment_id,serviceId:sub.service_id,eventType:"subscription.resumed",fromState:"paused",toState:"active",actorType:"merchant",actorId:req.merchant.id,metadata:{subscription_id:sub.id}});
+res.json({success:true,subscription:data});
+  }catch(error){
+    console.error("Resume subscription error:",error);
+    res.status(500).json({error:"Could not resume subscription."});
+  }
+});
+
+app.post("/api/merchant/subscriptions/:subscriptionId/cancel",authenticateMerchant,async(req,res)=>{
+  try{
+    const sub=await getMerchantSubscription(req,req.params.subscriptionId);
+    if(!sub)return res.status(404).json({error:"Subscription not found."});
+    if(["cancelled","completed"].includes(sub.status))return res.status(409).json({error:"This subscription is already closed."});
+    const now=new Date().toISOString();
+    const {data,error}=await supabase.from("subscription_contracts")
+      .update({status:"cancelled",cancelled_at:now,updated_at:now})
+      .eq("id",sub.id).select("*").single();
+    if(error)throw error;
+    if(sub.current_payment_id){
+      await supabase.from("payments")
+        .update({status:"cancelled",payment_state:"cancelled",cancel_reason:"Subscription cancelled by merchant.",cancelled_at:now})
+        .eq("id",sub.current_payment_id)
+        .in("status",["pending","awaiting_receipt"]);
+    }
+    await persistPaymentEvent({paymentId:sub.current_payment_id,serviceId:sub.service_id,eventType:"subscription.cancelled",fromState:"active",toState:"cancelled",actorType:"merchant",actorId:req.merchant.id,metadata:{subscription_id:sub.id}});
+res.json({success:true,subscription:data});
+  }catch(error){
+    console.error("Cancel subscription error:",error);
+    res.status(500).json({error:"Could not cancel subscription."});
+  }
+});
+
+app.post("/api/merchant/subscriptions/:subscriptionId/change",authenticateMerchant,async(req,res)=>{
+  try{
+    const sub=await getMerchantSubscription(req,req.params.subscriptionId);
+    if(!sub)return res.status(404).json({error:"Subscription not found."});
+    if(["cancelled","completed"].includes(sub.status))return res.status(409).json({error:"Closed subscriptions cannot be changed."});
+
+    const productId=String(req.body?.product_id||sub.product_id).trim();
+    const {data:product,error:productError}=await supabase.from("products")
+      .select("id,service_id,payment_type,status,subscription_interval")
+      .eq("id",productId).eq("service_id",sub.service_id).maybeSingle();
+    if(productError)throw productError;
+    if(!product||product.status!=="active"||product.payment_type!=="subscribe"){
+      return res.status(400).json({error:"Choose an active subscription product from the same application."});
+    }
+
+    const interval=String(req.body?.interval||product.subscription_interval||sub.interval).trim();
+    if(!["monthly","yearly"].includes(interval))return res.status(400).json({error:"Choose monthly or yearly billing."});
+
+    const due=new Date();
+    if(interval==="yearly")due.setFullYear(due.getFullYear()+1);
+    else due.setMonth(due.getMonth()+1);
+
+    const {data,error}=await supabase.from("subscription_contracts")
+      .update({product_id:product.id,interval,next_due_at:due.toISOString(),updated_at:new Date().toISOString()})
+      .eq("id",sub.id).select("*").single();
+    if(error)throw error;
+
+    await persistPaymentEvent({paymentId:sub.current_payment_id,serviceId:sub.service_id,eventType:"subscription.changed",fromState:"active",toState:"active",actorType:"merchant",actorId:req.merchant.id,metadata:{subscription_id:sub.id,product_id:data.product_id,interval:data.interval}});
+res.json({success:true,subscription:data});
+  }catch(error){
+    console.error("Change subscription error:",error);
+    res.status(500).json({error:"Could not change subscription."});
+  }
 });
 
 app.get("/api/merchant/donations", authenticateMerchant, async (req,res) => {
@@ -10343,6 +11089,18 @@ export async function runSubscriptionReminderJob(){
         if(pe)throw pe;
         const raw=randomToken();const {error:se}=await supabase.from("payment_sessions").insert({payment_id:p.id,session_token_hash:hash(raw),expires_at:expiresAt});if(se)throw se;
         await supabase.from("subscription_contracts").update({current_payment_id:p.id,last_reminded_at:now.toISOString(),reminder_count:(c.reminder_count||0)+1,updated_at:now.toISOString()}).eq("id",c.id);
+        await persistPaymentEvent(
+          p,
+          "subscription.payment_due",
+          "created",
+          "awaiting_payment",
+          {subscription_id:c.id,next_due_at:c.next_due_at}
+        );
+        await enqueueWebhookEvent(
+          "subscription.payment_due",
+          {...p,payment_state:"awaiting_payment"},
+          {subscription_id:c.id,next_due_at:c.next_due_at}
+        );
         await sendResendEmail({to:c.service_users?.email,subject:"Your "+c.services?.name+" subscription is due soon",text:"Your "+c.products?.name+" subscription payment is due "+new Date(c.next_due_at).toLocaleDateString()+".\n\nAmount: "+c.products.currency+" "+c.products.amount+"\n\nPay here: "+BASE_URL+"/pay/"+raw,html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><h1>Subscription payment due</h1><p>Your next "+escapeHtml(c.products?.name||"subscription")+" payment is due soon.</p><p><b>Amount:</b> "+escapeHtml(c.products.currency)+" "+Number(c.products.amount).toFixed(2)+"</p><p><a href=\""+escapeHtml(BASE_URL+"/pay/"+raw)+"\">Continue subscription payment</a></p></div></div>"});
         sent++;
         continue;

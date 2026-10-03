@@ -802,3 +802,87 @@ set
   ]::text[]
 where id = 'payment-receipts';
 
+
+
+-- ============================================================
+-- EMBEDDED SDK / RELIABILITY LAYER
+-- ============================================================
+
+alter table public.services
+  add column if not exists webhook_secret text,
+  add column if not exists publishable_key_hash text,
+  add column if not exists publishable_key_prefix text,
+  add column if not exists publishable_key_created_at timestamptz;
+
+create unique index if not exists idx_services_publishable_key_hash
+  on public.services(publishable_key_hash)
+  where publishable_key_hash is not null;
+
+create table if not exists public.api_idempotency_keys (
+  id uuid primary key default gen_random_uuid(),
+  service_id uuid not null references public.services(id) on delete cascade,
+  route text not null,
+  idempotency_key_hash text not null,
+  request_hash text not null,
+  response_status integer,
+  response_body jsonb,
+  resource_id uuid,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '24 hours'),
+  unique(service_id,route,idempotency_key_hash)
+);
+
+create index if not exists idx_api_idempotency_expiry
+  on public.api_idempotency_keys(expires_at);
+
+create table if not exists public.payment_events (
+  id uuid primary key default gen_random_uuid(),
+  payment_id uuid not null references public.payments(id) on delete cascade,
+  service_id uuid references public.services(id) on delete set null,
+  event_type text not null,
+  from_state text,
+  to_state text,
+  actor_type text,
+  actor_id text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_payment_events_payment
+  on public.payment_events(payment_id,created_at);
+
+create table if not exists public.webhook_deliveries (
+  id uuid primary key default gen_random_uuid(),
+  merchant_id uuid references public.merchant_profiles(id) on delete cascade,
+  service_id uuid references public.services(id) on delete cascade,
+  event_id text not null unique,
+  event_type text not null,
+  url text not null,
+  secret_value text,
+  payload jsonb not null,
+  status text not null default 'pending'
+    check(status in ('pending','delivered','failed')),
+  attempts integer not null default 0,
+  next_attempt_at timestamptz not null default now(),
+  last_error text,
+  delivered_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_webhook_deliveries_due
+  on public.webhook_deliveries(status,next_attempt_at);
+
+alter table public.subscription_contracts
+  drop constraint if exists subscription_contracts_status_check;
+
+alter table public.subscription_contracts
+  add constraint subscription_contracts_status_check
+  check(status in ('active','paused','past_due','cancelled','completed'));
+
+alter table public.api_idempotency_keys enable row level security;
+alter table public.payment_events enable row level security;
+alter table public.webhook_deliveries enable row level security;
+
+revoke all on public.api_idempotency_keys from anon,authenticated;
+revoke all on public.payment_events from anon,authenticated;
+revoke all on public.webhook_deliveries from anon,authenticated;
