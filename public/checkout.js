@@ -257,25 +257,17 @@ function renderDonationCampaign(
     donationProgressBar.parentElement.hidden =
         !showGoal;
 
-    const raised =
-        Number(
-            donation.raised || 0
-        );
+    const raisedValue=Number(donation.raised);
+    const raised=Number.isFinite(raisedValue)?raisedValue:0;
 
     const progress =
         Number(
             donation.progress_percent || 0
         );
 
-    donationProgressPercent.textContent =
-        goal !== null
-            ? String(progress) + "%"
-            : "";
+    donationProgressPercent.textContent=showGoal && Number.isFinite(progress) ? String(Math.min(100,Math.max(0,progress)))+"%" : "";
 
-    donationProgressBar.style.width =
-        goal !== null
-            ? String(Math.min(100, progress)) + "%"
-            : "0%";
+    donationProgressBar.style.width=showGoal && Number.isFinite(progress) ? String(Math.min(100,Math.max(0,progress)))+"%" : "0%";
 
     donationRaised.textContent =
         money(
@@ -431,7 +423,16 @@ function updateCheckoutSeo(){
  document.title=title+" — SquashberryPay";
  const setMeta=(selector,attr,value)=>{let m=document.querySelector(selector);if(!m){m=document.createElement("meta");m.setAttribute(attr,"");document.head.appendChild(m)}m.setAttribute(attr==="property"?"content":"content",value);};
  const set=(key,attr,value)=>{let m=document.querySelector('meta['+attr+'="'+key+'"]');if(!m){m=document.createElement("meta");m.setAttribute(attr,key);document.head.appendChild(m)}m.setAttribute("content",value)};
- set("og:title","property",title+" — SquashberryPay");set("og:description","property",description);set("og:url","property",window.location.href);set("twitter:title","name",title+" — SquashberryPay");set("twitter:description","name",description);
+ set("og:title","property",title+" — SquashberryPay");
+ set("og:description","property",description);
+ set("og:url","property",window.location.href);
+ set("og:image","property",SITE_BASE+"/og-image.svg");
+ set("og:image:alt","property","SquashberryPay secure payment");
+ set("twitter:title","name",title+" — SquashberryPay");
+ set("twitter:description","name",description);
+ set("twitter:image","name",new URL(SITE_BASE+"/og-image.svg",window.location.origin).href);
+ const robots=document.querySelector('meta[name="robots"]');
+ if(robots)robots.setAttribute("content",state.isDonation?"index,follow":"noindex,follow");
 }
 function renderCheckout() {
     const link =
