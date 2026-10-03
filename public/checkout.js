@@ -162,18 +162,28 @@ async function loadCheckout() {
             data = {};
         }
 
-        if (
-            !response.ok ||
-            !data.payment_link
-        ) {
+        if (!response.ok) {
             throw new Error(
                 data.error ||
-                "This payment link is unavailable."
+                (state.isDonation ? "This donation page is unavailable." : "This payment link is unavailable.")
             );
         }
 
-        state.link =
-            data.payment_link;
+        if (state.isDonation) {
+            if (!data.donation) throw new Error(data.error || "This donation page is unavailable.");
+            const d=data.donation;
+            state.link={
+                title:d.name,
+                description:d.description||"Support this donation campaign.",
+                button_label:"Donate",
+                service:{name:data.merchant?.name||"Merchant"},
+                product:{name:d.name,description:d.description||"",payment_type:"donate",amount:d.fixed_amount,currency:d.currency,allow_custom_amount:d.allow_custom_amount},
+                donation:{enabled:true,goal:d.goal,raised:d.raised,donor_count:d.donor_count,minimum:d.minimum_amount,maximum:d.maximum_amount,presets:d.presets||[],goal_message:d.goal_message,end_at:d.end_at,show_goal:d.goal!==null,show_donor_count:true,close_on_goal:false,goal_reached:d.goal!==null&&Number(d.raised||0)>=Number(d.goal)}
+            };
+        } else {
+            if (!data.payment_link) throw new Error(data.error || "This payment link is unavailable.");
+            state.link=data.payment_link;
+        }
 
         renderCheckout();
 
