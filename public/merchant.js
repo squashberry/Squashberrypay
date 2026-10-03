@@ -18,7 +18,7 @@ function openNav(){$("#merchantSidebar").classList.add("mobile-open");$("#mobile
 $("#openNotifications")?.addEventListener("click",()=>$("#notificationDrawer").hidden=false);$("#closeNotifications")?.addEventListener("click",()=>$("#notificationDrawer").hidden=true);$("#closePaymentDrawer")?.addEventListener("click",()=>$("#paymentDrawer").hidden=true);
 async function load(){try{const r=await Promise.all([api("/api/merchant/me"),api("/api/merchant/dashboard")]);merchant=r[0].merchant;dashboard=r[1];apps=dashboard.apps||[];identity();all();$("#lastUpdated").textContent="Updated "+fmt(dashboard.generated_at)}catch(e){notify(e.message,"error")}}
 function identity(){const n=merchant?.business_name||"Business";["merchantName","overviewName","sidebarBusinessName"].forEach(id=>$("#"+id).textContent=n);$("#sidebarBusinessStatus").textContent=merchant?.status||"Account";$("#businessAvatar").textContent=n.charAt(0).toUpperCase()}
-function all(){overview();populateApps();renderApps();renderProducts();renderMethods();renderLinks();renderSubscriptions();renderDonations();renderCustomers();renderPayments();renderAnalytics();profile()}
+function all(){overview();populateApps();prepareLinkGenerator();renderApps();renderProducts();renderMethods();renderLinks();renderSubscriptions();renderDonations();renderCustomers();renderPayments();renderAnalytics();profile()}
 function overview(){const s=dashboard.summary||{};$("#grossCollected").textContent=money(s.gross_collected);$("#pendingAmount").textContent=money(s.pending_amount);$("#successfulCount").textContent=s.successful_count||0;$("#customerCount").textContent=s.customer_count||0;$("#pendingCount").textContent=(s.pending_count||0)+" payments";$("#failedCount").textContent=s.failed_count||0;$("#refundCount").textContent=s.refunded_count||0;$("#navPaymentCount").textContent=s.transaction_count||0;$("#balanceGross").textContent=money(s.gross_collected);$("#balancePending").textContent=money(s.pending_amount);$("#balanceTransactions").textContent=s.transaction_count||0;$("#balanceMethods").textContent=(dashboard.payment_methods||[]).length;const x=(s.successful_count||0)+(s.failed_count||0);$("#successRate").textContent=x?Math.round(s.successful_count/x*100)+"%":"0%";chart();recent()}
 function chart(){const e=$("#revenueChart"),now=Date.now(),days=range<=7?range:10,b=[];for(let i=days-1;i>=0;i--){const d=new Date(now-i*86400000);b.push({k:d.toISOString().slice(0,10),l:d.toLocaleDateString(undefined,{day:"numeric",month:"short"}),v:0})}const m=new Map(b.map(x=>[x.k,x]));(dashboard.payments||[]).forEach(p=>{if(good(p.status)){const k=new Date(p.created_at).toISOString().slice(0,10);if(m.has(k))m.get(k).v+=Number(p.amount||0)}});const max=Math.max(...b.map(x=>x.v),1);$("#chartTotal").textContent=money(b.reduce((a,x)=>a+x.v,0));e.innerHTML=b.map(x=>"<div class=\"chart-col\"><div class=\"chart-value\" style=\"height:"+Math.max(4,x.v/max*100)+"%\"><span>"+(x.v?money(x.v).replace("GMD ",""):"")+"</span></div><small>"+esc(x.l)+"</small></div>").join("")}
 function recent(){const e=$("#recentPayments"),r=(dashboard.payments||[]).slice(0,6);e.innerHTML=r.length?r.map(p=>"<button class=\"payment-row\" data-payment-id=\""+esc(p.id)+"\"><span class=\"payment-icon\">"+esc((p.product?.name||"P").charAt(0))+"</span><span class=\"payment-main\"><strong>"+esc(p.product?.name||"Payment")+"</strong><small>"+esc(p.customer?.email||"Guest")+" · "+esc(p.payment_reference||"—")+"</small></span><span class=\"payment-amount\"><strong>"+money(p.amount,p.currency)+"</strong><small class=\"status-text "+statusClass(p.status)+"\">"+esc(p.status||"unknown")+"</small></span></button>").join(""):empty("No payments yet","Recorded activity will appear here.")}
@@ -29,6 +29,35 @@ function renderPayments(){const e=$("#paymentsTable");if(!e)return;const q=($("#
 $("#paymentSearch")?.addEventListener("input",renderPayments);$("#paymentStatusFilter")?.addEventListener("change",renderPayments);$("#paymentAppFilter")?.addEventListener("change",renderPayments);
 function renderCustomers(){const e=$("#customersGrid"),q=($("#customerSearch")?.value||"").toLowerCase(),r=(dashboard.customers||[]).filter(c=>!q||[c.email,c.external_user_id,c.id].join(" ").toLowerCase().includes(q));e.innerHTML=r.length?r.map(c=>{const ps=(dashboard.payments||[]).filter(p=>p.service_user_id===c.id),t=ps.filter(p=>good(p.status)).reduce((a,p)=>a+Number(p.amount||0),0);return"<article class=\"customer-card\"><div class=\"customer-avatar\">"+esc((c.email||"C").charAt(0).toUpperCase())+"</div><div class=\"customer-content\"><h3>"+esc(c.email||"Customer")+"</h3><p>"+esc(c.external_user_id||c.id)+"</p><div><span>"+ps.length+" payments</span><strong>"+money(t)+"</strong></div></div><small>Joined "+esc(fmt(c.created_at))+"</small></article>"}).join(""):empty("No customers yet","Customers appear when checkout starts.")}
 $("#customerSearch")?.addEventListener("input",renderCustomers);
+function prepareLinkGenerator(){
+    const app=$("#linkApp"), product=$("#linkProduct");
+    if(!app||!product)return;
+    const current=app.value;
+    app.innerHTML=apps.map(a=>"<option value=\""+esc(a.id)+"\">"+esc(a.name)+" — "+esc(a.status)+"</option>").join("");
+    if(current&&apps.some(a=>String(a.id)===String(current)))app.value=current;
+    renderLinkProducts();
+}
+function renderLinkProducts(){
+    const appId=$("#linkApp")?.value, product=$("#linkProduct");
+    if(!product)return;
+    const rows=(dashboard.products||[]).filter(p=>p.service_id===appId&&p.status==="active");
+    product.innerHTML=rows.map(p=>"<option value=\""+esc(p.id)+"\">"+esc(p.name)+" — "+esc(p.payment_type)+"</option>").join("");
+}
+$("#linkApp")?.addEventListener("change",renderLinkProducts);
+$("#createPaymentLink")?.addEventListener("click",async()=>{
+    const b=$("#createPaymentLink"),appId=$("#linkApp")?.value,productId=$("#linkProduct")?.value;
+    if(!appId||!productId){notify("Choose an application and product.","error");return}
+    loadBtn(b,"Creating…");
+    try{
+        const d=await api("/api/merchant/apps/"+encodeURIComponent(appId)+"/payment-links",{method:"POST",body:JSON.stringify({product_id:productId})});
+        await refresh();
+        renderLinks();
+        if(d.payment_url){
+            await navigator.clipboard.writeText(d.payment_url).catch(()=>{});
+            notify(d.reused?"Existing payment link loaded and copied.":"Payment link created and copied.","success");
+        }else notify("Payment link created.","success");
+    }catch(e){notify(e.message,"error")}finally{resetBtn(b)}
+});
 function renderLinks(){const e=$("#paymentLinksGrid"),ls=dashboard.payment_links||[];e.innerHTML=ls.length?ls.map(l=>{const a=apps.find(x=>x.id===l.service_id),p=(dashboard.products||[]).find(x=>x.id===l.product_id),u=location.origin+"/checkout/"+encodeURIComponent(l.slug);return"<article class=\"link-card\"><div class=\"link-card-top\"><span class=\"link-symbol\">↗</span><span class=\"status-badge "+(l.status==="active"?"success":"neutral")+"\">"+esc(l.status||"inactive")+"</span></div><h3>"+esc(l.title||p?.name||"Payment link")+"</h3><p>"+esc(l.description||p?.description||"Hosted checkout")+"</p><small>"+esc(a?.name||"Application")+" · "+esc(p?.payment_type||"payment")+"</small><div class=\"link-url\">"+esc(u)+"</div><div class=\"card-actions\"><button class=\"small-action\" data-copy-link=\""+esc(u)+"\">Copy link</button><a class=\"small-action\" href=\""+esc(u)+"\" target=\"_blank\" rel=\"noopener\">Preview</a></div></article>"}).join(""):empty("No payment links yet","Create a product, then generate a hosted link.")}
 document.addEventListener("click",async e=>{const b=e.target.closest("[data-copy-link]");if(!b)return;try{await navigator.clipboard.writeText(b.dataset.copyLink);notify("Payment link copied.","success")}catch{notify("Could not copy the link.","error")}});
 function renderProducts(){const e=$("#productsList"),ps=dashboard.products||[];e.innerHTML=ps.length?ps.map(p=>"<article class=\"product-card\"><div class=\"product-card-top\"><span class=\"product-type\">"+esc(p.payment_type||"payment")+"</span><span class=\"status-badge "+(p.status==="active"?"success":"neutral")+"\">"+esc(p.status||"—")+"</span></div><h3>"+esc(p.name)+"</h3><p>"+esc(p.description||"No description")+"</p><strong>"+(p.allow_custom_amount?"Customer chooses amount":money(p.amount,p.currency))+(p.payment_type==="subscribe"?" / "+esc(p.subscription_interval||"period"):"")+"</strong><small>"+esc(apps.find(a=>a.id===p.service_id)?.name||"Application")+" · "+esc(p.product_code||"")+"</small></article>").join(""):empty("No products yet","Create your first product.")}
