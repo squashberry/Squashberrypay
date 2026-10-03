@@ -56,7 +56,7 @@ const BASE_URL =
 
 const PUBLIC_SITE_URL =
     process.env.SQUASHBERRYPAY_PUBLIC_URL ||
-    "https://squashberry.github.io";
+    "https://squashberry.github.io/Squashberrypay";
 
 const PAYMENT_SESSION_MINUTES =
     Number(
