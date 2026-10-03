@@ -804,7 +804,7 @@ function validateStep1() {
 
 
         showMessage(
-            "Enter your business name."
+            "Enter your profile name."
         );
 
 
@@ -830,7 +830,7 @@ function validateStep1() {
 
 
         showMessage(
-            "Tell us what type of business you operate."
+            "Choose how you plan to use SquashberryPay."
         );
 
 
@@ -999,7 +999,7 @@ function validateStep2() {
 
 
         showMessage(
-            "Enter a valid business email."
+            "Enter a valid account email."
         );
 
 
@@ -2230,7 +2230,7 @@ signinEmailForm?.addEventListener("submit", event => {
         );
 
         shake(signinEmailInput);
-        showMessage("Enter a valid business email.");
+        showMessage("Enter a valid account email.");
         signinEmailInput?.focus();
         return;
     }
@@ -2405,7 +2405,7 @@ signinForm?.addEventListener(
             );
 
             showMessage(
-                "Enter a valid business email."
+                "Enter a valid account email."
             );
 
             signinEmailInput?.focus();
@@ -2951,7 +2951,7 @@ async function sendPasswordResetOtp() {
             );
 
             showMessage(
-                "Enter a valid business email."
+                "Enter a valid account email."
             );
 
             resetEmailInput?.focus();
