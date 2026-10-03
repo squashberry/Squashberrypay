@@ -1,5 +1,8 @@
 "use strict";
 
+const SITE_BASE="/Squashberrypay";
+const SITE_URL=location.origin+SITE_BASE;
+
 
 /* ============================================================
    STATE
@@ -2478,7 +2481,7 @@ function handleSignedOutNotice(){
     const params=new URLSearchParams(window.location.search);
     if(params.get("signed_out")==="1"){
         showMessage("Signed out successfully.","success");
-        history.replaceState(null,"","/signin/");
+        history.replaceState(null,"",SITE_BASE+"/signin/");
     }
 }
 handleSignedOutNotice();
