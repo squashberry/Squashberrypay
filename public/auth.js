@@ -99,6 +99,113 @@ const authMessage =
     $("#authMessage");
 
 
+function showAuthErrorAlert(
+    message
+) {
+
+    let alert =
+        document.querySelector(
+            "#authErrorAlert"
+        );
+
+    if (!alert) {
+
+        alert =
+            document.createElement(
+                "div"
+            );
+
+        alert.id =
+            "authErrorAlert";
+
+        alert.className =
+            "auth-error-alert";
+
+        alert.setAttribute(
+            "role",
+            "alert"
+        );
+
+        alert.innerHTML = `
+            <div class="auth-error-alert-icon" aria-hidden="true">!</div>
+            <div class="auth-error-alert-content">
+                <strong class="auth-error-alert-title"></strong>
+                <p class="auth-error-alert-message"></p>
+                <span class="auth-error-alert-guidance"></span>
+            </div>
+            <button
+                class="auth-error-alert-close"
+                type="button"
+                aria-label="Dismiss error"
+            >×</button>
+        `;
+
+        document.body.appendChild(
+            alert
+        );
+
+        alert
+            .querySelector(
+                ".auth-error-alert-close"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+                    alert.classList.remove(
+                        "is-visible"
+                    );
+                }
+            );
+    }
+
+    const networkError =
+        /couldn't reach|network|connection|fetch/i.test(
+            message
+        );
+
+    alert.querySelector(
+        ".auth-error-alert-title"
+    ).textContent =
+        networkError
+            ? "Connection problem"
+            : "We couldn't complete that";
+
+    alert.querySelector(
+        ".auth-error-alert-message"
+    ).textContent =
+        message;
+
+    alert.querySelector(
+        ".auth-error-alert-guidance"
+    ).textContent =
+        networkError
+            ? "Check your internet connection and try again. If it keeps happening, wait a moment and try again."
+            : "Review the message and correct the highlighted information, then try again.";
+
+    alert.classList.remove(
+        "is-visible"
+    );
+
+    void alert.offsetWidth;
+
+    alert.classList.add(
+        "is-visible"
+    );
+}
+
+
+function hideAuthErrorAlert() {
+
+    document
+        .querySelector(
+            "#authErrorAlert"
+        )
+        ?.classList.remove(
+            "is-visible"
+        );
+}
+
+
 function showMessage(
     message,
     type = "error"
@@ -132,10 +239,22 @@ function showMessage(
     authMessage.classList.add(
         "state-enter"
     );
+
+    if (
+        type === "error"
+    ) {
+        showAuthErrorAlert(
+            message
+        );
+    } else {
+        hideAuthErrorAlert();
+    }
 }
 
 
 function clearMessage() {
+
+    hideAuthErrorAlert();
 
     if (!authMessage) {
         return;
