@@ -2,6 +2,9 @@
 
 async function fetchWithTimeout(input, init={}, timeoutMs=20000){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),timeoutMs);try{return await fetch(input,{...init,signal:controller.signal})}finally{clearTimeout(timer)}}
 
+const SITE_BASE = "/Squashberrypay";
+const SITE_ORIGIN = window.location.origin;
+
 const apiBase =
     String(
         window.SQUASHBERRYPAY_API_BASE ||
@@ -426,11 +429,11 @@ function updateCheckoutSeo(){
  set("og:title","property",title+" — SquashberryPay");
  set("og:description","property",description);
  set("og:url","property",window.location.href);
- set("og:image","property",SITE_BASE+"/og-image.svg");
+ set("og:image","property",SITE_ORIGIN+SITE_BASE+"/og-image.svg");
  set("og:image:alt","property","SquashberryPay secure payment");
  set("twitter:title","name",title+" — SquashberryPay");
  set("twitter:description","name",description);
- set("twitter:image","name",new URL(SITE_BASE+"/og-image.svg",window.location.origin).href);
+ set("twitter:image","name",new URL(SITE_BASE+"/og-image.svg",SITE_ORIGIN).href);
  const robots=document.querySelector('meta[name="robots"]');
  if(robots)robots.setAttribute("content",state.isDonation?"index,follow":"noindex,follow");
 }
