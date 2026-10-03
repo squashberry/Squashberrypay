@@ -496,6 +496,9 @@ function renderCheckout() {
         product.payment_type === "donate" &&
         product.allow_custom_amount;
 
+    const summaryAmount = $("#amountLabel")?.parentElement;
+    if (summaryAmount) summaryAmount.hidden = product.payment_type === "donate" && custom;
+
     $("#customAmountWrap").hidden =
         !custom;
 
