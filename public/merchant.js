@@ -93,6 +93,13 @@ document.addEventListener("click",e=>{
 async function loadDonationPaymentMethods(){
   try{const d=await api("/api/merchant/donation-payment-methods");donationPaymentMethods=Array.isArray(d.methods)?d.methods:[]}catch(_){donationPaymentMethods=[]}
 }
+
+function renderDonationPaymentMethods(){
+  const e=$("#donationMethodsList");
+  if(!e)return;
+  const m=donationPaymentMethods||[];
+  e.innerHTML=m.length?m.map(x=>'<article class="method-card"><div class="method-icon">'+esc((x.name||"P").charAt(0))+'</div><div><h3>'+esc(x.name)+'</h3><p>'+esc(x.type||"payment")+' · '+esc(x.account_name||x.phone_number||"")+'</p><small>'+esc(x.instructions||"")+'</small></div></article>').join(""):empty("No donation payment methods","Add a payment destination so donors know where to send their money.");
+}
 function renderReadiness(){
   const appList=Array.isArray(apps)?apps:[];
   const products=dashboard.products||[], methods=dashboard.payment_methods||[], campaigns=dashboard.donation_campaigns||[];
@@ -108,6 +115,7 @@ function renderReadiness(){
   const msg=donationPaymentMethods.length
     ?'<div class="state-card success"><span class="state-icon">✓</span><div><strong>Donation checkout is ready.</strong><p>'+donationPaymentMethods.length+' payment destination'+(donationPaymentMethods.length===1?"":"s")+' configured.</p></div></div>'
     :'<div class="state-card warning"><span class="state-icon">!</span><div><strong>Add a donation payment method before sharing a campaign.</strong><p>You can create the campaign, but customers need a configured destination before you send the link.</p><button class="button secondary small" data-workspace-tab="donations" data-workspace-target="donations-destination">Add payment destination</button></div></div>';
+  renderDonationPaymentMethods();
   if(dbox)dbox.innerHTML=msg;
   if(dbox2)dbox2.innerHTML=donationPaymentMethods.length?'<div class="state-card success"><span class="state-icon">✓</span><div><strong>Destination configured.</strong><p>Standalone donation checkout has somewhere to direct customers.</p></div></div>':'<div class="state-card warning"><span class="state-icon">!</span><div><strong>No donation payment destination yet.</strong><p>Add Wave, bank transfer or another supported destination before sending the campaign link to donors.</p></div></div>';
 }
