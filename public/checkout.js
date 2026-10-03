@@ -93,7 +93,26 @@ const donationEnded =
     $("#donationEnded");
 
 const donorFields =
-    $("#donorFields");\nconst sessionOverlay=$("#checkoutSessionOverlay");const sessionTitle=$("#sessionTitle");const sessionDetail=$("#sessionDetail");function setCheckoutLoading(title,detail){if($("#checkoutLoadingTitle"))$("#checkoutLoadingTitle").textContent=title;if($("#checkoutLoadingDetail"))$("#checkoutLoadingDetail").textContent=detail}function showSessionStep(step,title,detail){if(!sessionOverlay)return;sessionOverlay.hidden=false;sessionTitle.textContent=title;sessionDetail.textContent=detail;document.querySelectorAll("[data-session-step]").forEach(e=>{const n=Number(e.dataset.sessionStep);e.classList.toggle("active",n===step);e.classList.toggle("done",n<step);e.querySelector("i").textContent=n<step?"✓":String(n)})}
+    $("#donorFields");
+const sessionOverlay=$("#checkoutSessionOverlay");
+const sessionTitle=$("#sessionTitle");
+const sessionDetail=$("#sessionDetail");
+function setCheckoutLoading(title,detail){
+    if($("#checkoutLoadingTitle"))$("#checkoutLoadingTitle").textContent=title;
+    if($("#checkoutLoadingDetail"))$("#checkoutLoadingDetail").textContent=detail;
+}
+function showSessionStep(step,title,detail){
+    if(!sessionOverlay)return;
+    sessionOverlay.hidden=false;
+    sessionTitle.textContent=title;
+    sessionDetail.textContent=detail;
+    document.querySelectorAll("[data-session-step]").forEach(e=>{
+        const n=Number(e.dataset.sessionStep);
+        e.classList.toggle("active",n===step);
+        e.classList.toggle("done",n<step);
+        e.querySelector("i").textContent=n<step?"✓":String(n);
+    });
+}
 
 function setError(
     message
@@ -143,8 +162,10 @@ async function loadCheckout() {
     loadingState.hidden = false;
     errorState.hidden = true;
     checkoutState.hidden = true;
+    setCheckoutLoading("Loading secure payment link…","Connecting to SquashberryPay.");
 
     try {
+        setCheckoutLoading("Checking payment details…","Verifying the payment link and product.");
         const response =
             await fetch(
                 apiBase + (state.isDonation ? "/api/public/donations/" : "/api/public/links/") +
@@ -185,6 +206,7 @@ async function loadCheckout() {
             state.link=data.payment_link;
         }
 
+        setCheckoutLoading("Preparing checkout…","Your secure payment page is ready.");
         renderCheckout();
 
     } catch (error) {
@@ -523,6 +545,7 @@ function renderCheckout() {
     loadingState.hidden = true;
     errorState.hidden = true;
     checkoutState.hidden = false;
+    if(sessionOverlay)sessionOverlay.hidden=true;
 }
 
 async function startPayment(
@@ -627,10 +650,10 @@ async function startPayment(
     continueButton.disabled =
         true;
 
-    $("#buttonText").textContent =
-        "Starting checkout…";
+    showSessionStep(1,"Creating payment session…","Securely creating a payment session for this checkout.");
 
     try {
+        showSessionStep(2,"Preparing payment details…","Saving your payment request and preparing the next step.");
         const response =
             await fetch(
                 apiBase + (state.isDonation ? "/api/public/donations/" : "/api/public/links/") +
@@ -662,10 +685,13 @@ async function startPayment(
             );
         }
 
+        showSessionStep(3,"Opening secure checkout…","Payment session created. Redirecting now.");
+        await new Promise(resolve=>setTimeout(resolve,260));
         window.location.href =
             data.payment_url;
 
     } catch (error) {
+        if(sessionOverlay)sessionOverlay.hidden=true;
         setFormError(error.message);
         continueButton.disabled = false;
         $("#buttonText").textContent =
