@@ -1,89 +1,4 @@
-"us
-
-app.patch("/api/merchant/donation-payment-methods/:id", authenticateMerchant, async (req,res) => {
-    try {
-        const id=String(req.params.id||"").trim();
-        const patch={
-            name:String(req.body?.name||"").trim().slice(0,120),
-            type:String(req.body?.type||"").trim().slice(0,80),
-            account_name:String(req.body?.account_name||"").trim().slice(0,160)||null,
-            account_number:String(req.body?.account_number||"").trim().slice(0,120)||null,
-            bank_name:String(req.body?.bank_name||"").trim().slice(0,120)||null,
-            phone_number:String(req.body?.phone_number||"").trim().slice(0,80)||null,
-            instructions:String(req.body?.instructions||"").trim().slice(0,2000)
-        };
-        if(!id||!patch.name||!patch.type||!patch.instructions)return res.status(400).json({error:"Payment method name, type and instructions are required."});
-        const {data,error}=await supabase.from("donation_payment_methods").update(patch).eq("id",id).eq("merchant_id",req.merchant.id).select("*").single();
-        if(error||!data)return res.status(404).json({error:"Donation payment method not found."});
-        res.json({method:data});
-    }catch(e){console.error(e);res.status(500).json({error:"Could not update donation payment method."});}
-});
-app.delete("/api/merchant/donation-payment-methods/:id", authenticateMerchant, async (req,res) => {
-    const {data,error}=await supabase.from("donation_payment_methods").update({enabled:false}).eq("id",String(req.params.id)).eq("merchant_id",req.merchant.id).select("id,enabled").single();
-    if(error||!data)return res.status(404).json({error:"Donation payment method not found."});
-    res.json({success:true,method:data});
-});
-
-app.patch("/api/merchant/donation-campaigns/:id", authenticateMerchant, async (req,res) => {
-    try {
-        const id=String(req.params.id||"").trim();
-        const patch={};
-        if(req.body?.name!==undefined)patch.name=String(req.body.name).trim().slice(0,160);
-        if(req.body?.description!==undefined)patch.description=String(req.body.description).trim().slice(0,1000)||null;
-        if(req.body?.allow_custom_amount!==undefined)patch.allow_custom_amount=Boolean(req.body.allow_custom_amount);
-        for(const [key,field] of [["fixed_amount","fixed_amount"],["minimum_amount","minimum_amount"],["maximum_amount","maximum_amount"],["goal","goal"]]){
-            if(req.body?.[field]!==undefined)patch[key]=req.body[field]===""||req.body[field]===null?null:Number(req.body[field]);
-        }
-        if(req.body?.presets!==undefined)patch.presets=Array.isArray(req.body.presets)?req.body.presets.map(Number).filter(x=>Number.isFinite(x)&&x>0).slice(0,12):[];
-        if(req.body?.end_at!==undefined)patch.end_at=req.body.end_at||null;
-        if(req.body?.goal_message!==undefined)patch.goal_message=String(req.body.goal_message||"").trim().slice(0,500)||null;
-        if(req.body?.slug!==undefined){
-            const requested=cleanSlug(req.body.slug);
-            if(!requested)return res.status(400).json({error:"A valid public slug is required."});
-            const slug=requested+"-"+randomHex(5);
-            patch.slug=slug;
-        }
-        if(!id||Object.keys(patch).length===0)return res.status(400).json({error:"Nothing to update."});
-        const {data,error}=await supabase.from("donation_campaigns").update(patch).eq("id",id).eq("merchant_id",req.merchant.id).select("*").single();
-        if(error||!data)return res.status(404).json({error:"Donation campaign not found."});
-        res.json({campaign:data,payment_url:BASE_URL+"/donate/"+data.slug});
-    }catch(e){console.error(e);res.status(500).json({error:"Could not update donation campaign."});}
-});
-app.delete("/api/merchant/donation-campaigns/:id", authenticateMerchant, async (req,res) => {
-    const {data,error}=await supabase.from("donation_campaigns").update({status:"inactive"}).eq("id",String(req.params.id)).eq("merchant_id",req.merchant.id).select("id,status").single();
-    if(error||!data)return res.status(404).json({error:"Donation campaign not found."});
-    res.json({success:true,campaign:data});
-});
-
-app.patch("/api/merchant/payment-links/:id", authenticateMerchant, async (req,res) => {
-    try {
-        const id=String(req.params.id||"").trim();
-        const {data:owned,error:oe}=await supabase.from("payment_links").select("id,service_id,product_id,slug").eq("id",id).maybeSingle();
-        if(oe||!owned)return res.status(404).json({error:"Payment link not found."});
-        const {data:service}=await supabase.from("services").select("id").eq("id",owned.service_id).eq("merchant_id",req.merchant.id).maybeSingle();
-        if(!service)return res.status(404).json({error:"Payment link not found."});
-        const patch={};
-        for(const key of ["title","description","button_label","return_url","cancel_url"])if(req.body?.[key]!==undefined)patch[key]=String(req.body[key]||"").trim()||null;
-        if(req.body?.status!==undefined)patch.status=["active","inactive"].includes(String(req.body.status))?String(req.body.status):"inactive";
-        if(!Object.keys(patch).length)return res.status(400).json({error:"Nothing to update."});
-        const {data,error}=await supabase.from("payment_links").update(patch).eq("id",id).select("*").single();
-        if(error||!data)return res.status(404).json({error:"Payment link not found."});
-        res.json({payment_link:data,payment_url:BASE_URL+"/checkout/"+encodeURIComponent(data.slug)});
-    }catch(e){console.error(e);res.status(500).json({error:"Could not update payment link."});}
-});
-app.delete("/api/merchant/payment-links/:id", authenticateMerchant, async (req,res) => {
-    try {
-        const id=String(req.params.id||"").trim();
-        const {data:owned}=await supabase.from("payment_links").select("id,service_id").eq("id",id).maybeSingle();
-        if(!owned)return res.status(404).json({error:"Payment link not found."});
-        const {data:service}=await supabase.from("services").select("id").eq("id",owned.service_id).eq("merchant_id",req.merchant.id).maybeSingle();
-        if(!service)return res.status(404).json({error:"Payment link not found."});
-        const {data,error}=await supabase.from("payment_links").update({status:"inactive"}).eq("id",id).select("id,status").single();
-        if(error||!data)return res.status(404).json({error:"Payment link not found."});
-        res.json({success:true,payment_link:data});
-    }catch(e){console.error(e);res.status(500).json({error:"Could not delete payment link."});}
-});
-e strict";
+"use strict";
 
 require("dotenv").config();
 
@@ -9694,6 +9609,70 @@ app.post("/api/merchant/donation-campaigns", authenticateMerchant, async (req,re
         console.error("Create donation campaign error:", error);
         res.status(500).json({ error: "Could not create donation campaign." });
     }
+});
+
+app.patch("/api/merchant/donation-payment-methods/:id", authenticateMerchant, async (req,res) => {
+    try {
+        const id=String(req.params.id||"").trim();
+        const patch={name:String(req.body?.name||"").trim().slice(0,120),type:String(req.body?.type||"").trim().slice(0,80),account_name:String(req.body?.account_name||"").trim().slice(0,160)||null,account_number:String(req.body?.account_number||"").trim().slice(0,120)||null,bank_name:String(req.body?.bank_name||"").trim().slice(0,120)||null,phone_number:String(req.body?.phone_number||"").trim().slice(0,80)||null,instructions:String(req.body?.instructions||"").trim().slice(0,2000)};
+        if(!id||!patch.name||!patch.type||!patch.instructions)return res.status(400).json({error:"Payment method name, type and instructions are required."});
+        const {data,error}=await supabase.from("donation_payment_methods").update(patch).eq("id",id).eq("merchant_id",req.merchant.id).select("*").single();
+        if(error||!data)return res.status(404).json({error:"Donation payment method not found."});
+        res.json({method:data});
+    }catch(e){console.error(e);res.status(500).json({error:"Could not update donation payment method."});}
+});
+app.delete("/api/merchant/donation-payment-methods/:id", authenticateMerchant, async (req,res) => {
+    const {data,error}=await supabase.from("donation_payment_methods").update({enabled:false}).eq("id",String(req.params.id)).eq("merchant_id",req.merchant.id).select("id,enabled").single();
+    if(error||!data)return res.status(404).json({error:"Donation payment method not found."});
+    res.json({success:true,method:data});
+});
+app.patch("/api/merchant/donation-campaigns/:id", authenticateMerchant, async (req,res) => {
+    try {
+        const id=String(req.params.id||"").trim(),patch={};
+        if(req.body?.name!==undefined)patch.name=String(req.body.name).trim().slice(0,160);
+        if(req.body?.description!==undefined)patch.description=String(req.body.description).trim().slice(0,1000)||null;
+        if(req.body?.allow_custom_amount!==undefined)patch.allow_custom_amount=Boolean(req.body.allow_custom_amount);
+        for(const field of ["fixed_amount","minimum_amount","maximum_amount","goal"])if(req.body?.[field]!==undefined)patch[field]=req.body[field]===""||req.body[field]===null?null:Number(req.body[field]);
+        if(req.body?.presets!==undefined)patch.presets=Array.isArray(req.body.presets)?req.body.presets.map(Number).filter(x=>Number.isFinite(x)&&x>0).slice(0,12):[];
+        if(req.body?.end_at!==undefined)patch.end_at=req.body.end_at||null;
+        if(req.body?.goal_message!==undefined)patch.goal_message=String(req.body.goal_message||"").trim().slice(0,500)||null;
+        if(!id||Object.keys(patch).length===0)return res.status(400).json({error:"Nothing to update."});
+        const {data,error}=await supabase.from("donation_campaigns").update(patch).eq("id",id).eq("merchant_id",req.merchant.id).select("*").single();
+        if(error||!data)return res.status(404).json({error:"Donation campaign not found."});
+        res.json({campaign:data,payment_url:BASE_URL+"/donate/"+data.slug});
+    }catch(e){console.error(e);res.status(500).json({error:"Could not update donation campaign."});}
+});
+app.delete("/api/merchant/donation-campaigns/:id", authenticateMerchant, async (req,res) => {
+    const {data,error}=await supabase.from("donation_campaigns").update({status:"inactive"}).eq("id",String(req.params.id)).eq("merchant_id",req.merchant.id).select("id,status").single();
+    if(error||!data)return res.status(404).json({error:"Donation campaign not found."});
+    res.json({success:true,campaign:data});
+});
+app.patch("/api/merchant/payment-links/:id", authenticateMerchant, async (req,res) => {
+    try {
+        const id=String(req.params.id||"").trim();
+        const {data:owned,error:oe}=await supabase.from("payment_links").select("id,service_id").eq("id",id).maybeSingle();
+        if(oe||!owned)return res.status(404).json({error:"Payment link not found."});
+        const {data:service}=await supabase.from("services").select("id").eq("id",owned.service_id).eq("merchant_id",req.merchant.id).maybeSingle();
+        if(!service)return res.status(404).json({error:"Payment link not found."});
+        const patch={};for(const key of ["title","description","button_label"])if(req.body?.[key]!==undefined)patch[key]=String(req.body[key]||"").trim()||null;
+        if(req.body?.status!==undefined)patch.status=["active","inactive"].includes(String(req.body.status))?String(req.body.status):"inactive";
+        if(!Object.keys(patch).length)return res.status(400).json({error:"Nothing to update."});
+        const {data,error}=await supabase.from("payment_links").update(patch).eq("id",id).select("*").single();
+        if(error||!data)return res.status(404).json({error:"Payment link not found."});
+        res.json({payment_link:data,payment_url:BASE_URL+"/checkout/"+encodeURIComponent(data.slug)});
+    }catch(e){console.error(e);res.status(500).json({error:"Could not update payment link."});}
+});
+app.delete("/api/merchant/payment-links/:id", authenticateMerchant, async (req,res) => {
+    try {
+        const id=String(req.params.id||"").trim();
+        const {data:owned}=await supabase.from("payment_links").select("id,service_id").eq("id",id).maybeSingle();
+        if(!owned)return res.status(404).json({error:"Payment link not found."});
+        const {data:service}=await supabase.from("services").select("id").eq("id",owned.service_id).eq("merchant_id",req.merchant.id).maybeSingle();
+        if(!service)return res.status(404).json({error:"Payment link not found."});
+        const {data,error}=await supabase.from("payment_links").update({status:"inactive"}).eq("id",id).select("id,status").single();
+        if(error||!data)return res.status(404).json({error:"Payment link not found."});
+        res.json({success:true,payment_link:data});
+    }catch(e){console.error(e);res.status(500).json({error:"Could not delete payment link."});}
 });
 
 app.get("/api/merchant/refunds", authenticateMerchant, async (req,res) => {
