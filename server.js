@@ -56,11 +56,14 @@ const BASE_URL =
 
 const configuredPublicSiteUrl =
     String(process.env.SQUASHBERRYPAY_PUBLIC_URL || "").replace(/\/+$/, "");
+const githubPagesOrigin = "https://squashberry.github.io";
+const githubPagesBase = githubPagesOrigin + "/Squashberrypay";
 const PUBLIC_SITE_URL =
-    configuredPublicSiteUrl &&
-    configuredPublicSiteUrl !== "https://squashberry.github.io"
-        ? configuredPublicSiteUrl
-        : "https://squashberry.github.io/Squashberrypay";
+    !configuredPublicSiteUrl ||
+    configuredPublicSiteUrl === githubPagesOrigin ||
+    configuredPublicSiteUrl.toLowerCase() === githubPagesOrigin + "/squashberrypay"
+        ? githubPagesBase
+        : configuredPublicSiteUrl;
 
 const PAYMENT_SESSION_MINUTES =
     Number(
@@ -9522,6 +9525,15 @@ app.post("/api/merchant/donation-campaigns", authenticateMerchant, async (req,re
         if (fixedAmount !== null && maximumAmount !== null && fixedAmount > maximumAmount) return res.status(400).json({ error: "Fixed amount cannot exceed the maximum donation." });
 
         let slug = (cleanSlug(name) || "donation") + "-" + randomHex(5);
+        for (let attempt = 0; attempt < 8; attempt++) {
+            const { data: existingSlug } = await supabase
+                .from("donation_campaigns")
+                .select("id")
+                .eq("slug", slug)
+                .maybeSingle();
+            if (!existingSlug) break;
+            slug = (cleanSlug(name) || "donation") + "-" + randomHex(5);
+        }
 
         const { data: campaign, error } = await supabase.from("donation_campaigns").insert({
             merchant_id: req.merchant.id,
