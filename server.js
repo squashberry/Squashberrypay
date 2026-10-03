@@ -5574,6 +5574,8 @@ app.post(
                     `
                     id,
                     payment_reference,
+                    processing_page_id,
+                    customer_reference,
                     amount,
                     currency,
                     payment_type,
