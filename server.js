@@ -64,10 +64,17 @@ const PAYMENT_ATTEMPT_MINUTES =
         process.env.PAYMENT_ATTEMPT_MINUTES || 20
     );
 
-const PAYMENT_TOKEN_HOURS =
+const PAYMENT_TOKEN_MINUTES =
     Number(
-        process.env.PAYMENT_TOKEN_HOURS || 24
+        process.env.PAYMENT_TOKEN_MINUTES ||
+        (Number(process.env.PAYMENT_TOKEN_HOURS || 1) * 60)
     );
+
+const PAYMENT_VERIFICATION_MAX_ATTEMPTS =
+    Number(process.env.PAYMENT_VERIFICATION_MAX_ATTEMPTS || 8);
+
+const PAYMENT_VERIFICATION_WINDOW_MINUTES =
+    Number(process.env.PAYMENT_VERIFICATION_WINDOW_MINUTES || 15);
 
 const ADMIN_SECRET =
     process.env.ADMIN_SESSION_SECRET;
@@ -1014,6 +1021,15 @@ async function authenticateService(
 
         req.service =
             service;
+
+        try {
+            await supabase
+                .from("services")
+                .update({ last_api_used_at: new Date().toISOString() })
+                .eq("id", service.id);
+        } catch (activityError) {
+            console.error("Service API activity update error:", activityError);
+        }
 
         next();
 
@@ -5564,6 +5580,9 @@ app.post(
                     status:
                         "pending",
 
+                    payment_state:
+                        "awaiting_payment",
+
                     return_url:
                         normalizedReturnUrl,
 
@@ -5648,10 +5667,16 @@ app.post(
 
             res.status(201).json({
 
-                payment,
+                payment: {
+                    ...payment,
+                    payment_state: "awaiting_payment"
+                },
 
                 payment_url:
-                    `${BASE_URL}/pay/${rawSessionToken}`
+                    BASE_URL + "/pay/" + rawSessionToken,
+
+                receipt_url:
+                    BASE_URL + "/receipt/" + encodeURIComponent(payment.processing_page_id)
             });
 
         } catch (error) {
@@ -5975,7 +6000,7 @@ app.post("/api/public/donations/:slug/payments",async(req,res)=>{
     if(c.minimum_amount!==null&&amount<Number(c.minimum_amount))return res.status(400).json({error:"Donation is below the minimum allowed amount."});
     if(c.maximum_amount!==null&&amount>Number(c.maximum_amount))return res.status(400).json({error:"Donation exceeds the maximum allowed amount."});
     const expiresAt=addMinutes(PAYMENT_SESSION_MINUTES);
-    const {data:p,error:pe}=await supabase.from("payments").insert({payment_reference:generateReference(),processing_page_id:"SPP-"+randomHex(10).toUpperCase(),customer_reference:String(req.body?.customer_reference||"").trim().slice(0,160)||null,customer_email:email,service_id:null,service_user_id:null,product_id:null,donation_campaign_id:c.id,amount:Math.round(amount*100)/100,currency:c.currency,payment_type:"donate",status:"pending",donor_name:req.body?.donor_anonymous?null:String(req.body?.donor_name||"").trim().slice(0,120)||null,donor_message:String(req.body?.donor_message||"").trim().slice(0,500)||null,donor_anonymous:Boolean(req.body?.donor_anonymous),expires_at:expiresAt}).select("id,payment_reference,processing_page_id,customer_reference,amount,currency,payment_type,status,expires_at").single();
+    const {data:p,error:pe}=await supabase.from("payments").insert({payment_reference:generateReference(),processing_page_id:"SPP-"+randomHex(10).toUpperCase(),customer_reference:String(req.body?.customer_reference||"").trim().slice(0,160)||null,customer_email:email,service_id:null,service_user_id:null,product_id:null,donation_campaign_id:c.id,amount:Math.round(amount*100)/100,currency:c.currency,payment_type:"donate",status:"pending",payment_state:"awaiting_payment",donor_name:req.body?.donor_anonymous?null:String(req.body?.donor_name||"").trim().slice(0,120)||null,donor_message:String(req.body?.donor_message||"").trim().slice(0,500)||null,donor_anonymous:Boolean(req.body?.donor_anonymous),expires_at:expiresAt}).select("id,payment_reference,processing_page_id,customer_reference,amount,currency,payment_type,status,expires_at").single();
     if(pe)throw pe;
     const rawSessionToken=randomToken();const {error:se}=await supabase.from("payment_sessions").insert({payment_id:p.id,session_token_hash:hash(rawSessionToken),expires_at:expiresAt});if(se)throw se;
     res.status(201).json({payment:p,payment_url:BASE_URL+"/pay/"+rawSessionToken});
@@ -6493,6 +6518,7 @@ app.post(
                         currency,
                         payment_type,
                         status,
+                        payment_state,
                         expires_at
                     `)
                     .single();
@@ -7051,7 +7077,10 @@ app.get(
                             deadlineAt,
 
                         status:
-                            "awaiting_receipt"
+                            "awaiting_receipt",
+
+                        payment_state:
+                            "awaiting_payment"
                     })
                     .eq(
                         "id",
@@ -7284,15 +7313,17 @@ app.post(
             }
 
 
+            const extensionMap = {
+                "image/jpeg": "jpg",
+                "image/jpg": "jpg",
+                "image/png": "png",
+                "image/webp": "webp",
+                "application/pdf": "pdf"
+            };
+
             const extension =
-                (
-                    req.file.originalname
-                        .split(
-                            "."
-                        )
-                        .pop() ||
-                    "jpg"
-                ).toLowerCase();
+                extensionMap[req.file.mimetype] ||
+                "bin";
 
 
             const storagePath =
@@ -7355,6 +7386,9 @@ app.post(
                             .toISOString(),
 
                     status:
+                        "awaiting_verification",
+
+                    payment_state:
                         "awaiting_verification"
                 })
                 .eq(
@@ -7419,7 +7453,10 @@ app.post(
                     true,
 
                 message:
-                    "Receipt submitted for verification."
+                    "Receipt submitted for verification.",
+
+                receipt_url:
+                    BASE_URL + "/receipt/" + encodeURIComponent(payment.id)
             });
 
         } catch (error) {
@@ -7522,6 +7559,7 @@ app.post(
 
             if (
                 [
+                    "awaiting_verification",
                     "approved",
                     "completed"
                 ].includes(
@@ -7545,6 +7583,9 @@ app.post(
                 .update({
 
                     status:
+                        "cancelled",
+
+                    payment_state:
                         "cancelled",
 
                     cancel_reason:
@@ -9860,7 +9901,7 @@ export async function runSubscriptionReminderJob(){
       const needsNew=!payment||["completed","rejected","cancelled","expired"].includes(payment.status);
       if(needsNew){
         const expiresAt=new Date(now.getTime()+7*86400000).toISOString();
-        const {data:p,error:pe}=await supabase.from("payments").insert({payment_reference:generateReference(),processing_page_id:"SPP-"+randomHex(10).toUpperCase(),service_id:c.service_id,service_user_id:c.service_user_id,product_id:c.product_id,amount:c.products.amount,currency:c.products.currency,payment_type:"subscribe",status:"pending",expires_at:expiresAt}).select("id,payment_reference,amount,currency,status").single();
+        const {data:p,error:pe}=await supabase.from("payments").insert({payment_reference:generateReference(),processing_page_id:"SPP-"+randomHex(10).toUpperCase(),service_id:c.service_id,service_user_id:c.service_user_id,product_id:c.product_id,amount:c.products.amount,currency:c.products.currency,payment_type:"subscribe",status:"pending",payment_state:"awaiting_payment",expires_at:expiresAt}).select("id,payment_reference,amount,currency,status").single();
         if(pe)throw pe;
         const raw=randomToken();const {error:se}=await supabase.from("payment_sessions").insert({payment_id:p.id,session_token_hash:hash(raw),expires_at:expiresAt});if(se)throw se;
         await supabase.from("subscription_contracts").update({current_payment_id:p.id,last_reminded_at:now.toISOString(),reminder_count:(c.reminder_count||0)+1,updated_at:now.toISOString()}).eq("id",c.id);
