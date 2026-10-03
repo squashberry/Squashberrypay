@@ -4,7 +4,7 @@ const SITE_BASE="/Squashberrypay";
 const SITE_ORIGIN=location.origin;
 const siteUrl=p=>SITE_ORIGIN+SITE_BASE+(String(p||"").startsWith("/")?String(p):"/"+String(p));
 const normalizePublicUrl=u=>{try{const x=new URL(String(u||""),SITE_ORIGIN);if(x.hostname==="squashberry.github.io"&&!x.pathname.startsWith(SITE_BASE+"/"))x.pathname=SITE_BASE+(x.pathname.startsWith("/")?x.pathname:"/"+x.pathname);return x.href}catch{return String(u||"")}};
-const authUrl=(p="")=>SITE_BASE+"/signin/index.html"+p;
+const authUrl=(p="")=>SITE_ORIGIN+SITE_BASE+"/signin/index.html"+p;
 const token=sessionStorage.getItem("sbp_access_token");
 if(!token)location.replace(authUrl("?reason=session_expired"));
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));let merchant=(()=>{try{return JSON.parse(sessionStorage.getItem("sbp_merchant")||"null")}catch{return null}})(),dashboard=null,apps=[],range=7;
