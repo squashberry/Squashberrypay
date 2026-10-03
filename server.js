@@ -9568,7 +9568,7 @@ app.patch("/api/merchant/donation-payment-methods/:id", authenticateMerchant, as
     try {
         const id=String(req.params.id||"").trim();
         const patch={name:String(req.body?.name||"").trim().slice(0,120),type:String(req.body?.type||"").trim().slice(0,80),account_name:String(req.body?.account_name||"").trim().slice(0,160)||null,account_number:String(req.body?.account_number||"").trim().slice(0,120)||null,bank_name:String(req.body?.bank_name||"").trim().slice(0,120)||null,phone_number:String(req.body?.phone_number||"").trim().slice(0,80)||null,instructions:String(req.body?.instructions||"").trim().slice(0,2000)}; if(req.body?.enabled!==undefined)patch.enabled=Boolean(req.body.enabled);
-        if(!id||!patch.name||!patch.type||!patch.instructions)return res.status(400).json({error:"Payment method name, type and instructions are required."});
+        if(!id)return res.status(400).json({error:"Payment method id is required."}); if(req.body?.enabled===undefined && (!patch.name||!patch.type||!patch.instructions))return res.status(400).json({error:"Payment method name, type and instructions are required."});
         const {data,error}=await supabase.from("donation_payment_methods").update(patch).eq("id",id).eq("merchant_id",req.merchant.id).select("*").single();
         if(error||!data)return res.status(404).json({error:"Donation payment method not found."});
         res.json({method:data});
