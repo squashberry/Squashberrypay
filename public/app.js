@@ -244,15 +244,11 @@ function formatMoney(
 
 
 function getToken() {
-
-    const match =
-        window.location.pathname.match(
-            /^\/pay\/([^/]+)$/
-        );
-
-    return match
-        ? match[1]
-        : null;
+    const query = new URLSearchParams(window.location.search);
+    if (query.get("pay")) return query.get("pay");
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    const i = parts.indexOf("pay");
+    return i >= 0 ? parts[i + 1] || null : null;
 }
 
 
