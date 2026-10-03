@@ -5700,68 +5700,82 @@ app.post(
    V1 VERIFY PAYMENT
 ============================================================ */
 
+
 app.post(
     "/api/v1/verify-payment",
     authenticateService,
-    async (
-        req,
-        res
-    ) => {
-
+    async (req, res) => {
         try {
+            const externalUserId = String(req.body?.external_user_id || "").trim();
+            const rawToken = String(req.body?.token || "").trim().toUpperCase();
 
-            const {
-                external_user_id,
-                token
-            } = req.body;
-
-
-            if (
-                !external_user_id ||
-                !token
-            ) {
-
+            if (!externalUserId || !rawToken) {
                 return res.status(400).json({
                     error:
                         "external_user_id and token are required."
                 });
             }
 
-
-            const result =
-                await supabase.rpc(
-                    "redeem_payment_token",
-                    {
-
-                        p_service_id:
-                            req.service.id,
-
-                        p_external_user_id:
-                            String(
-                                external_user_id
-                            ),
-
-                        p_token_hash:
-                            hash(
-                                String(
-                                    token
-                                )
-                                    .trim()
-                                    .toUpperCase()
-                            )
-                    }
-                );
-
-
             if (
-                result.error
+                externalUserId.length > 160 ||
+                !/^SBP-[A-Z0-9-]{8,64}$/.test(rawToken)
             ) {
+                return res.status(400).json({
+                    verified:false,
+                    reason:"INVALID_TOKEN_FORMAT"
+                });
+            }
 
+            const {data:serviceUser} = await supabase
+                .from("service_users")
+                .select("id")
+                .eq("service_id",req.service.id)
+                .eq("external_user_id",externalUserId)
+                .maybeSingle();
+
+            const sourceIp = String(
+                req.get("CF-Connecting-IP") ||
+                req.ip ||
+                "unknown"
+            );
+
+            const attemptKeyHash = hash(
+                [
+                    req.service.id,
+                    externalUserId,
+                    sourceIp
+                ].join(":")
+            );
+
+            const windowStart = new Date(
+                Date.now() -
+                PAYMENT_VERIFICATION_WINDOW_MINUTES *
+                60 *
+                1000
+            ).toISOString();
+
+            const {
+                count:failedAttempts,
+                error:attemptCountError
+            } = await supabase
+                .from("payment_verification_attempts")
+                .select(
+                    "id",
+                    {
+                        count:"exact",
+                        head:true
+                    }
+                )
+                .eq("service_id",req.service.id)
+                .eq("attempt_key_hash",attemptKeyHash)
+                .eq("success",false)
+                .gte("created_at",windowStart);
+
+            if(attemptCountError){
                 console.error(
-                    "Redeem token RPC error:",
-                    result.error
+                    "Payment verification rate-limit lookup error:",
+                    attemptCountError
                 );
-
 
                 return res.status(500).json({
                     error:
@@ -5769,54 +5783,96 @@ app.post(
                 });
             }
 
+            if(
+                Number(failedAttempts || 0) >=
+                PAYMENT_VERIFICATION_MAX_ATTEMPTS
+            ){
+                return res.status(429).json({
+                    verified:false,
+                    reason:"TOO_MANY_ATTEMPTS",
+                    retry_after_seconds:
+                        PAYMENT_VERIFICATION_WINDOW_MINUTES * 60
+                });
+            }
 
-            if (
-                !result.data?.success
-            ) {
+            const result = await supabase.rpc(
+                "redeem_payment_token",
+                {
+                    p_service_id:
+                        req.service.id,
 
+                    p_external_user_id:
+                        externalUserId,
+
+                    p_token_hash:
+                        hash(rawToken)
+                }
+            );
+
+            if(result.error){
+                console.error(
+                    "Redeem token RPC error:",
+                    result.error
+                );
+
+                return res.status(500).json({
+                    error:
+                        "Payment verification failed."
+                });
+            }
+
+            const verified =
+                Boolean(result.data?.success);
+
+            await supabase
+                .from("payment_verification_attempts")
+                .insert({
+                    service_id:
+                        req.service.id,
+
+                    service_user_id:
+                        serviceUser?.id || null,
+
+                    attempt_key_hash:
+                        attemptKeyHash,
+
+                    success:
+                        verified
+                });
+
+            if(!verified){
                 return res.status(400).json({
-
-                    verified:
-                        false,
-
+                    verified:false,
                     reason:
                         result.data?.reason ||
                         "VERIFICATION_FAILED"
                 });
             }
 
-
-            res.json({
-
-                verified:
-                    true,
-
+            return res.json({
+                verified:true,
                 payment_id:
                     result.data.payment_id,
-
                 product_id:
                     result.data.product_id,
-
                 amount:
                     result.data.amount,
-
                 currency:
                     result.data.currency,
-
                 payment_type:
-                    result.data.payment_type
+                    result.data.payment_type,
+                status:
+                    "completed",
+                unlocked:
+                    true
             });
-
-        } catch (error) {
-
+        }catch(error){
             console.error(
                 "Verify payment error:",
                 error
             );
 
-
-            res.status(500).json({
-
+            return res.status(500).json({
                 error:
                     "Payment verification failed."
             });
@@ -5824,6 +5880,200 @@ app.post(
     }
 );
 
+
+/* ============================================================
+   V1 PAYMENT LOOKUP
+============================================================ */
+
+app.get(
+    "/api/v1/payments/:paymentId",
+    authenticateService,
+    async (req,res) => {
+        try{
+            const {
+                data:payment,
+                error
+            } = await supabase
+                .from("payments")
+                .select(
+                    "id,payment_reference,processing_page_id,customer_reference,amount,currency,payment_type,status,payment_state,code_issued_at,redeemed_at,created_at,approved_at,completed_at,rejection_reason,cancelled_at,expires_at,service_id"
+                )
+                .eq(
+                    "id",
+                    req.params.paymentId
+                )
+                .eq(
+                    "service_id",
+                    req.service.id
+                )
+                .maybeSingle();
+
+            if(error) throw error;
+
+            if(!payment){
+                return res.status(404).json({
+                    error:
+                        "Payment not found."
+                });
+            }
+
+            return res.json({
+                payment:{
+                    ...payment,
+
+                    receipt_url:
+                        payment.processing_page_id
+                            ? BASE_URL +
+                              "/receipt/" +
+                              encodeURIComponent(
+                                  payment.processing_page_id
+                              )
+                            : null
+                }
+            });
+        }catch(error){
+            console.error(
+                "Payment lookup error:",
+                error
+            );
+
+            return res.status(500).json({
+                error:
+                    "Could not load payment."
+            });
+        }
+    }
+);
+
+
+/* ============================================================
+   V1 CANCEL PAYMENT
+============================================================ */
+
+app.post(
+    "/api/v1/payments/:paymentId/cancel",
+    authenticateService,
+    async (req,res) => {
+        try{
+            const {
+                data:payment,
+                error
+            } = await supabase
+                .from("payments")
+                .select(
+                    "id,status,return_url,cancel_url,processing_page_id"
+                )
+                .eq(
+                    "id",
+                    req.params.paymentId
+                )
+                .eq(
+                    "service_id",
+                    req.service.id
+                )
+                .maybeSingle();
+
+            if(error) throw error;
+
+            if(!payment){
+                return res.status(404).json({
+                    error:
+                        "Payment not found."
+                });
+            }
+
+            if(
+                ![
+                    "pending",
+                    "awaiting_receipt"
+                ].includes(payment.status)
+            ){
+                return res.status(409).json({
+                    error:
+                        "Only payments still awaiting payment can be cancelled."
+                });
+            }
+
+            const {
+                error:updateError
+            } = await supabase
+                .from("payments")
+                .update({
+                    status:
+                        "cancelled",
+
+                    payment_state:
+                        "cancelled",
+
+                    cancel_reason:
+                        "Application cancelled payment.",
+
+                    cancelled_at:
+                        new Date().toISOString()
+                })
+                .eq(
+                    "id",
+                    payment.id
+                )
+                .eq(
+                    "service_id",
+                    req.service.id
+                )
+                .eq(
+                    "status",
+                    payment.status
+                );
+
+            if(updateError) throw updateError;
+
+            await supabase
+                .from("audit_logs")
+                .insert({
+                    actor_type:
+                        "service",
+                    actor_id:
+                        req.service.id,
+                    action:
+                        "payment_cancelled",
+                    payment_id:
+                        payment.id,
+                    metadata:{
+                        reason:
+                            "service_cancelled"
+                    }
+                });
+
+            return res.json({
+                success:true,
+                status:
+                    "cancelled",
+                return_url:
+                    payment.return_url,
+                cancel_url:
+                    payment.cancel_url ||
+                    payment.return_url,
+                receipt_url:
+                    payment.processing_page_id
+                        ? BASE_URL +
+                          "/receipt/" +
+                          encodeURIComponent(
+                              payment.processing_page_id
+                          )
+                        : null
+            });
+        }catch(error){
+            console.error(
+                "API payment cancellation error:",
+                error
+            );
+
+            return res.status(500).json({
+                error:
+                    "Could not cancel payment."
+            });
+        }
+    }
+);
 
 
 /* ============================================================
@@ -7693,20 +7943,244 @@ async function ensureSubscriptionContract(payment){
   const {data:contract,error}=await supabase.from("subscription_contracts").insert({merchant_id:service.merchant_id,service_id:payment.service_id,product_id:payment.product_id,service_user_id:payment.service_user_id,initial_payment_id:payment.id,current_payment_id:payment.id,status:"active",interval:product.subscription_interval,next_due_at:due.toISOString()}).select("*").single();if(error)throw error;return contract;
 }
 async function sendDonationSuccessEmail({email,name,amount,currency,reference,customerReference}){if(!email)return;await sendResendEmail({to:email,subject:"Donation confirmed — "+reference,text:"Your donation to "+(name||"this campaign")+" has been successfully confirmed.\n\nAmount: "+currency+" "+amount+"\nReference: "+reference+(customerReference?"\nYour reference: "+customerReference:"")+"\n\nProcessing receipt: "+BASE_URL+"/receipt/"+encodeURIComponent(reference)+"\n\nThank you for your support.",html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><h1>Donation confirmed</h1><p>Your donation to "+escapeHtml(name||"this campaign")+" has been successfully confirmed.</p><p><b>Amount:</b> "+escapeHtml(currency)+" "+Number(amount).toFixed(2)+"<br><b>Reference:</b> "+escapeHtml(reference)+"</p><p>Keep this email as your receipt.</p></div></div>"});}
+
 async function approveMerchantPayment(paymentId,merchantId){
-  const {data:p,error}=await supabase.from("payments").select("*,service_users(email,external_user_id),services(name,status,merchant_id),products(name,product_code,subscription_interval),donation_campaigns(name,merchant_id,status)").eq("id",paymentId).maybeSingle();if(error)throw error;if(!p)return{status:404,body:{error:"Payment not found."}};
-  const owner=p.donation_campaign_id?p.donation_campaigns?.merchant_id:p.services?.merchant_id;if(owner!==merchantId)return{status:404,body:{error:"Payment not found."}};if(p.status!=="awaiting_verification")return{status:409,body:{error:"Only payments awaiting verification can be approved."}};
+  const {data:p,error}=await supabase
+    .from("payments")
+    .select("*,service_users(email,external_user_id),services(name,status,merchant_id),products(name,product_code,subscription_interval),donation_campaigns(name,merchant_id,status)")
+    .eq("id",paymentId)
+    .maybeSingle();
+
+  if(error) throw error;
+  if(!p) return {status:404,body:{error:"Payment not found."}};
+
+  const owner=
+    p.donation_campaign_id
+      ? p.donation_campaigns?.merchant_id
+      : p.services?.merchant_id;
+
+  if(owner!==merchantId){
+    return {status:404,body:{error:"Payment not found."}};
+  }
+
+  if(p.status!=="awaiting_verification"){
+    return {
+      status:409,
+      body:{
+        error:
+          "Only payments awaiting verification can be approved."
+      }
+    };
+  }
+
   const now=new Date().toISOString();
-  if(p.donation_campaign_id){const {error:e}=await supabase.from("payments").update({status:"completed",approved_at:now,completed_at:now}).eq("id",p.id).eq("status","awaiting_verification");if(e)throw e;await sendDonationSuccessEmail({email:p.customer_email||p.service_users?.email,name:p.donation_campaigns?.name,amount:p.amount,currency:p.currency,reference:p.payment_reference,customerReference:p.customer_reference});return{status:200,body:{success:true,type:"donation",message:"Donation confirmed and success email sent."}};}
-  if(p.services?.status!=="active")return{status:403,body:{error:"The application associated with this payment is not active."}};
-  const rawCode=generatePaymentCode();const {error:te}=await supabase.from("payment_tokens").upsert({payment_id:p.id,service_id:p.service_id,service_user_id:p.service_user_id,token_hash:hash(rawCode),expires_at:addHours(PAYMENT_TOKEN_HOURS),used_at:null},{onConflict:"payment_id"});if(te)throw te;
-  const {error:ue}=await supabase.from("payments").update({status:"approved",approved_at:now}).eq("id",p.id).eq("status","awaiting_verification");if(ue)throw ue;
-  if(p.payment_type==="subscribe")await ensureSubscriptionContract(p);await sendPaymentCodeEmail({email:p.service_users?.email,code:rawCode,serviceName:p.services?.name,amount:p.amount,currency:p.currency,reference:p.payment_reference});return{status:200,body:{success:true,type:p.payment_type,message:"Payment approved and one-time code emailed."}};
+
+  if(p.donation_campaign_id){
+    const {
+      error:e
+    } = await supabase
+      .from("payments")
+      .update({
+        status:
+          "completed",
+        payment_state:
+          "completed",
+        approved_at:
+          now,
+        completed_at:
+          now
+      })
+      .eq(
+        "id",
+        p.id
+      )
+      .eq(
+        "status",
+        "awaiting_verification"
+      );
+
+    if(e) throw e;
+
+    await sendDonationSuccessEmail({
+      email:
+        p.customer_email ||
+        p.service_users?.email,
+      name:
+        p.donation_campaigns?.name,
+      amount:
+        p.amount,
+      currency:
+        p.currency,
+      reference:
+        p.payment_reference,
+      customerReference:
+        p.customer_reference
+    });
+
+    return {
+      status:200,
+      body:{
+        success:true,
+        type:
+          "donation",
+        message:
+          "Donation confirmed and success email sent."
+      }
+    };
+  }
+
+  if(p.services?.status!=="active"){
+    return {
+      status:403,
+      body:{
+        error:
+          "The application associated with this payment is not active."
+      }
+    };
+  }
+
+  const rawCode =
+    generatePaymentCode();
+
+  const tokenExpiresAt =
+    addMinutes(
+      PAYMENT_TOKEN_MINUTES
+    );
+
+  const {
+    error:
+      tokenError
+  } = await supabase
+    .from("payment_tokens")
+    .upsert({
+      payment_id:
+        p.id,
+      service_id:
+        p.service_id,
+      service_user_id:
+        p.service_user_id,
+      token_hash:
+        hash(rawCode),
+      expires_at:
+        tokenExpiresAt,
+      used_at:
+        null
+    },{
+      onConflict:
+        "payment_id"
+    });
+
+  if(tokenError) throw tokenError;
+
+  const {
+    error:
+      approveError
+  } = await supabase
+    .from("payments")
+    .update({
+      status:
+        "approved",
+      payment_state:
+        "code_issued",
+      approved_at:
+        now,
+      code_issued_at:
+        now
+    })
+    .eq(
+      "id",
+      p.id
+    )
+    .eq(
+      "status",
+      "awaiting_verification"
+    );
+
+  if(approveError){
+    await supabase
+      .from("payment_tokens")
+      .delete()
+      .eq(
+        "payment_id",
+        p.id
+      );
+
+    throw approveError;
+  }
+
+  try{
+    if(
+      p.payment_type==="subscribe"
+    ){
+      await ensureSubscriptionContract(
+        p
+      );
+    }
+
+    await sendPaymentCodeEmail({
+      email:
+        p.service_users?.email,
+      code:
+        rawCode,
+      serviceName:
+        p.services?.name,
+      amount:
+        p.amount,
+      currency:
+        p.currency,
+      reference:
+        p.payment_reference
+    });
+  }catch(emailError){
+    await supabase
+      .from("payment_tokens")
+      .delete()
+      .eq(
+        "payment_id",
+        p.id
+      );
+
+    await supabase
+      .from("payments")
+      .update({
+        status:
+          "awaiting_verification",
+        payment_state:
+          "awaiting_verification",
+        approved_at:
+          null,
+        code_issued_at:
+          null
+      })
+      .eq(
+        "id",
+        p.id
+      )
+      .eq(
+        "status",
+        "approved"
+      );
+
+    throw emailError;
+  }
+
+  return {
+    status:200,
+    body:{
+      success:true,
+      type:
+        p.payment_type,
+      message:
+        "Payment approved and one-time code emailed.",
+      code_expires_at:
+        tokenExpiresAt
+    }
+  };
 }
 app.get("/api/merchant/payment-requests",authenticateMerchant,async(req,res)=>{try{const {data:services}=await merchantServices(req);const ids=(services||[]).map(s=>s.id);const {data:campaigns}=await supabase.from("donation_campaigns").select("id").eq("merchant_id",req.merchant.id);const cids=(campaigns||[]).map(c=>c.id);const qs=[];if(ids.length)qs.push(supabase.from("payments").select("*,service_users(email,external_user_id),services(name,slug),products(name,product_code,subscription_interval),payment_methods(name,type)").in("service_id",ids).eq("status","awaiting_verification"));if(cids.length)qs.push(supabase.from("payments").select("*,service_users(email,external_user_id),donation_campaigns(name,slug)").in("donation_campaign_id",cids).eq("status","awaiting_verification"));const rs=await Promise.all(qs);res.json({payments:rs.flatMap(x=>x.data||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))});}catch(e){console.error(e);res.status(500).json({error:"Could not load payment requests."})}});
 app.get("/api/merchant/payments/:paymentId/receipt",authenticateMerchant,async(req,res)=>{try{const {data:p}=await supabase.from("payments").select("id,service_id,donation_campaign_id,receipt_path").eq("id",req.params.paymentId).maybeSingle();if(!p?.receipt_path)return res.status(404).json({error:"Receipt not found."});let allowed=false;if(p.service_id){const {data:x}=await supabase.from("services").select("id").eq("id",p.service_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(p.donation_campaign_id){const {data:x}=await supabase.from("donation_campaigns").select("id").eq("id",p.donation_campaign_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(!allowed)return res.status(404).json({error:"Receipt not found."});const {data,error}=await supabase.storage.from("payment-receipts").createSignedUrl(p.receipt_path,300);if(error)throw error;res.json({url:data?.signedUrl||data?.signedURL});}catch(e){console.error(e);res.status(500).json({error:"Could not open receipt."})}});
 app.post("/api/merchant/payments/:paymentId/approve",authenticateMerchant,async(req,res)=>{try{const r=await approveMerchantPayment(req.params.paymentId,req.merchant.id);res.status(r.status).json(r.body)}catch(e){console.error(e);res.status(500).json({error:"Could not approve payment."})}});
-app.post("/api/merchant/payments/:paymentId/reject",authenticateMerchant,async(req,res)=>{try{const reason=String(req.body?.reason||"Payment could not be verified.").trim().slice(0,500);const {data:p}=await supabase.from("payments").select("id,service_id,donation_campaign_id,status").eq("id",req.params.paymentId).maybeSingle();if(!p)return res.status(404).json({error:"Payment not found."});let allowed=false;if(p.service_id){const {data:x}=await supabase.from("services").select("id").eq("id",p.service_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(p.donation_campaign_id){const {data:x}=await supabase.from("donation_campaigns").select("id").eq("id",p.donation_campaign_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(!allowed)return res.status(404).json({error:"Payment not found."});if(p.status!=="awaiting_verification")return res.status(409).json({error:"Only payments awaiting verification can be rejected."});const {error}=await supabase.from("payments").update({status:"rejected",rejection_reason:reason}).eq("id",p.id).eq("status","awaiting_verification");if(error)throw error;res.json({success:true});}catch(e){console.error(e);res.status(500).json({error:"Could not reject payment."})}});
+app.post("/api/merchant/payments/:paymentId/reject",authenticateMerchant,async(req,res)=>{try{const reason=String(req.body?.reason||"Payment could not be verified.").trim().slice(0,500);const {data:p}=await supabase.from("payments").select("id,service_id,donation_campaign_id,status").eq("id",req.params.paymentId).maybeSingle();if(!p)return res.status(404).json({error:"Payment not found."});let allowed=false;if(p.service_id){const {data:x}=await supabase.from("services").select("id").eq("id",p.service_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(p.donation_campaign_id){const {data:x}=await supabase.from("donation_campaigns").select("id").eq("id",p.donation_campaign_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(!allowed)return res.status(404).json({error:"Payment not found."});if(p.status!=="awaiting_verification")return res.status(409).json({error:"Only payments awaiting verification can be rejected."});const {error}=await supabase.from("payments").update({status:"rejected",payment_state:"rejected",rejection_reason:reason}).eq("id",p.id).eq("status","awaiting_verification");if(error)throw error;res.json({success:true});}catch(e){console.error(e);res.status(500).json({error:"Could not reject payment."})}});
 
 /* ============================================================
    ADMIN LOGIN
@@ -9150,337 +9624,80 @@ async function sendPaymentLinkApprovedEmail({
    PAYMENT CODE EMAIL
 ============================================================ */
 
+
 async function sendPaymentCodeEmail({
-
-    email,
-
-    code,
-
-    serviceName,
-
-    amount,
-
-    currency,
-
-    reference
-
+  email,
+  code,
+  serviceName,
+  amount,
+  currency,
+  reference
 }) {
-
-    if (
-        !email
-    ) {
-
-        console.error(
-            "Payment-code email skipped: no recipient."
-        );
-
-
-        return;
-    }
-
-
-    const apiKey =
-        process.env.RESEND_API_KEY;
-
-
-    const from =
-        process.env.RESEND_FROM_EMAIL;
-
-
-    if (
-        !apiKey ||
-        !from
-    ) {
-
-        console.error(
-            "Payment-code email unavailable: Resend configuration missing."
-        );
-
-
-        return;
-    }
-
-
-    try {
-
-        const response =
-            await fetch(
-                "https://api.resend.com/emails",
-                {
-
-                    method:
-                        "POST",
-
-                    headers: {
-
-                        Authorization:
-                            `Bearer ${apiKey}`,
-
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            from,
-
-                            to: [
-                                email
-                            ],
-
-                            subject:
-                                `${serviceName} payment approved — verification code`,
-
-                            text:
-                                `Your payment for ${serviceName} has been approved.\n\nReference: ${reference}\nAmount: ${currency} ${amount}\n\nYour one-time payment code is: ${code}\n\nProcessing receipt: ${BASE_URL}/receipt/${encodeURIComponent(reference)}\n\nEnter this code in the application or website where you started the payment. Do not share this code.`,
-
-                            html:
-                                `
-<!DOCTYPE html>
-
-<html>
-
-<body
-style="
-    margin:0;
-    padding:0;
-    background:#f6f6f3;
-    font-family:Arial,Helvetica,sans-serif;
-    color:#111;
-"
->
-
-<div
-style="
-    max-width:560px;
-    margin:auto;
-    padding:40px 20px;
-"
->
-
-
-<div
-style="
-    background:#ffffff;
-    border:1px solid #e7e7e2;
-    border-radius:20px;
-    padding:34px;
-"
->
-
-
-<div
-style="
-    width:42px;
-    height:42px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:#111;
-    color:white;
-    border-radius:11px;
-    font-weight:800;
-"
->
-S
-</div>
-
-
-<h1
-style="
-    margin:25px 0 10px;
-    font-size:27px;
-    letter-spacing:-1px;
-"
->
-Payment approved
-</h1>
-
-
-<p
-style="
-    color:#666;
-    line-height:1.7;
-"
->
-Your payment for
-<strong>
-${escapeHtml(serviceName)}
-</strong>
-has been verified and approved.
-</p>
-
-
-<div
-style="
-    background:#f7f7f4;
-    border:1px solid #e7e7e1;
-    border-radius:16px;
-    padding:22px;
-    margin:25px 0;
-"
->
-
-
-<div
-style="
-    color:#777;
-    font-size:11px;
-    margin-bottom:8px;
-"
->
-PAYMENT REFERENCE
-</div>
-
-
-<div
-style="
-    font-family:monospace;
-    font-weight:bold;
-"
->
-${escapeHtml(reference)}
-</div>
-
-
-<div
-style="
-    color:#777;
-    font-size:11px;
-    margin-top:18px;
-    margin-bottom:8px;
-"
->
-AMOUNT
-</div>
-
-
-<div
-style="
-    font-weight:bold;
-"
->
-${escapeHtml(currency)}
-${Number(amount).toFixed(2)}
-</div>
-
-
-</div>
-
-
-<div
-style="
-    border:1px solid #deded9;
-    border-radius:16px;
-    padding:25px;
-    text-align:center;
-"
->
-
-
-<div
-style="
-    color:#777;
-    font-size:10px;
-    font-weight:800;
-    letter-spacing:2px;
-"
->
-ONE-TIME PAYMENT CODE
-</div>
-
-
-<div
-style="
-    margin-top:12px;
-    font-family:Consolas,Monaco,monospace;
-    font-size:29px;
-    font-weight:800;
-    letter-spacing:2px;
-"
->
-${escapeHtml(code)}
-</div>
-
-
-</div>
-
-
-<p
-style="
-    color:#666;
-    font-size:13px;
-    line-height:1.7;
-    margin-top:24px;
-"
->
-Return to the application or website
-where you started the payment and
-enter this code there.
-</p>
-
-
-<p
-style="
-    color:#999;
-    font-size:12px;
-    line-height:1.6;
-    border-top:1px solid #eee;
-    padding-top:18px;
-    margin-top:25px;
-"
->
-This payment code is tied to this
-transaction and can only be used once.
-Do not share it with anyone.
-</p>
-
-
-</div>
-
-</div>
-
-</body>
-
-</html>
-`
-                        })
-                }
-            );
-
-
-        if (
-            !response.ok
-        ) {
-
-            console.error(
-                "\n========== PAYMENT EMAIL ERROR =========="
-            );
-
-            console.error(
-                await response.text()
-            );
-
-            console.error(
-                "==========================================\n"
-            );
-
-            return;
-        }
-
-
-        console.log(
-            `Payment-code email sent successfully to ${email}`
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Payment-code email exception:",
-            error
-        );
-    }
+  if(!email){
+    throw publicError(
+      "No customer email is available for this payment."
+    );
+  }
+
+  await sendResendEmail({
+    to:
+      email,
+
+    subject:
+      String(
+        serviceName ||
+        "SquashberryPay"
+      ) +
+      " payment approved — verification code",
+
+    text:
+      "Your payment for " +
+      String(
+        serviceName ||
+        "the merchant"
+      ) +
+      " has been approved.\\n\\n" +
+      "Reference: " +
+      String(reference) +
+      "\\nAmount: " +
+      String(currency) +
+      " " +
+      String(amount) +
+      "\\n\\nYour one-time payment code is: " +
+      String(code) +
+      "\\n\\nProcessing receipt: " +
+      BASE_URL +
+      "/receipt/" +
+      encodeURIComponent(reference) +
+      "\\n\\nEnter this code in the application or website where you started the payment. Do not share this code.",
+
+    html:
+      "<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\">" +
+      "<div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\">" +
+      "<b>SquashberryPay</b>" +
+      "<h1>Payment approved</h1>" +
+      "<p>Your payment for <strong>" +
+      escapeHtml(
+        serviceName ||
+        "the merchant"
+      ) +
+      "</strong> has been verified.</p>" +
+      "<p><b>Reference:</b> " +
+      escapeHtml(reference) +
+      "<br><b>Amount:</b> " +
+      escapeHtml(currency) +
+      " " +
+      Number(amount).toFixed(2) +
+      "</p>" +
+      "<div style=\"border:1px solid #deded9;border-radius:16px;padding:22px;text-align:center\">" +
+      "<div style=\"font-size:11px;font-weight:800;letter-spacing:2px;color:#777\">ONE-TIME PAYMENT CODE</div>" +
+      "<div style=\"margin-top:10px;font:800 28px monospace;letter-spacing:2px\">" +
+      escapeHtml(code) +
+      "</div></div>" +
+      "<p style=\"color:#666;line-height:1.6\">Enter this code in the application where you started the payment.</p>" +
+      "<p style=\"color:#999;font-size:12px\">This code is tied to this payment, expires shortly, and can only be used once.</p>" +
+      "</div></div>"
+  });
 }
 
 
