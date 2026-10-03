@@ -8,6 +8,8 @@ const apiBase =
 
 
 const state = {
+    isDonation:
+        window.location.pathname.split("/").filter(Boolean)[0] === "donate",
     slug:
         decodeURIComponent(
             window.location.pathname
@@ -145,7 +147,7 @@ async function loadCheckout() {
     try {
         const response =
             await fetch(
-                apiBase + "/api/public/links/" +
+                apiBase + (state.isDonation ? "/api/public/donations/" : "/api/public/links/") +
                 encodeURIComponent(
                     state.slug
                 )
@@ -541,7 +543,8 @@ async function startPayment(
         state.link.donation || { enabled: false };
 
     const body = {
-        email
+        email,
+        customer_reference: ($("#customerReference")?.value || "").trim().slice(0,160)
     };
 
     if (
