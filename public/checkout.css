@@ -371,3 +371,26 @@ textarea:focus{
     }
 }
 \n.donation-continue{width:100%;margin-top:16px}#checkoutForm[hidden]{display:none!important}\n
+.checkout-stage[hidden]{display:none!important}
+.checkout-progress{display:flex;align-items:center;gap:9px;margin:-4px 0 24px}
+.checkout-progress span{width:28px;height:28px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:900;color:var(--muted);background:#fff}
+.checkout-progress span.active,.checkout-progress span.complete{background:#111;color:#fff;border-color:#111}
+.checkout-progress i{height:1px;flex:1;background:var(--line)}
+.stage-title{margin:8px 0 8px;font-size:27px;letter-spacing:-.8px}
+.stage-continue{margin-top:22px}
+.back-button{border:0;background:transparent;padding:0;margin:0 0 18px;color:var(--muted);font-weight:800;cursor:pointer}
+.processing-stage{min-height:320px;text-align:center;display:grid;place-items:center;align-content:center;gap:12px}
+.processing-stage h2{margin:0;font-size:28px;letter-spacing:-.8px}
+.processing-stage p{margin:0;color:var(--muted);max-width:330px;line-height:1.55}
+.spinner.large{width:42px;height:42px;border-width:4px;margin-bottom:6px}
+@media (max-width:620px){
+    .checkout-card{padding:20px}
+    .checkout-progress{margin-bottom:20px}
+    .checkout-progress span{width:25px;height:25px;font-size:10px}
+    .summary-card{margin:18px 0}
+    .donation-campaign{margin:18px 0}
+    .donation-heading > strong{font-size:20px}
+    .campaign-stats{grid-template-columns:repeat(3,minmax(0,1fr));}
+    .campaign-stats strong{font-size:12px}
+    .preset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
