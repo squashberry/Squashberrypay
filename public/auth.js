@@ -96,7 +96,19 @@ function escapeHtml(
 ============================================================ */
 
 const authMessage =
-    $("#authMessage");
+    $("#authMessage")
+
+  function showSessionExpiredNotice() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("reason") !== "session_expired") return;
+      showMessage(
+        "Your session expired because you were inactive for a while. Please sign in again to continue.",
+        "error"
+      );
+    } catch (_) {}
+  }
+  window.addEventListener("DOMContentLoaded", showSessionExpiredNotice);;
 
 
 function showAuthErrorAlert(
@@ -137,7 +149,7 @@ function showAuthErrorAlert(
                 class="auth-error-alert-close"
                 type="button"
                 aria-label="Dismiss error"
-            >×</button>
+            >Ã</button>
         `;
 
         document.body.appendChild(
@@ -1318,7 +1330,7 @@ signupForm?.addEventListener(
 
         setButtonLoading(
             signupButton,
-            "Sending code…"
+            "Sending codeâ¦"
         );
 
 
@@ -1955,7 +1967,7 @@ async function verifySignupOtp(
      *
      * then
      *
-     *        ✓
+     *        â
      */
 
     signupOtpContainer
@@ -2183,7 +2195,7 @@ $("#resendSignupButton")
 
             setButtonLoading(
                 button,
-                "Sending…"
+                "Sendingâ¦"
             );
 
 
@@ -2306,7 +2318,7 @@ function saveMerchantSession(
 
 /* ============================================================
    SIGN-IN TWO-STATE FLOW
-   Email → Continue → Password → Sign in
+   Email â Continue â Password â Sign in
 ============================================================ */
 
 const signinState = {
@@ -2570,7 +2582,7 @@ signinForm?.addEventListener(
 
         setButtonLoading(
             button,
-            "Signing in…"
+            "Signing inâ¦"
         );
 
         try {
@@ -3059,7 +3071,7 @@ async function sendPasswordResetOtp() {
 
     setButtonLoading(
         sendResetButton,
-        "Sending code…"
+        "Sending codeâ¦"
     );
 
     try {
@@ -3189,7 +3201,7 @@ async function verifyResetOtp() {
 
     setButtonLoading(
         verifyResetOtpButton,
-        "Verifying…"
+        "Verifyingâ¦"
     );
 
     try {
@@ -3367,7 +3379,7 @@ saveNewPasswordButton?.addEventListener(
 
         setButtonLoading(
             saveNewPasswordButton,
-            "Updating password…"
+            "Updating passwordâ¦"
         );
 
         try {
