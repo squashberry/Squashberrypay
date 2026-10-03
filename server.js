@@ -6088,7 +6088,7 @@ async function handleV1CreatePayment(
                 },
 
                 payment_url:
-                    PUBLIC_SITE_URL + "/pay/" + rawSessionToken,
+                    PUBLIC_SITE_URL + "/index.html?pay=" + encodeURIComponent(rawSessionToken),
 
                 receipt_url:
                     PUBLIC_SITE_URL + "/receipt/" + encodeURIComponent(payment.processing_page_id)
@@ -9400,7 +9400,7 @@ app.post("/api/merchant/donation-campaigns", authenticateMerchant, async (req,re
             return res.status(500).json({ error: "Could not create donation campaign." });
         }
 
-        res.status(201).json({ campaign, payment_url: PUBLIC_SITE_URL + "/donate/" + campaign.slug });
+        res.status(201).json({ campaign, payment_url: PUBLIC_SITE_URL + "/checkout.html?donation=" + encodeURIComponent(campaign.slug) });
     } catch (error) {
         console.error("Create donation campaign error:", error);
         res.status(500).json({ error: "Could not create donation campaign." });
@@ -9435,7 +9435,7 @@ app.patch("/api/merchant/donation-campaigns/:id", authenticateMerchant, async (r
         if(!id||Object.keys(patch).length===0)return res.status(400).json({error:"Nothing to update."});
         const {data,error}=await supabase.from("donation_campaigns").update(patch).eq("id",id).eq("merchant_id",req.merchant.id).select("*").single();
         if(error||!data)return res.status(404).json({error:"Donation campaign not found."});
-        res.json({campaign:data,payment_url:PUBLIC_SITE_URL+"/donate/"+data.slug});
+        res.json({campaign:data,payment_url:PUBLIC_SITE_URL+"/checkout.html?donation="+encodeURIComponent(data.slug)});
     }catch(e){console.error(e);res.status(500).json({error:"Could not update donation campaign."});}
 });
 app.delete("/api/merchant/donation-campaigns/:id", authenticateMerchant, async (req,res) => {
@@ -9455,9 +9455,35 @@ app.patch("/api/merchant/payment-links/:id", authenticateMerchant, async (req,re
         if(!Object.keys(patch).length)return res.status(400).json({error:"Nothing to update."});
         const {data,error}=await supabase.from("payment_links").update(patch).eq("id",id).select("*").single();
         if(error||!data)return res.status(404).json({error:"Payment link not found."});
-        res.json({payment_link:data,payment_url:PUBLIC_SITE_URL+"/checkout/"+encodeURIComponent(data.slug)});
+        res.json({payment_link:data,payment_url:PUBLIC_SITE_URL+"/checkout.html?checkout="+encodeURIComponent(data.slug)});
     }catch(e){console.error(e);res.status(500).json({error:"Could not update payment link."});}
 });
+app.patch("/api/merchant/apps/:id/webhook", authenticateMerchant, async (req,res) => {
+    try {
+        const id=String(req.params.id||"").trim();
+        const webhookUrl=String(req.body?.webhook_url||"").trim();
+        if(webhookUrl && !/^https:\/\//i.test(webhookUrl)){
+            return res.status(400).json({error:"Webhook URL must use HTTPS."});
+        }
+        const {data:service,error:lookupError}=await supabase.from("services")
+            .select("id,name,webhook_url,webhook_secret")
+            .eq("id",id).eq("merchant_id",req.merchant.id).maybeSingle();
+        if(lookupError)throw lookupError;
+        if(!service)return res.status(404).json({error:"Application not found."});
+        const patch={webhook_url:webhookUrl||null,updated_at:new Date().toISOString()};
+        if(webhookUrl && !service.webhook_secret)patch.webhook_secret="whsec_"+randomHex(32);
+        if(!webhookUrl)patch.webhook_secret=null;
+        const {data:updated,error}=await supabase.from("services").update(patch)
+            .eq("id",id).eq("merchant_id",req.merchant.id)
+            .select("id,name,webhook_url,environment,status,created_at,updated_at").single();
+        if(error)throw error;
+        res.json({success:true,app:updated,webhook_configured:Boolean(updated.webhook_url),message:webhookUrl?"Webhook delivery is enabled for this application.":"Webhook delivery is disabled for this application."});
+    }catch(error){
+        console.error("Update webhook configuration error:",error);
+        res.status(500).json({error:"Could not update webhook configuration."});
+    }
+});
+
 app.delete("/api/merchant/payment-links/:id", authenticateMerchant, async (req,res) => {
     try {
         const id=String(req.params.id||"").trim();
