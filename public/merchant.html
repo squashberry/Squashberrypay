@@ -32,6 +32,7 @@
       <button data-section="balances" class="side-link"><span>◈</span>Balances</button>
       <button data-section="payment-links" class="side-link"><span>↗</span>Payment Links</button>
       <button data-section="products" class="side-link"><span>▦</span>Products</button>
+      <button data-section="methods" class="side-link"><span>◉</span>Payment Methods</button>
       <button data-section="subscriptions" class="side-link"><span>↻</span>Subscriptions</button>
       <button data-section="donations" class="side-link"><span>♡</span>Donations</button>
       <button data-section="analytics" class="side-link"><span>⌁</span>Analytics</button>
@@ -92,6 +93,21 @@
       <div id="paymentLinksGrid" class="links-grid"></div>
     </section>
 
+    <section id="section-methods" class="merchant-section" hidden>
+  <div class="section-title-row"><div><span class="eyebrow">PAYMENT METHODS</span><h2>Where customers send money.</h2><p>Configure the payment destinations shown on hosted checkout.</p></div></div>
+  <div class="merchant-form">
+    <label>Application<select id="methodApp"></select></label>
+    <label>Payment method name<input id="methodName" placeholder="Wave"></label>
+    <label>Type<select id="methodType"><option value="wave">Wave</option><option value="aps">APS</option><option value="nada">NADA</option><option value="bank">Bank Transfer</option><option value="other">Other</option></select></label>
+    <label>Account name<input id="methodAccountName" placeholder="Your business name"></label>
+    <label>Phone number<input id="methodPhone" placeholder="+220…"></label>
+    <label>Bank name<input id="methodBankName" placeholder="Bank name"></label>
+    <label>Account number<input id="methodAccountNumber" placeholder="Account number"></label>
+    <label>Payment instructions<textarea id="methodInstructions" rows="5" placeholder="Explain exactly how customers should make the transfer."></textarea></label>
+    <button id="saveMethod" class="button primary">Save payment method</button>
+  </div>
+  <div id="methodsList" class="method-list"></div>
+</section>
     <section id="section-products" class="merchant-section" hidden>
       <div class="section-title-row"><div><span class="eyebrow">PRODUCTS</span><h2>What customers can pay for.</h2><p>One-time payments, subscriptions and donation campaigns.</p></div></div>
       <div class="merchant-form product-form">
