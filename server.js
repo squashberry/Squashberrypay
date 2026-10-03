@@ -54,9 +54,13 @@ const BASE_URL =
     process.env.SQUASHBERRYPAY_URL ||
     `http://localhost:${PORT}`;
 
+const configuredPublicSiteUrl =
+    String(process.env.SQUASHBERRYPAY_PUBLIC_URL || "").replace(/\/+$/, "");
 const PUBLIC_SITE_URL =
-    process.env.SQUASHBERRYPAY_PUBLIC_URL ||
-    "https://squashberry.github.io/Squashberrypay";
+    configuredPublicSiteUrl &&
+    configuredPublicSiteUrl !== "https://squashberry.github.io"
+        ? configuredPublicSiteUrl
+        : "https://squashberry.github.io/Squashberrypay";
 
 const PAYMENT_SESSION_MINUTES =
     Number(
