@@ -3433,79 +3433,12 @@ app.post(
 
 
 /* ============================================================
-   CLEAN TEMPORARY AUTH DATA
+   TEMPORARY AUTH DATA
+
+   Cloudflare Workers disallow process-wide timers during module
+   initialization. Expiration is checked when each record is used,
+   so no global setInterval is required here.
 ============================================================ */
-
-setInterval(
-    () => {
-
-        const now =
-            Date.now();
-
-
-        for (
-            const [
-                key,
-                record
-            ]
-            of authOtpStore
-        ) {
-
-            if (
-                record.expires_at <=
-                now
-            ) {
-
-                authOtpStore.delete(
-                    key
-                );
-            }
-        }
-
-
-        for (
-            const [
-                email,
-                record
-            ]
-            of pendingSignupStore
-        ) {
-
-            if (
-                record.expires_at <=
-                now
-            ) {
-
-                pendingSignupStore.delete(
-                    email
-                );
-            }
-        }
-
-
-        for (
-            const [
-                ticket,
-                record
-            ]
-            of passwordResetTickets
-        ) {
-
-            if (
-                record.expiresAt <=
-                now
-            ) {
-
-                passwordResetTickets.delete(
-                    ticket
-                );
-            }
-        }
-
-    },
-    60 *
-    1000
-);
 
 
 /* ============================================================
