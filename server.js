@@ -1294,195 +1294,128 @@ function buildAuthOtpEmail({
     purpose
 }) {
 
-    return `
-<!DOCTYPE html>
+    const safeOtp =
+        escapeHtml(otp);
 
-<html lang="en">
+    const safeTitle =
+        escapeHtml(title);
 
+    const safeDescription =
+        escapeHtml(description);
+
+    const safePurpose =
+        escapeHtml(purpose);
+
+    return `<!DOCTYPE html>
+<html lang="en" dir="ltr">
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-    name="viewport"
-    content="width=device-width,initial-scale=1"
->
-
-<title>
-    ${escapeHtml(title)}
-</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>${safeTitle}</title>
 </head>
 
+<body style="margin:0;padding:0;background-color:#f3f3f0;color:#111111;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;background-color:#f3f3f0;">
+<tr>
+<td align="center" style="padding-top:36px;padding-right:16px;padding-bottom:36px;padding-left:16px;">
 
-<body
-style="
-    margin:0;
-    padding:0;
-    background:#f5f5f2;
-    font-family:Arial,Helvetica,sans-serif;
-    color:#111111;
-"
->
+<table width="600" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;max-width:600px;background-color:#ffffff;border:1px solid #ddddda;border-radius:22px;">
+<tr>
+<td style="padding-top:34px;padding-right:34px;padding-bottom:34px;padding-left:34px;">
 
+<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+<tr>
+<td style="padding-bottom:24px;">
 
-<div
-style="
-    width:100%;
-    padding:45px 18px;
-    box-sizing:border-box;
-"
->
+<table cellpadding="0" cellspacing="0" border="0" role="presentation">
+<tr>
+<td width="44" height="44" align="center" valign="middle" bgcolor="#111111" style="width:44px;height:44px;background-color:#111111;border-radius:12px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:18px;line-height:44px;font-weight:800;">
+S
+</td>
+<td style="padding-left:12px;">
+<div style="font-size:16px;line-height:20px;color:#111111;font-weight:800;">SquashberryPay</div>
+<div style="font-size:11px;line-height:16px;color:#888888;font-weight:600;">Secure business payments</div>
+</td>
+</tr>
+</table>
 
+</td>
+</tr>
 
-    <div
-    style="
-        max-width:560px;
-        margin:0 auto;
-        background:#ffffff;
-        border:1px solid #e6e6e1;
-        border-radius:20px;
-        padding:34px;
-        box-sizing:border-box;
-    "
-    >
+<tr>
+<td style="padding-bottom:10px;font-size:10px;line-height:14px;color:#777777;font-weight:800;letter-spacing:2px;">
+${safePurpose}
+</td>
+</tr>
 
+<tr>
+<td style="padding-bottom:12px;font-size:28px;line-height:34px;color:#111111;font-weight:800;letter-spacing:-0.8px;">
+${safeTitle}
+</td>
+</tr>
 
-        <div
-        style="
-            width:42px;
-            height:42px;
-            background:#111111;
-            color:#ffffff;
-            border-radius:11px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-size:17px;
-            font-weight:800;
-            margin-bottom:24px;
-        "
-        >
-            S
-        </div>
+<tr>
+<td style="padding-bottom:24px;font-size:15px;line-height:25px;color:#666666;">
+${safeDescription}
+</td>
+</tr>
 
+<tr>
+<td style="padding-top:2px;padding-right:22px;padding-bottom:22px;padding-left:22px;background-color:#f7f7f4;border:1px solid #e2e2dc;border-radius:18px;">
 
-        <div
-        style="
-            font-size:10px;
-            font-weight:800;
-            letter-spacing:2px;
-            color:#777777;
-            margin-bottom:10px;
-        "
-        >
-            ${escapeHtml(purpose)}
-        </div>
+<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+<tr>
+<td align="center" style="padding-top:22px;padding-bottom:9px;font-size:10px;line-height:14px;color:#777777;font-weight:800;letter-spacing:2px;">
+YOUR VERIFICATION CODE
+</td>
+</tr>
+<tr>
+<td align="center" style="padding-top:2px;padding-bottom:16px;font-family:Consolas,Monaco,'Courier New',monospace;font-size:36px;line-height:42px;color:#111111;font-weight:800;letter-spacing:8px;">
+${safeOtp}
+</td>
+</tr>
+<tr>
+<td align="center" style="font-size:12px;line-height:18px;color:#888888;">
+This code expires in ${AUTH_OTP_MINUTES} minutes.
+</td>
+</tr>
+</table>
 
+</td>
+</tr>
 
-        <h1
-        style="
-            margin:0 0 12px;
-            font-size:27px;
-            line-height:1.15;
-            letter-spacing:-0.8px;
-        "
-        >
-            ${escapeHtml(title)}
-        </h1>
+<tr>
+<td style="padding-top:24px;font-size:13px;line-height:21px;color:#666666;">
+For your security, never share this code. SquashberryPay support will never ask you for your verification code.
+</td>
+</tr>
 
+<tr>
+<td style="padding-top:24px;border-top:1px solid #eeeeea;font-size:11px;line-height:18px;color:#999999;">
+This is an automated security email from SquashberryPay. If you did not request this code, you can safely ignore this message.
+</td>
+</tr>
 
-        <p
-        style="
-            margin:0;
-            color:#666666;
-            font-size:15px;
-            line-height:1.7;
-        "
-        >
-            ${escapeHtml(description)}
-        </p>
+</table>
 
+</td>
+</tr>
+</table>
 
-        <div
-        style="
-            margin:28px 0;
-            background:#f7f7f4;
-            border:1px solid #e7e7e1;
-            border-radius:17px;
-            padding:28px 20px;
-            text-align:center;
-        "
-        >
+<table width="600" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;max-width:600px;">
+<tr>
+<td align="center" style="padding-top:16px;font-size:11px;line-height:17px;color:#999999;">
+SquashberryPay Secure Authentication
+</td>
+</tr>
+</table>
 
-
-            <div
-            style="
-                color:#777777;
-                font-size:10px;
-                font-weight:800;
-                letter-spacing:2px;
-                margin-bottom:12px;
-            "
-            >
-                VERIFICATION CODE
-            </div>
-
-
-            <div
-            style="
-                font-family:Consolas,Monaco,monospace;
-                font-size:34px;
-                font-weight:800;
-                letter-spacing:8px;
-                color:#111111;
-            "
-            >
-                ${escapeHtml(otp)}
-            </div>
-
-
-        </div>
-
-
-        <p
-        style="
-            margin:0;
-            color:#666666;
-            font-size:13px;
-            line-height:1.65;
-        "
-        >
-            This code expires in
-            <strong>
-                ${AUTH_OTP_MINUTES} minutes
-            </strong>.
-            Never share it with anyone.
-        </p>
-
-
-        <div
-        style="
-            margin-top:28px;
-            padding-top:18px;
-            border-top:1px solid #eeeeea;
-            color:#999999;
-            font-size:11px;
-            line-height:1.6;
-        "
-        >
-            SquashberryPay Secure Authentication
-        </div>
-
-
-    </div>
-
-</div>
-
+</td>
+</tr>
+</table>
 </body>
-
-</html>
-`;
+</html>`;
 }
 
 
@@ -1648,7 +1581,7 @@ async function issueAuthOtp({
                 normalizedEmail,
 
             subject:
-                `SquashberryPay verification code: ${otp}`,
+                "Your SquashberryPay verification code",
 
             html:
                 buildAuthOtpEmail({
