@@ -7851,7 +7851,7 @@ app.get(
 
             const { data: payment, error: paymentError } = await supabase
                 .from("payments")
-                .select("id,service_id,status,payment_method_id,donation_campaign_id,payment_started_at,payment_deadline_at")
+                .select("id,service_id,status,payment_method_id,donation_payment_method_id,donation_campaign_id,payment_started_at,payment_deadline_at")
                 .eq("id", session.payment_id)
                 .maybeSingle();
 
@@ -7930,7 +7930,9 @@ app.get(
                 const { error: updateError } = await supabase
                     .from("payments")
                     .update({
-                        payment_method_id: methodQuery.data.id,
+                        ...(payment.donation_campaign_id
+                            ? { donation_payment_method_id: methodQuery.data.id }
+                            : { payment_method_id: methodQuery.data.id }),
                         payment_started_at: startedAt,
                         payment_deadline_at: deadlineAt,
                         status: "awaiting_receipt",
