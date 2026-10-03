@@ -1,8 +1,11 @@
 "use strict";
 const apiBase=String(window.SQUASHBERRYPAY_API_BASE||"https://squashberrypay.squashberrypay.workers.dev").replace(/\/+$/,"");
 const SITE_BASE="/Squashberrypay";
-const siteUrl=p=>location.origin+SITE_BASE+(String(p||"").startsWith("/")?String(p):"/"+String(p));
-const token=sessionStorage.getItem("sbp_access_token");if(!token)location.href=SITE_BASE+"/signin/?reason=session_expired&returnTo="+encodeURIComponent(location.pathname+location.search);
+const SITE_ORIGIN=location.origin;
+const siteUrl=p=>SITE_ORIGIN+SITE_BASE+(String(p||"").startsWith("/")?String(p):"/"+String(p));
+const authUrl=(p="")=>SITE_BASE+"/signin/"+p;
+const token=sessionStorage.getItem("sbp_access_token");
+if(!token)location.replace(authUrl("?reason=session_expired"));
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));let merchant=(()=>{try{return JSON.parse(sessionStorage.getItem("sbp_merchant")||"null")}catch{return null}})(),dashboard=null,apps=[],range=7;
 const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/\x27/g,"&#039;");
 const money=(v,c="GMD")=>c+" "+Number(v||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -12,7 +15,7 @@ const statusClass=s=>{s=String(s||"").toLowerCase();return good(s)?"success":["f
 const empty=(a,b)=>"<div class=\"empty-state\"><strong>"+esc(a)+"</strong><p>"+esc(b)+"</p></div>";
 function notify(m,t){const e=$("#merchantNotification");e.textContent=m;e.className="merchant-notification "+(t||"normal");e.hidden=false;clearTimeout(notify.t);notify.t=setTimeout(()=>e.hidden=true,4500)}
 function loadBtn(b,t){if(!b)return;if(!b.dataset.old)b.dataset.old=b.innerHTML;b.disabled=true;b.innerHTML="<span class=\"spinner dark\"></span>"+esc(t)}function resetBtn(b){if(!b)return;b.disabled=false;if(b.dataset.old)b.innerHTML=b.dataset.old}
-async function api(u,o){const r=await fetch(apiBase+u,Object.assign({},o||{},{headers:Object.assign({},o?.headers||{},{Authorization:"Bearer "+token,"Content-Type":"application/json"})}));let d={};try{d=await r.json()}catch{}if(!r.ok){if(r.status===401){sessionStorage.removeItem("sbp_access_token");sessionStorage.removeItem("sbp_refresh_token");sessionStorage.removeItem("sbp_expires_at");location.href=SITE_BASE+"/signin/?reason=session_expired&returnTo="+encodeURIComponent(location.pathname+location.search);return}throw Error(d.error||"Request failed.")}return d}
+async function api(u,o){const r=await fetch(apiBase+u,Object.assign({},o||{},{headers:Object.assign({},o?.headers||{},{Authorization:"Bearer "+token,"Content-Type":"application/json"})}));let d={};try{d=await r.json()}catch{}if(!r.ok){if(r.status===401){sessionStorage.removeItem("sbp_access_token");sessionStorage.removeItem("sbp_refresh_token");sessionStorage.removeItem("sbp_expires_at");location.replace(authUrl("?reason=session_expired"));return}throw Error(d.error||"Request failed.")}return d}
 const sections=["overview","applications","payment-requests","payments","customers","balances","payment-links","products","methods","subscriptions","donations","analytics","apps","developers","settings","integration"];
 function show(n){if(!sections.includes(n))n="overview";sections.forEach(s=>{const e=$("#section-"+s);if(e)e.hidden=s!==n});$$(".side-link").forEach(b=>b.classList.toggle("active",b.dataset.section===n));history.replaceState(null,"","#"+n);if(n==="applications")renderApplicationsPrimary();if(n==="payment-requests")renderPaymentRequests();if(n==="payments")renderPayments();if(n==="customers")renderCustomers();if(n==="payment-links")renderLinks();if(n==="products")renderProducts();if(n==="methods")renderMethods();if(n==="subscriptions")renderSubscriptions();if(n==="donations")renderDonations();if(n==="analytics")renderAnalytics();if(n==="apps")renderApps();closeNav()}
 $$(".side-link").forEach(b=>b.onclick=()=>show(b.dataset.section));document.addEventListener("click",e=>{const b=e.target.closest("[data-section-jump]");if(b)show(b.dataset.sectionJump)});
@@ -166,7 +169,7 @@ function openSignOutConfirm(){
       if(e.target.closest("#confirmSignOut")){
         sessionStorage.clear();
         modal.hidden=true;
-        location.href=SITE_BASE+"/signin/?signed_out=1";
+        location.replace(authUrl("?signed_out=1"));
       }
     });
   }
