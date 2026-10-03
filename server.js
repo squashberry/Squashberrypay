@@ -6027,6 +6027,12 @@ app.get(
                             name,
                             slug,
                             status
+                        ),
+                        donation_campaigns (
+                            name,
+                            slug,
+                            merchant_id,
+                            status
                         )
                     `)
                     .eq(
@@ -6479,6 +6485,8 @@ app.post(
                     .select(`
                         id,
                         payment_reference,
+                        processing_page_id,
+                        customer_reference,
                         amount,
                         currency,
                         payment_type,
@@ -6587,6 +6595,7 @@ app.get(
                         receipt_uploaded_at,
                         service_id,
                         service_user_id,
+                        donation_campaign_id,
                         payment_method_id,
                         payment_started_at,
                         payment_deadline_at,
@@ -6687,15 +6696,10 @@ app.get(
             }
 
 
-            if (
-                payment.services.status !==
-                "active"
-            ) {
-
-                return res.status(403).json({
-                    error:
-                        "This application is no longer active."
-                });
+            if (payment.donation_campaign_id) {
+                if (!payment.donation_campaigns || payment.donation_campaigns.status !== "active") return res.status(403).json({error:"This donation campaign is no longer active."});
+            } else if (payment.services?.status !== "active") {
+                return res.status(403).json({error:"This application is no longer active."});
             }
 
 
@@ -6711,33 +6715,17 @@ app.get(
             }
 
 
-            const {
-                data: methods,
-                error:
-                    methodsError
-            } = await supabase
-                .from(
-                    "payment_methods"
-                )
-                .select(
-                    `
-                    id,
-                    name,
-                    type,
-                    icon_path
-                    `
-                )
-                .eq(
-                    "service_id",
-                    payment.service_id
-                )
-                .eq(
-                    "enabled",
-                    true
-                )
-                .order(
-                    "name"
-                );
+            let methods = [];
+            let methodsError = null;
+            if (payment.donation_campaign_id) {
+                const result = await supabase.from("donation_payment_methods").select("id,name,type,icon_path,instructions,account_name,account_number,bank_name,phone_number").eq("merchant_id",payment.donation_campaigns.merchant_id).eq("enabled",true).order("name");
+                methods = result.data || [];
+                methodsError = result.error;
+            } else {
+                const result = await supabase.from("payment_methods").select("id,name,type,icon_path").eq("service_id",payment.service_id).eq("enabled",true).order("name");
+                methods = result.data || [];
+                methodsError = result.error;
+            }
 
 
             if (
@@ -6776,6 +6764,12 @@ app.get(
                     reference:
                         payment.payment_reference,
 
+                    processing_page_id:
+                        payment.processing_page_id,
+
+                    customer_reference:
+                        payment.customer_reference,
+
                     amount:
                         payment.amount,
 
@@ -6806,14 +6800,9 @@ app.get(
                         payment.products
                 },
 
-                service: {
-
-                    name:
-                        payment.services.name,
-
-                    slug:
-                        payment.services.slug
-                },
+                service: payment.donation_campaign_id
+                    ? {name: payment.donation_campaigns.name, slug: payment.donation_campaigns.slug}
+                    : {name: payment.services.name, slug: payment.services.slug},
 
                 payment_methods:
                     methods || []
@@ -6866,10 +6855,15 @@ app.get(
                         service_id,
                         status,
                         payment_method_id,
+                        donation_campaign_id,
                         payment_started_at,
                         payment_deadline_at,
 
                         services (
+                            status
+                        ),
+                        donation_campaigns (
+                            merchant_id,
                             status
                         )
                     )
@@ -6941,15 +6935,10 @@ app.get(
             }
 
 
-            if (
-                payment.services.status !==
-                "active"
-            ) {
-
-                return res.status(403).json({
-                    error:
-                        "This application is no longer active."
-                });
+            if (payment.donation_campaign_id) {
+                if (!payment.donation_campaigns || payment.donation_campaigns.status !== "active") return res.status(403).json({error:"This donation campaign is no longer active."});
+            } else if (payment.services?.status !== "active") {
+                return res.status(403).json({error:"This application is no longer active."});
             }
 
 
@@ -6969,41 +6958,15 @@ app.get(
             }
 
 
-            const {
-                data: method,
-                error:
-                    methodError
-            } = await supabase
-                .from(
-                    "payment_methods"
-                )
-                .select(
-                    `
-                    id,
-                    name,
-                    type,
-                    icon_path,
-                    instructions,
-                    account_name,
-                    account_number,
-                    bank_name,
-                    phone_number
-                    `
-                )
-                .eq(
-                    "id",
-                    req.params.methodId
-                )
-                .eq(
-                    "service_id",
-                    payment.service_id
-                )
-                .eq(
-                    "enabled",
-                    true
-                )
-                .maybeSingle();
-
+            let method;
+            let methodError;
+            if (payment.donation_campaign_id) {
+                const result = await supabase.from("donation_payment_methods").select("id,name,type,icon_path,instructions,account_name,account_number,bank_name,phone_number").eq("id",req.params.methodId).eq("merchant_id",payment.donation_campaigns.merchant_id).eq("enabled",true).maybeSingle();
+                method=result.data; methodError=result.error;
+            } else {
+                const result = await supabase.from("payment_methods").select("id,name,type,icon_path,instructions,account_name,account_number,bank_name,phone_number").eq("id",req.params.methodId).eq("service_id",payment.service_id).eq("enabled",true).maybeSingle();
+                method=result.data; methodError=result.error;
+            }
 
             if (
                 methodError
@@ -9854,6 +9817,42 @@ app.use(
     }
 );
 
+
+/* ============================================================
+   SUBSCRIPTION REMINDER JOB
+============================================================ */
+export async function runSubscriptionReminderJob(){
+  const now=new Date();
+  const horizon=new Date(now.getTime()+7*86400000);
+  const cutoff=new Date(now.getTime()-23*3600000);
+  const {data:contracts,error}=await supabase.from("subscription_contracts").select("*,services(name,status),products(name,amount,currency,subscription_interval),service_users(email),payments:current_payment_id(id,payment_reference,status,amount,currency)").eq("status","active").lte("next_due_at",horizon.toISOString());
+  if(error){console.error("Subscription reminder query error:",error);return{sent:0,error:true};}
+  let sent=0;
+  for(const c of contracts||[]){
+    try{
+      let payment=c.payments;
+      const newNeeded=!payment||["completed","rejected","cancelled","expired"].includes(payment.status);
+      if(newNeeded){
+        const expiresAt=new Date(now.getTime()+7*86400000).toISOString();
+        const {data:p,error:pe}=await supabase.from("payments").insert({payment_reference:generateReference(),processing_page_id:"SPP-"+randomHex(10).toUpperCase(),service_id:c.service_id,service_user_id:c.service_user_id,product_id:c.product_id,amount:c.products.amount,currency:c.products.currency,payment_type:"subscribe",status:"pending",expires_at:expiresAt}).select("id,payment_reference,amount,currency,status").single();
+        if(pe)throw pe;
+        const raw=randomToken();const {error:se}=await supabase.from("payment_sessions").insert({payment_id:p.id,session_token_hash:hash(raw),expires_at:expiresAt});if(se)throw se;
+        await supabase.from("subscription_contracts").update({current_payment_id:p.id,last_reminded_at:now.toISOString(),reminder_count:(c.reminder_count||0)+1,updated_at:now.toISOString()}).eq("id",c.id);
+        await sendResendEmail({to:c.service_users?.email,subject:"Your "+c.services?.name+" subscription is due soon",text:"Your "+c.products?.name+" subscription payment is due "+new Date(c.next_due_at).toLocaleDateString()+".\n\nAmount: "+c.products.currency+" "+c.products.amount+"\n\nPay here: "+BASE_URL+"/pay/"+raw,html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><h1>Subscription payment due</h1><p>Your next "+escapeHtml(c.products?.name||"subscription")+" payment is due soon.</p><p><b>Amount:</b> "+escapeHtml(c.products.currency)+" "+Number(c.products.amount).toFixed(2)+"</p><p><a href=\""+escapeHtml(BASE_URL+"/pay/"+raw)+"\">Continue subscription payment</a></p></div></div>"});
+        sent++;continue;
+      }
+      if(c.last_reminded_at&&new Date(c.last_reminded_at)>cutoff)continue;
+      if(["pending","awaiting_receipt","awaiting_verification","approved"].includes(payment.status)){
+        const raw=randomToken();const expiresAt=new Date(now.getTime()+7*86400000).toISOString();
+        await supabase.from("payment_sessions").insert({payment_id:payment.id,session_token_hash:hash(raw),expires_at:expiresAt});
+        await supabase.from("subscription_contracts").update({last_reminded_at:now.toISOString(),reminder_count:(c.reminder_count||0)+1,updated_at:now.toISOString()}).eq("id",c.id);
+        await sendResendEmail({to:c.service_users?.email,subject:"Reminder: "+c.services?.name+" subscription payment",text:"Your subscription payment is due "+new Date(c.next_due_at).toLocaleDateString()+".\n\nPay here: "+BASE_URL+"/pay/"+raw,html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><h1>Subscription payment reminder</h1><p>Your next subscription payment is due.</p><p><a href=\""+escapeHtml(BASE_URL+"/pay/"+raw)+"\">Continue payment</a></p></div></div>"});
+        sent++;
+      }
+    }catch(e){console.error("Subscription reminder item error:",c.id,e);}
+  }
+  return{sent};
+}
 
 /* ============================================================
    START
