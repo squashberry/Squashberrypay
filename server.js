@@ -9,6 +9,11 @@ const bcrypt = require("bcryptjs");
 const multer = require("multer");
 const path = require("path");
 
+// Cloudflare Workers do not expose Node's CommonJS __dirname global.
+// The Worker serves the frontend from GitHub Pages, so this is only used
+// by legacy static-file routes and keeps the module Worker-compatible.
+const __dirname = process.cwd();
+
 const {
     createClient
 } = require("@supabase/supabase-js");
