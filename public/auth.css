@@ -559,7 +559,8 @@
 }
 
 
-.input-shell input {
+.input-shell input,
+.input-shell select {
     width:
         100%;
 
@@ -629,7 +630,8 @@
 }
 
 
-.input-shell input:focus {
+.input-shell input:focus,
+.input-shell select:focus {
     border-color:
         #111111;
 
@@ -647,7 +649,8 @@
 }
 
 
-.input-shell input.is-valid {
+.input-shell input.is-valid,
+.input-shell select.is-valid {
     border-color:
         #68a77d;
 
@@ -656,7 +659,8 @@
 }
 
 
-.input-shell input.is-invalid {
+.input-shell input.is-invalid,
+.input-shell select.is-invalid {
     border-color:
         #c86a6a;
 
