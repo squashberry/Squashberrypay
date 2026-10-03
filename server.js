@@ -3754,6 +3754,82 @@ app.post(
                 console.error(
                     "Create app database error:",
 
+                    error
+                );
+
+
+                return res.status(500).json({
+                    error:
+                        "Could not submit application."
+                });
+            }
+
+
+            await supabase
+                .from(
+                    "audit_logs"
+                )
+                .insert({
+
+                    actor_type:
+                        "merchant",
+
+                    actor_id:
+                        req.merchant.id,
+
+                    action:
+                        "application_submitted",
+
+                    metadata: {
+
+                        service_id:
+                            service.id,
+
+                        service_name:
+                            service.name
+                    }
+                });
+
+
+            res.status(201).json({
+
+                app:
+                    service,
+
+                approval_required:
+                    true,
+
+                credentials: {
+
+                    client_id:
+                        clientId,
+
+                    client_secret:
+                        clientSecret
+                },
+
+                message:
+                    "Application submitted for approval. Save these credentials securely. They become usable after approval."
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Create app error:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                error:
+                    "Could not submit application."
+            });
+        }
+    }
+);
+
+
 /* ============================================================
    MERCHANT ROTATE APPLICATION SECRET
 ============================================================ */
@@ -3862,81 +3938,6 @@ app.post(
             return res.status(500).json({
                 error:
                     "Could not rotate application secret."
-            });
-        }
-    }
-);
-
-                    error
-                );
-
-
-                return res.status(500).json({
-                    error:
-                        "Could not submit application."
-                });
-            }
-
-
-            await supabase
-                .from(
-                    "audit_logs"
-                )
-                .insert({
-
-                    actor_type:
-                        "merchant",
-
-                    actor_id:
-                        req.merchant.id,
-
-                    action:
-                        "application_submitted",
-
-                    metadata: {
-
-                        service_id:
-                            service.id,
-
-                        service_name:
-                            service.name
-                    }
-                });
-
-
-            res.status(201).json({
-
-                app:
-                    service,
-
-                approval_required:
-                    true,
-
-                credentials: {
-
-                    client_id:
-                        clientId,
-
-                    client_secret:
-                        clientSecret
-                },
-
-                message:
-                    "Application submitted for approval. Save these credentials securely. They become usable after approval."
-            });
-
-        } catch (error) {
-
-            console.error(
-                "Create app error:",
-                error
-            );
-
-
-            res.status(500).json({
-
-                error:
-                    "Could not submit application."
             });
         }
     }
