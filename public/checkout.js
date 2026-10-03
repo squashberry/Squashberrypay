@@ -93,7 +93,7 @@ const donationEnded =
     $("#donationEnded");
 
 const donorFields =
-    $("#donorFields");
+    $("#donorFields");\nconst sessionOverlay=$("#checkoutSessionOverlay");const sessionTitle=$("#sessionTitle");const sessionDetail=$("#sessionDetail");function setCheckoutLoading(title,detail){if($("#checkoutLoadingTitle"))$("#checkoutLoadingTitle").textContent=title;if($("#checkoutLoadingDetail"))$("#checkoutLoadingDetail").textContent=detail}function showSessionStep(step,title,detail){if(!sessionOverlay)return;sessionOverlay.hidden=false;sessionTitle.textContent=title;sessionDetail.textContent=detail;document.querySelectorAll("[data-session-step]").forEach(e=>{const n=Number(e.dataset.sessionStep);e.classList.toggle("active",n===step);e.classList.toggle("done",n<step);e.querySelector("i").textContent=n<step?"✓":String(n)})}
 
 function setError(
     message

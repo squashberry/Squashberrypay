@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="theme-color" content="#0a0a0a">
     <title>Secure checkout — SquashberryPay</title>
-    <link rel="stylesheet" href="./checkout.css">
+    <link rel="stylesheet" href="./checkout.css">\n<link rel="stylesheet" href="./state-flow.css">\n<link rel="icon" href="/favicon.svg" type="image/svg+xml">\n<link rel="apple-touch-icon" href="/favicon.svg">
 
     <link rel="stylesheet" href="./ui-overhaul.css">
 </head>
@@ -22,7 +22,7 @@
 
             <div id="loadingState" class="state">
                 <span class="spinner" aria-hidden="true"></span>
-                <p>Loading checkout…</p>
+                <p id="checkoutLoadingTitle">Loading secure payment link…</p><small id="checkoutLoadingDetail">Connecting to SquashberryPay.</small>
             </div>
 
             <div id="errorState" class="state error-state" hidden>
@@ -144,5 +144,5 @@
 
     <script src="./checkout.js"></script>
 <script src="/offline.js" defer></script>
-</body>
+<div id="checkoutSessionOverlay" class="checkout-session-overlay" hidden aria-live="polite" aria-busy="true"><div class="checkout-session-card"><div class="checkout-session-brand"><span class="brand-mark">S</span><strong>SquashberryPay</strong></div><h2 id="sessionTitle">Creating payment session…</h2><p id="sessionDetail">Securely preparing your checkout.</p><div class="session-steps"><div class="session-step" data-session-step="1"><i>1</i><span>Creating payment session</span></div><div class="session-step" data-session-step="2"><i>2</i><span>Preparing payment details</span></div><div class="session-step" data-session-step="3"><i>3</i><span>Opening secure checkout</span></div></div></div></div><script src="/site-splash.js" defer></script>\n</body>
 </html>
