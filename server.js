@@ -6088,7 +6088,7 @@ async function handleV1CreatePayment(
                 },
 
                 payment_url:
-                    PUBLIC_SITE_URL + "/index.html?pay=" + rawSessionToken,
+                    PUBLIC_SITE_URL + "/pay/" + rawSessionToken,
 
                 receipt_url:
                     PUBLIC_SITE_URL + "/receipt/" + encodeURIComponent(payment.processing_page_id)
@@ -6966,7 +6966,7 @@ app.post("/api/public/donations/:slug/payments",async(req,res)=>{
     const {data:p,error:pe}=await supabase.from("payments").insert({payment_reference:generateReference(),processing_page_id:"SPP-"+randomHex(10).toUpperCase(),customer_reference:String(req.body?.customer_reference||"").trim().slice(0,160)||null,customer_email:email,service_id:null,service_user_id:null,product_id:null,donation_campaign_id:c.id,amount:Math.round(amount*100)/100,currency:c.currency,payment_type:"donate",status:"pending",payment_state:"awaiting_payment",donor_name:req.body?.donor_anonymous?null:String(req.body?.donor_name||"").trim().slice(0,120)||null,donor_message:String(req.body?.donor_message||"").trim().slice(0,500)||null,donor_anonymous:Boolean(req.body?.donor_anonymous),expires_at:expiresAt}).select("id,payment_reference,processing_page_id,customer_reference,amount,currency,payment_type,status,expires_at").single();
     if(pe)throw pe;
     const rawSessionToken=randomToken();const {error:se}=await supabase.from("payment_sessions").insert({payment_id:p.id,session_token_hash:hash(rawSessionToken),expires_at:expiresAt});if(se)throw se;
-    res.status(201).json({payment:p,payment_url:PUBLIC_SITE_URL+"/index.html?pay="+rawSessionToken});
+    res.status(201).json({payment:p,payment_url:PUBLIC_SITE_URL+"/pay/"+rawSessionToken});
   }catch(e){console.error("Donation payment error:",e);res.status(500).json({error:"Could not start donation."});}
 });
 
@@ -11251,7 +11251,7 @@ export async function runSubscriptionReminderJob(){
           {...p,payment_state:"awaiting_payment"},
           {subscription_id:c.id,next_due_at:c.next_due_at}
         );
-        await sendResendEmail({to:c.service_users?.email,subject:"Your "+c.services?.name+" subscription is due soon",text:"Your "+c.products?.name+" subscription payment is due "+new Date(c.next_due_at).toLocaleDateString()+".\n\nAmount: "+c.products.currency+" "+c.products.amount+"\n\nPay here: "+PUBLIC_SITE_URL+"/index.html?pay="+raw,html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><h1>Subscription payment due</h1><p>Your next "+escapeHtml(c.products?.name||"subscription")+" payment is due soon.</p><p><b>Amount:</b> "+escapeHtml(c.products.currency)+" "+Number(c.products.amount).toFixed(2)+"</p><p><a href=\""+escapeHtml(PUBLIC_SITE_URL+"/index.html?pay="+raw)+"\">Continue subscription payment</a></p></div></div>"});
+        await sendResendEmail({to:c.service_users?.email,subject:"Your "+c.services?.name+" subscription is due soon",text:"Your "+c.products?.name+" subscription payment is due "+new Date(c.next_due_at).toLocaleDateString()+".\n\nAmount: "+c.products.currency+" "+c.products.amount+"\n\nPay here: "+PUBLIC_SITE_URL+"/pay/"+raw,html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><h1>Subscription payment due</h1><p>Your next "+escapeHtml(c.products?.name||"subscription")+" payment is due soon.</p><p><b>Amount:</b> "+escapeHtml(c.products.currency)+" "+Number(c.products.amount).toFixed(2)+"</p><p><a href=\""+escapeHtml(PUBLIC_SITE_URL+"/pay/"+raw)+"\">Continue subscription payment</a></p></div></div>"});
         sent++;
         continue;
       }
@@ -11260,7 +11260,7 @@ export async function runSubscriptionReminderJob(){
         const raw=randomToken();const expiresAt=new Date(now.getTime()+7*86400000).toISOString();
         await supabase.from("payment_sessions").insert({payment_id:payment.id,session_token_hash:hash(raw),expires_at:expiresAt});
         await supabase.from("subscription_contracts").update({last_reminded_at:now.toISOString(),reminder_count:(c.reminder_count||0)+1,updated_at:now.toISOString()}).eq("id",c.id);
-        await sendResendEmail({to:c.service_users?.email,subject:"Reminder: "+c.services?.name+" subscription payment",text:"Your subscription payment is due "+new Date(c.next_due_at).toLocaleDateString()+".\n\nPay here: "+PUBLIC_SITE_URL+"/index.html?pay="+raw,html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><h1>Subscription payment reminder</h1><p>Your next subscription payment is due.</p><p><a href=\""+escapeHtml(PUBLIC_SITE_URL+"/index.html?pay="+raw)+"\">Continue payment</a></p></div></div>"});
+        await sendResendEmail({to:c.service_users?.email,subject:"Reminder: "+c.services?.name+" subscription payment",text:"Your subscription payment is due "+new Date(c.next_due_at).toLocaleDateString()+".\n\nPay here: "+PUBLIC_SITE_URL+"/pay/"+raw,html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><h1>Subscription payment reminder</h1><p>Your next subscription payment is due.</p><p><a href=\""+escapeHtml(PUBLIC_SITE_URL+"/pay/"+raw)+"\">Continue payment</a></p></div></div>"});
         sent++;
       }
     }catch(e){console.error("Subscription reminder item error:",c.id,e);}
