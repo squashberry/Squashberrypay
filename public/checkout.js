@@ -209,7 +209,7 @@ async function loadCheckout() {
                 button_label:"Donate",
                 service:{name:data.merchant?.name||"Merchant"},
                 product:{name:d.name,description:d.description||"",payment_type:"donate",amount:d.fixed_amount,currency:d.currency,allow_custom_amount:d.allow_custom_amount},
-                donation:{enabled:true,goal:d.goal,raised:d.raised,donor_count:d.donor_count,remaining:d.remaining,progress_percent:d.progress_percent,minimum:d.minimum_amount,maximum:d.maximum_amount,presets:d.presets||[],goal_message:d.goal_message,end_at:d.end_at,show_goal:d.goal!==null,show_donor_count:true,close_on_goal:false,goal_reached:d.goal!==null&&Number(d.raised||0)>=Number(d.goal)}
+                donation:{enabled:true,goal:d.goal,raised:d.raised,donor_count:d.donor_count,remaining:d.remaining,progress_percent:d.progress_percent,minimum:d.minimum_amount,maximum:d.maximum_amount,presets:d.presets||[],goal_message:d.goal_message,end_at:d.end_at,show_goal:d.goal!==null,show_donor_count:false,close_on_goal:false,goal_reached:d.goal!==null&&Number(d.raised||0)>=Number(d.goal)}
             };
         } else {
             if (!data.payment_link) throw new Error(data.error || "This payment link is unavailable.");
@@ -251,8 +251,9 @@ function renderDonationCampaign(
         product.currency;
 
     const goal=Number(donation.goal);
+    const hasFiniteGoal=Number.isFinite(goal) && goal > 0;
 
-    const showGoal=donation.show_goal && Number.isFinite(goal);
+    const showGoal=donation.show_goal && hasFiniteGoal;
 
     donationProgressPercent.hidden =
         !showGoal;
@@ -282,12 +283,8 @@ function renderDonationCampaign(
         !showGoal;
 
     if (showGoal) {
-        const remaining =
-            Number.isFinite(Number(donation.remaining))
-                ? Number(donation.remaining)
-                : Number.isFinite(goal)
-                    ? Math.max(0, goal-raised)
-                    : NaN;
+        const remainingValue=Number(donation.remaining);
+        const remaining = Number.isFinite(remainingValue) ? Math.max(0,remainingValue) : Math.max(0,goal-raised);
         donationRemaining.textContent =
             money(
                 remaining,
