@@ -3580,8 +3580,29 @@ app.post(
             const {
                 name,
                 website_url,
-                platform_type
+                platform_type,
+                environment,
+                allowed_origins,
+                allowed_package_ids,
+                webhook_url
             } = req.body;
+
+            const appEnvironment =
+                environment === "test"
+                    ? "test"
+                    : "live";
+
+            const normalizeList = value =>
+                Array.isArray(value)
+                    ? value
+                        .map(item => String(item || "").trim())
+                        .filter(Boolean)
+                        .slice(0, 30)
+                    : String(value || "")
+                        .split(/[,\n]/)
+                        .map(item => item.trim())
+                        .filter(Boolean)
+                        .slice(0, 30);
 
 
             if (
@@ -3627,7 +3648,10 @@ app.post(
 
 
             const clientId =
-                `sbp_live_${randomHex(18)}`;
+                "sbp_" +
+                appEnvironment +
+                "_" +
+                randomHex(18);
 
 
             const clientSecret =
@@ -3674,6 +3698,26 @@ app.post(
                             ).trim()
                             : null,
 
+                    environment:
+                        appEnvironment,
+
+                    allowed_origins:
+                        normalizeList(
+                            allowed_origins
+                        ),
+
+                    allowed_package_ids:
+                        normalizeList(
+                            allowed_package_ids
+                        ),
+
+                    webhook_url:
+                        webhook_url
+                            ? String(
+                                webhook_url
+                            ).trim()
+                            : null,
+
                     client_id:
                         clientId,
 
@@ -3690,6 +3734,11 @@ app.post(
                     slug,
                     website_url,
                     platform_type,
+                    environment,
+                    allowed_origins,
+                    allowed_package_ids,
+                    webhook_url,
+                    last_api_used_at,
                     client_id,
                     status,
                     created_at
@@ -3704,6 +3753,120 @@ app.post(
 
                 console.error(
                     "Create app database error:",
+
+/* ============================================================
+   MERCHANT ROTATE APPLICATION SECRET
+============================================================ */
+
+app.post(
+    "/api/merchant/apps/:id/rotate-secret",
+    authenticateMerchant,
+    async (
+        req,
+        res
+    ) => {
+        try {
+            const {
+                data:service,
+                error
+            } =
+                await supabase
+                    .from("services")
+                    .select(
+                        "id,name,client_id,status"
+                    )
+                    .eq(
+                        "id",
+                        req.params.id
+                    )
+                    .eq(
+                        "merchant_id",
+                        req.merchant.id
+                    )
+                    .maybeSingle();
+
+            if(error) throw error;
+
+            if(!service){
+                return res.status(404).json({
+                    error:
+                        "Application not found."
+                });
+            }
+
+            const clientSecret =
+                "sbps_" +
+                randomHex(32);
+
+            const clientSecretHash =
+                await bcrypt.hash(
+                    clientSecret,
+                    12
+                );
+
+            const {
+                error:updateError
+            } =
+                await supabase
+                    .from("services")
+                    .update({
+                        client_secret_hash:
+                            clientSecretHash,
+                        updated_at:
+                            new Date().toISOString()
+                    })
+                    .eq(
+                        "id",
+                        service.id
+                    )
+                    .eq(
+                        "merchant_id",
+                        req.merchant.id
+                    );
+
+            if(updateError) throw updateError;
+
+            await supabase
+                .from("audit_logs")
+                .insert({
+                    actor_type:
+                        "merchant",
+                    actor_id:
+                        req.merchant.id,
+                    action:
+                        "application_secret_rotated",
+                    metadata:{
+                        service_id:
+                            service.id
+                    }
+                });
+
+            return res.json({
+                success:
+                    true,
+                credentials:{
+                    client_id:
+                        service.client_id,
+                    client_secret:
+                        clientSecret
+                },
+                message:
+                    "Application secret rotated. The previous secret is now invalid."
+            });
+        }catch(error){
+            console.error(
+                "Rotate application secret error:",
+                error
+            );
+
+            return res.status(500).json({
+                error:
+                    "Could not rotate application secret."
+            });
+        }
+    }
+);
+
                     error
                 );
 
@@ -5523,6 +5686,38 @@ app.post(
 
                     normalizedReturnUrl =
                         parsed.toString();
+
+                    const allowedOrigins =
+                        Array.isArray(
+                            req.service.allowed_origins
+                        )
+                            ? req.service.allowed_origins
+                                .map(
+                                    value =>
+                                        String(
+                                            value || ""
+                                        ).trim().replace(
+                                            /\/$/,
+                                            ""
+                                        )
+                                )
+                                .filter(Boolean)
+                            : [];
+
+                    if (
+                        allowedOrigins.length &&
+                        !allowedOrigins.includes(
+                            parsed.origin.replace(
+                                /\/$/,
+                                ""
+                            )
+                        )
+                    ) {
+                        return res.status(400).json({
+                            error:
+                                "return_url is not allowed for this application."
+                        });
+                    }
 
                 } catch {
 
@@ -8400,7 +8595,7 @@ app.get(
 async function merchantServices(req) {
     const { data, error } = await supabase
         .from("services")
-        .select("id,name,slug,status,created_at")
+        .select("id,name,slug,status,environment,website_url,platform_type,allowed_origins,allowed_package_ids,webhook_url,last_api_used_at,client_id,created_at")
         .eq("merchant_id", req.merchant.id)
         .order("created_at", { ascending: false });
     return { data: data || [], error };
