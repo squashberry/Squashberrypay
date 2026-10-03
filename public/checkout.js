@@ -7,16 +7,14 @@ const apiBase =
     ).replace(/\/+$/, "");
 
 
+const routeSegments = window.location.pathname.split("/").filter(Boolean);
+const routeIndex = routeSegments.findIndex(part => part === "donate" || part === "checkout");
+const query = new URLSearchParams(window.location.search);
 const state = {
     isDonation:
-        window.location.pathname.split("/").filter(Boolean)[0] === "donate",
+        routeIndex >= 0 ? routeSegments[routeIndex] === "donate" : query.has("donation"),
     slug:
-        decodeURIComponent(
-            window.location.pathname
-                .split("/")
-                .filter(Boolean)
-                .pop() || ""
-        ),
+        decodeURIComponent(routeIndex >= 0 ? (routeSegments[routeIndex + 1] || "") : (query.get("donation") || query.get("checkout") || "")),
     link:
         null,
 
