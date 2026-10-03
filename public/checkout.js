@@ -98,22 +98,54 @@ const donationEnded =
 const donationContinue =
     $("#donationContinue");
 
+const overviewContinue =
+    $("#overviewContinue");
+
+const backToOverview =
+    $("#backToOverview");
+
+const checkoutOverview =
+    $("#checkoutOverview");
+
+const checkoutDetails =
+    $("#checkoutDetails");
+
+const checkoutProcessing =
+    $("#checkoutProcessing");
+
+const checkoutStepOne =
+    $("#checkoutStepOne");
+
+const checkoutStepTwo =
+    $("#checkoutStepTwo");
+
+const checkoutStepThree =
+    $("#checkoutStepThree");
+
 const donorFields =
     $("#donorFields");
 function setCheckoutLoading(title,detail){
     if($("#checkoutLoadingTitle"))$("#checkoutLoadingTitle").textContent=title;
     if($("#checkoutLoadingDetail"))$("#checkoutLoadingDetail").textContent=detail;
 }
-function setError(
-    message
-) {
-    document.querySelectorAll(".checkout-session-overlay").forEach(el=>el.remove());
-    loadingState.hidden = true;
-    checkoutState.hidden = true;
-    errorState.hidden = false;
-    errorMessage.textContent =
-        message;
+function setCheckoutStage(step){
+    if(!checkoutOverview || !checkoutDetails || !checkoutProcessing)return;
+    checkoutOverview.hidden = step !== 1;
+    checkoutDetails.hidden = step !== 2;
+    checkoutProcessing.hidden = step !== 3;
+    [checkoutStepOne,checkoutStepTwo,checkoutStepThree].forEach((el,i)=>{
+        if(el)el.classList.toggle("active",i+1===step);
+        if(el)el.classList.toggle("complete",i+1<step);
+    });
 }
+function setError(message){
+    document.querySelectorAll(".checkout-session-overlay").forEach(el=>el.remove());
+    loadingState.hidden=true;
+    checkoutState.hidden=true;
+    errorState.hidden=false;
+    errorMessage.textContent=message;
+}
+
 
 function money(
     amount,
@@ -443,13 +475,14 @@ function renderCheckout() {
 
     updateCheckoutSeo();
     state.donationStarted = !state.isDonation;
-    if (donationContinue) {
-        donationContinue.hidden = !state.isDonation || donationEnded.hidden === false;
-        donationContinue.textContent = product.payment_type === "donate" ? "Continue to donation" : "Continue";
+    if(donationContinue){
+        donationContinue.hidden=!state.isDonation || donationEnded.hidden===false;
+        donationContinue.textContent=product.payment_type==="donate"?"Continue to donation":"Continue";
     }
-    checkoutForm.hidden = state.isDonation;
-    state.donationStarted = !state.isDonation;
-
+    if(overviewContinue){
+        overviewContinue.hidden=state.isDonation;
+        overviewContinue.textContent=product.payment_type==="donate"?(link.button_label||"Continue"):(link.button_label||"Continue to payment");
+    }
     const donation =
         link.donation || {
             enabled: false
@@ -548,12 +581,21 @@ function renderCheckout() {
         }
     }
 
-    loadingState.hidden = true;
-    errorState.hidden = true;
-    checkoutState.hidden = false;
+    loadingState.hidden=true;
+    errorState.hidden=true;
+    checkoutState.hidden=false;
+    setCheckoutStage(1);
 }
 
-function normalizePublicUrl(u){try{const x=new URL(String(u||""),window.location.origin);if(x.hostname==="squashberry.github.io"&&!x.pathname.startsWith("/Squashberrypay/"))x.pathname="/Squashberrypay"+(x.pathname.startsWith("/")?x.pathname:"/"+x.pathname);return x.href}catch{return String(u||"")}}
+function normalizePublicUrl(u){
+    try{
+        const x=new URL(String(u||""),window.location.origin);
+        if(x.hostname==="squashberry.github.io" && !x.pathname.startsWith("/Squashberrypay/")){
+            x.pathname="/Squashberrypay"+(x.pathname.startsWith("/")?x.pathname:"/"+x.pathname);
+        }
+        return x.href;
+    }catch{return String(u||"")}
+}
 
 async function startPayment(
     event
@@ -651,12 +693,10 @@ async function startPayment(
         return;
     }
 
-    const originalText =
-        $("#buttonText").textContent;
-
-    continueButton.disabled =
-        true;
-
+    const originalText=$("#buttonText").textContent;
+    continueButton.disabled=true;
+    setCheckoutStage(3);
+    $("#processingDetail").textContent="Creating your secure payment session…";
 
     try {
         const response =
@@ -690,22 +730,42 @@ async function startPayment(
             );
         }
 
-        window.location.href = normalizePublicUrl(data.payment_url);
+        const target=normalizePublicUrl(data.payment_url);
+        $("#processingDetail").textContent="Opening the secure payment page…";
+        window.location.replace(target);
 
     } catch (error) {
+        setCheckoutStage(2);
         setFormError(error.name==="AbortError"?"The payment service took too long to respond. Please try again.":error.message);
-        continueButton.disabled = false;
-        $("#buttonText").textContent =
-            originalText;
+        continueButton.disabled=false;
+        $("#buttonText").textContent=originalText;
     }
 }
-function normalizePublicUrl(u){try{const x=new URL(String(u||""),window.location.origin);if(x.hostname==="squashberry.github.io"&&!x.pathname.startsWith("/Squashberrypay/"))x.pathname="/Squashberrypay"+(x.pathname.startsWith("/")?x.pathname:"/"+x.pathname);return x.href}catch{return String(u||"")}}
+
+function goToDetails(){
+    if(state.isDonation && !state.selectedDonationAmount && state.link?.product?.allow_custom_amount){
+        const presets=state.link?.donation?.presets||[];
+        if(presets.length){
+            state.selectedDonationAmount=Number(presets[0]);
+            $("#customAmount").value=String(presets[0]);
+        }
+    }
+    setCheckoutStage(2);
+    setTimeout(()=>$("#email")?.focus(),40);
+}
 
 donationContinue?.addEventListener("click",()=>{
+    if(donationContinue.disabled)return;
     state.donationStarted=true;
-    donationContinue.hidden=true;
-    checkoutForm.hidden=false;
-    setTimeout(()=>$("#email")?.focus(),40);
+    goToDetails();
+});
+
+overviewContinue?.addEventListener("click",goToDetails);
+
+backToOverview?.addEventListener("click",()=>{
+    setFormError("");
+    continueButton.disabled=false;
+    setCheckoutStage(1);
 });
 
 retryButton.addEventListener(
