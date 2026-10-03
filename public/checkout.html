@@ -51,7 +51,7 @@
                     <i></i>
                     <span id="checkoutStepTwo">2</span>
                     <i></i>
-                    <span id="checkoutStepThree">3</span>
+                    
                 </div>
 
                 <div id="checkoutOverview" class="checkout-stage">
@@ -131,12 +131,6 @@
                         <input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required>
                     </label>
 
-                    <label>
-                        Processing reference <span class="optional">(optional)</span>
-                        <input id="customerReference" name="customer_reference" type="text" maxlength="160" placeholder="Order ID, ticket ID, or processing ID">
-                        <span class="help">You can use this later to find your processing receipt.</span>
-                    </label>
-
                     <label id="customAmountWrap" hidden>
                         <span id="customAmountLabel">Donation amount</span>
                         <div class="money-input">
@@ -171,15 +165,7 @@
                     <p class="security-note">You’ll be redirected to the SquashberryPay payment page to choose an available payment method and complete the transfer.</p>
                         <p id="formError" class="form-error" role="alert" hidden></p>
                     </form>
-                </div>
-
-                <div id="checkoutProcessing" class="checkout-stage processing-stage" hidden aria-live="polite">
-                    <span class="spinner large" aria-hidden="true"></span>
-                    <div class="eyebrow">SECURE CHECKOUT</div>
-                    <h2>Opening payment</h2>
-                    <p id="processingDetail">Preparing your secure payment session.</p>
-                </div>
-            </div>
+                </div></div>
         </section>
     </main>
 
