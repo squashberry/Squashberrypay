@@ -1,1258 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1"
-    >
-
-    <title>
-        SquashberryPay Dashboard
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="./styles.css"
-    >
-
-    <link
-        rel="stylesheet"
-        href="./merchant.css"
-    >
-
-    <link
-        rel="stylesheet"
-        href="./ui-overhaul.css"
-    >
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0d">
+<title>SquashberryPay Dashboard</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./merchant.css">
+<link rel="stylesheet" href="./ui-overhaul.css">
 </head>
-
 <body>
-
-<header
-    class="merchant-header"
->
-
-    <a
-        href="./"
-        class="brand"
-    >
-
-        <span class="brand-mark">
-            S
-        </span>
-
-        <span>
-            SquashberryPay
-        </span>
-
-    </a>
-
-
-    <div
-        class="merchant-header-right"
-    >
-
-        <span
-            id="merchantName"
-        >
-            Business
-        </span>
-
-        <button
-            id="signOut"
-            class="text-button"
-        >
-            Sign out
-        </button>
-
-    </div>
-
+<header class="merchant-header">
+  <a href="./" class="brand"><span class="brand-mark">S</span><span>SquashberryPay</span></a>
+  <div class="header-actions">
+    <button id="testMode" class="mode-pill" type="button">Live mode</button>
+    <button id="notificationsButton" class="icon-button" aria-label="Notifications">●<span id="notificationDot"></span></button>
+    <span id="merchantName" class="merchant-name">Business</span>
+    <button id="signOut" class="text-button">Sign out</button>
+  </div>
 </header>
 
-
-<div
-    class="merchant-shell"
->
-
-    <aside
-        class="merchant-sidebar"
-    >
-
-        <button
-            data-section="overview"
-            class="side-link active"
-        >
-            Overview
-        </button>
-
-        <button
-            data-section="apps"
-            class="side-link"
-        >
-            Connected Apps
-        </button>
-
-        <button
-            data-section="products"
-            class="side-link"
-        >
-            Products & Services
-        </button>
-
-        <button
-            data-section="methods"
-            class="side-link"
-        >
-            Payment Methods
-        </button>
-
-        <button
-            data-section="buttons"
-            class="side-link"
-        >
-            Payment Buttons
-        </button>
-
-        <button
-            data-section="integration"
-            class="side-link"
-        >
-            Integration Guide
-        </button>
-
-        <button
-            data-section="settings"
-            class="side-link"
-        >
-            Settings
-        </button>
-
-    </aside>
-
-
-    <main
-        class="merchant-main"
-    >
-
-        <div
-            id="merchantNotification"
-            class="merchant-notification"
-            hidden
-        ></div>
-
-
-        <!-- ================================================= -->
-        <!-- OVERVIEW -->
-        <!-- ================================================= -->
-
-        <section
-            id="section-overview"
-            class="merchant-section active"
-        >
-
-            <span class="eyebrow">
-                SQUASHBERRYPAY ACCOUNT
-            </span>
-
-            <h1>
-                Welcome,
-                <span
-                    id="overviewName"
-                >
-                    Business
-                </span>
-            </h1>
-
-            <p class="merchant-lead">
-                Manage your connected apps, payment methods, products and donation campaigns from one place.
-            </p>
-
-
-            <div
-                class="dashboard-cards"
-            >
-
-                <div>
-                    <span>
-                        Connected apps
-                    </span>
-
-                    <strong
-                        id="appCount"
-                    >
-                        0
-                    </strong>
-                </div>
-
-
-                <div>
-                    <span>
-                        Products & Services
-                    </span>
-
-                    <strong
-                        id="productCount"
-                    >
-                        0
-                    </strong>
-                </div>
-
-
-                <div>
-                    <span>
-                        Account status
-                    </span>
-
-                    <strong
-                        id="merchantStatus"
-                    >
-                        —
-                    </strong>
-                </div>
-
-            </div>
-
-
-            <div
-                class="quick-grid"
-            >
-
-                <button
-                    data-jump="apps"
-                >
-                    <strong>
-                        Connect an app
-                    </strong>
-
-                    <span>
-                        Connect a website or mobile app to your account.
-                    </span>
-                </button>
-
-
-                <button
-                    data-jump="products"
-                >
-                    <strong>
-                        Create a payment or donation
-                    </strong>
-
-                    <span>
-                        Create a one-time payment, subscription or donation campaign.
-                    </span>
-                </button>
-
-
-                <button
-                    data-jump="methods"
-                >
-                    <strong>
-                        Configure payments
-                    </strong>
-
-                    <span>
-                        Add Wave, APS, NADA or bank details.
-                    </span>
-                </button>
-
-
-                <button
-                    data-jump="integration"
-                >
-                    <strong>
-                        Read the integration guide
-                    </strong>
-
-                    <span>
-                        Follow the exact setup instructions.
-                    </span>
-                </button>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================================================= -->
-        <!-- APPS -->
-        <!-- ================================================= -->
-
-        <section
-            id="section-apps"
-            class="merchant-section"
-            hidden
-        >
-
-            <div class="section-title-row">
-
-                <div>
-
-                    <span class="eyebrow">
-                        APPLICATIONS
-                    </span>
-
-                    <h2>
-                        Connected Apps
-                    </h2>
-
-                    <p>
-                        Create and manage the websites and apps connected to your account.
-                    </p>
-
-                </div>
-
-
-                <button
-                    id="openAddApp"
-                    class="button primary"
-                >
-                    + Add application
-                </button>
-
-            </div>
-
-
-            <div
-                id="appsList"
-                class="app-list"
-            ></div>
-
-
-            <div
-                id="addAppPanel"
-                class="merchant-form"
-                hidden
-            >
-
-                <h3>
-                    Add application
-                </h3>
-
-                <p>
-                    Create a separate SquashberryPay
-                    integration for this application.
-                </p>
-
-
-                <label>
-                    Application name
-
-                    <input
-                        id="newAppName"
-                        placeholder="e.g. MediSquash"
-                    >
-                </label>
-
-
-                <label>
-                    Website or app URL
-
-                    <input
-                        id="newAppUrl"
-                        placeholder="https://..."
-                    >
-                </label>
-
-
-                <label>
-                    Platform
-
-                    <select
-                        id="newAppPlatform"
-                    >
-                        <option value="website">
-                            Website
-                        </option>
-
-                        <option value="web_app">
-                            Web app
-                        </option>
-
-                        <option value="mobile_app">
-                            Mobile app
-                        </option>
-
-                        <option value="other">
-                            Other
-                        </option>
-                    </select>
-                </label>
-
-
-                <div class="form-actions">
-
-                    <button
-                        id="cancelAddApp"
-                        class="button secondary"
-                    >
-                        Cancel
-                    </button>
-
-                    <button
-                        id="createApp"
-                        class="button primary"
-                    >
-                        Create application
-                    </button>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================================================= -->
-        <!-- PRODUCTS -->
-        <!-- ================================================= -->
-
-        <section
-            id="section-products"
-            class="merchant-section"
-            hidden
-        >
-
-            <div class="section-title-row">
-
-                <div>
-
-                    <span class="eyebrow">
-                        PRODUCTS &amp; SERVICES
-                    </span>
-
-                    <h2>
-                        What customers can pay for
-                    </h2>
-
-                    <p>
-                        Create one-time payments, subscriptions or donation campaigns.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div
-                class="merchant-form"
-            >
-
-                <label>
-                    Application
-
-                    <select
-                        id="productApp"
-                    ></select>
-                </label>
-
-
-                <label>
-                    Product name
-
-                    <input
-                        id="productName"
-                        placeholder="MediSquash Premium"
-                    >
-                </label>
-
-
-                <label>
-                    Product code
-
-                    <input
-                        id="productCode"
-                        placeholder="premium_monthly"
-                    >
-                </label>
-
-
-                <label>
-                    Description
-
-                    <textarea
-                        id="productDescription"
-                        rows="3"
-                        placeholder="Describe what the customer gets."
-                    ></textarea>
-                </label>
-
-
-                <label>
-                    Offering type
-
-                    <select
-                        id="productType"
-                    >
-
-                        <option value="pay_now">
-                            Pay Now — one-time
-                        </option>
-
-                        <option value="subscribe">
-                            Subscribe — recurring
-                        </option>
-
-                        <option value="donate">
-                            Donation campaign
-                        </option>
-
-                    </select>
-                </label>
-
-
-                <label>
-                    Amount
-
-                    <input
-                        id="productAmount"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="250"
-                    >
-                </label>
-
-
-                <label
-                    id="subscriptionIntervalGroup"
-                    hidden
-                >
-                    Billing period
-
-                    <select
-                        id="subscriptionInterval"
-                    >
-
-                        <option value="monthly">
-                            Monthly
-                        </option>
-
-                        <option value="yearly">
-                            Yearly
-                        </option>
-
-                    </select>
-                </label>
-
-
-                <label
-                    class="checkbox-line"
-                >
-
-                    <input
-                        id="customDonation"
-                        type="checkbox"
-                        checked
-                    >
-
-                    Allow customer to choose
-                    the donation amount
-
-                </label>
-
-
-                <div
-                    id="donationSettings"
-                    class="donation-settings"
-                    hidden
-                >
-
-                    <div class="form-section-label">
-                        Donation campaign
-                    </div>
-
-                    <label>
-                        Target goal
-                        <input
-                            id="donationGoal"
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            placeholder="10000"
-                        >
-                    </label>
-
-                    <label>
-                        Minimum donation
-                        <input
-                            id="donationMinimum"
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            placeholder="50"
-                        >
-                    </label>
-
-                    <label>
-                        Maximum donation
-                        <input
-                            id="donationMaximum"
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            placeholder="5000"
-                        >
-                    </label>
-
-                    <label>
-                        Suggested amounts
-                        <input
-                            id="donationPresets"
-                            type="text"
-                            placeholder="50, 100, 250, 500"
-                        >
-                    </label>
-
-                    <p class="form-help">
-                        Enter comma-separated preset amounts customers can tap.
-                    </p>
-
-                    <label>
-                        Goal message
-                        <textarea
-                            id="donationGoalMessage"
-                            rows="3"
-                            placeholder="Help us raise GMD 10,000 to provide school supplies."
-                        ></textarea>
-                    </label>
-
-                    <label>
-                        Campaign end date
-                        <input
-                            id="donationEndAt"
-                            type="datetime-local"
-                        >
-                    </label>
-
-                    <label
-                        class="checkbox-line"
-                    >
-                        <input
-                            id="showDonationGoal"
-                            type="checkbox"
-                            checked
-                        >
-                        Show the target and progress to donors
-                    </label>
-
-                    <label
-                        class="checkbox-line"
-                    >
-                        <input
-                            id="showDonorCount"
-                            type="checkbox"
-                            checked
-                        >
-                        Show donor count
-                    </label>
-
-                    <label
-                        class="checkbox-line"
-                    >
-                        <input
-                            id="closeOnGoal"
-                            type="checkbox"
-                    >
-                        Stop accepting donations when the goal is reached
-                    </label>
-
-                </div>
-
-
-                <button
-                    id="saveProduct"
-                    class="button primary"
-                >
-                    Save product
-                </button>
-
-            </div>
-
-
-            <div
-                id="productsList"
-                class="product-list"
-            ></div>
-
-        </section>
-
-
-        <!-- ================================================= -->
-        <!-- METHODS -->
-        <!-- ================================================= -->
-
-        <section
-            id="section-methods"
-            class="merchant-section"
-            hidden
-        >
-
-            <div class="section-title-row">
-
-                <div>
-
-                    <span class="eyebrow">
-                        PAYMENT METHODS
-                    </span>
-
-                    <h2>
-                        Where customers send money
-                    </h2>
-
-                    <p>
-                        These details are shown on your
-                        SquashberryPay checkout.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div
-                class="merchant-form"
-            >
-
-                <label>
-                    Application
-
-                    <select
-                        id="methodApp"
-                    ></select>
-                </label>
-
-
-                <label>
-                    Payment method name
-
-                    <input
-                        id="methodName"
-                        placeholder="Wave"
-                    >
-                </label>
-
-
-                <label>
-                    Type
-
-                    <select
-                        id="methodType"
-                    >
-
-                        <option value="wave">
-                            Wave
-                        </option>
-
-                        <option value="aps">
-                            APS
-                        </option>
-
-                        <option value="nada">
-                            NADA
-                        </option>
-
-                        <option value="bank">
-                            Bank Transfer
-                        </option>
-
-                        <option value="other">
-                            Other
-                        </option>
-
-                    </select>
-                </label>
-
-
-                <label>
-                    Account name
-
-                    <input
-                        id="methodAccountName"
-                        placeholder="Your business name"
-                    >
-                </label>
-
-
-                <label>
-                    Phone number
-
-                    <input
-                        id="methodPhone"
-                        placeholder="+220..."
-                    >
-                </label>
-
-
-                <label>
-                    Bank name
-
-                    <input
-                        id="methodBankName"
-                        placeholder="Bank name"
-                    >
-                </label>
-
-
-                <label>
-                    Account number
-
-                    <input
-                        id="methodAccountNumber"
-                        placeholder="Account number"
-                    >
-                </label>
-
-
-                <label>
-                    Payment instructions
-
-                    <textarea
-                        id="methodInstructions"
-                        rows="5"
-                        placeholder="Explain exactly how customers should make the transfer."
-                    ></textarea>
-                </label>
-
-
-                <button
-                    id="saveMethod"
-                    class="button primary"
-                >
-                    Save payment method
-                </button>
-
-            </div>
-
-
-            <div
-                id="methodsList"
-                class="method-list"
-            ></div>
-
-        </section>
-
-
-        <!-- ================================================= -->
-        <!-- BUTTONS -->
-        <!-- ================================================= -->
-
-        <section
-            id="section-buttons"
-            class="merchant-section"
-            hidden
-        >
-
-            <span class="eyebrow">
-                PAYMENT BUTTONS
-            </span>
-
-            <h2>
-                Add SquashberryPay to your website
-            </h2>
-
-            <p class="merchant-lead">
-                Choose an application and product,
-                then use the generated instructions
-                below to connect your own Pay Now,
-                Subscribe or Donation campaign buttons.
-            </p>
-
-
-            <div
-                class="merchant-form"
-            >
-
-                <label>
-                    Application
-
-                    <select
-                        id="buttonApp"
-                    ></select>
-                </label>
-
-
-                <label>
-                    Product
-
-                    <select
-                        id="buttonProduct"
-                    ></select>
-                </label>
-
-
-                <button
-                    id="generateButtonGuide"
-                    class="button primary"
-                >
-                    Generate integration example
-                </button>
-
-            </div>
-
-
-            <div
-                id="buttonGuide"
-                class="code-guide"
-                hidden
-            >
-
-                <div
-                    class="guide-header"
-                >
-
-                    <strong>
-                        Your integration
-                    </strong>
-
-                    <span
-                        id="guideType"
-                    >
-                    </span>
-
-                </div>
-
-
-                <p>
-                    Generate the exact SquashberryPay button
-                    that customers will see on every website.
-                    Website owners paste one standard script tag;
-                    SquashberryPay controls the button design,
-                    behavior and checkout experience.
-                </p>
-
-
-                <div class="guide-code-actions">
-                    <button
-                        id="copyButtonCode"
-                        class="button secondary"
-                        type="button"
-                    >
-                        Copy button code
-                    </button>
-                </div>
-
-                <pre><code
-                    id="buttonCode"
-                ></code></pre>
-
-
-                <p>
-                    Never put your SquashberryPay
-                    client secret inside browser
-                    JavaScript.
-                </p>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================================================= -->
-        <!-- INTEGRATION -->
-        <!-- ================================================= -->
-
-        <section
-            id="section-integration"
-            class="merchant-section"
-            hidden
-        >
-
-            <span class="eyebrow">
-                INTEGRATION GUIDE
-            </span>
-
-            <h2>
-                Connect SquashberryPay to your website
-                or app
-            </h2>
-
-            <p class="merchant-lead">
-                Follow these steps in order.
-                You can give the code examples to your
-                developer or use them as your own guide.
-            </p>
-
-
-            <div
-                class="guide-steps"
-            >
-
-                <article>
-
-                    <span>
-                        STEP 1
-                    </span>
-
-                    <h3>
-                        Create your application
-                    </h3>
-
-                    <p>
-                        Go to <strong>Connected Apps</strong>,
-                        click <strong>Add application</strong>,
-                        then enter the name and URL of the
-                        website or app you want to connect.
-                    </p>
-
-                </article>
-
-
-                <article>
-
-                    <span>
-                        STEP 2
-                    </span>
-
-                    <h3>
-                        Create your products
-                    </h3>
-
-                    <p>
-                        Go to <strong>Products & Services</strong>.
-                        Create each thing your customers
-                        can buy. Select
-                        <strong>Pay Now</strong>,
-                        <strong>Subscribe</strong>
-                        or <strong>Donation campaign</strong>.
-                    </p>
-
-                </article>
-
-
-                <article>
-
-                    <span>
-                        STEP 3
-                    </span>
-
-                    <h3>
-                        Add your payment methods
-                    </h3>
-
-                    <p>
-                        Go to <strong>Payment Methods</strong>
-                        and enter the payment destination
-                        customers should use.
-                    </p>
-
-                </article>
-
-
-                <article>
-
-                    <span>
-                        STEP 4
-                    </span>
-
-                    <h3>
-                        Add the SquashberryPay button
-                    </h3>
-
-                    <p>
-                        Use the exact same SquashberryPay
-                        button on any website. Paste the
-                        one generated script tag and
-                        SquashberryPay renders and controls
-                        the button automatically. No
-                        client secret is placed in browser
-                        code.
-                    </p>
-
-                </article>
-
-
-                <article>
-
-                    <span>
-                        STEP 5
-                    </span>
-
-                    <h3>
-                        Customer makes the payment
-                    </h3>
-
-                    <p>
-                        SquashberryPay shows the payment
-                        methods you configured. The customer
-                        opens the account details, makes the
-                        transfer and uploads the receipt.
-                    </p>
-
-                </article>
-
-
-                <article>
-
-                    <span>
-                        STEP 6
-                    </span>
-
-                    <h3>
-                        Approve the payment
-                    </h3>
-
-                    <p>
-                        The submitted payment appears in
-                        your payment history. Review the
-                        receipt and approve it.
-                    </p>
-
-                </article>
-
-
-                <article>
-
-                    <span>
-                        STEP 7
-                    </span>
-
-                    <h3>
-                        Payment is completed
-                    </h3>
-
-                    <p>
-                        After verification, the hosted
-                        checkout records the payment as
-                        completed and can return the
-                        customer to your website or app.
-                    </p>
-
-                </article>
-
-
-                <article>
-
-                    <span>
-                        STEP 8
-                    </span>
-
-                    <h3>
-                        Keep the button everywhere
-                    </h3>
-
-                    <p>
-                        The same universal button snippet
-                        can be copied into any website,
-                        landing page, web app or storefront.
-                        The button design remains controlled
-                        by SquashberryPay.
-                    </p>
-
-                </article>
-
-            </div>
-
-
-            <div
-                class="code-guide"
-            >
-
-                <div class="guide-header">
-
-                    <strong>
-                        The universal button
-                    </strong>
-
-                </div>
-
-                <p>
-                    This is the complete integration.
-                    Paste it exactly as generated.
-                    The same SquashberryPay button will
-                    render on any website.
-                </p>
-
-                <pre><code>&lt;script
-    src="https://YOUR-SQUASHBERRYPAY-DOMAIN/buttons.js"
-    data-squashberrypay-button="YOUR-LINK-SLUG"&gt;
-&lt;/script&gt;</code></pre>
-
-            </div>
-
-
-            <div
-                class="code-guide"
-            >
-
-                <div class="guide-header">
-
-                    <strong>
-                        Example: verify a payment code
-                    </strong>
-
-                </div>
-
-
-                <pre><code>const response = await fetch(
-    "https://pay.squashberrypro.com/api/v1/verify-payment",
-    {
-        method: "POST",
-
-        headers: {
-            "Content-Type": "application/json",
-
-            "X-SquashberryPay-Client-ID":
-                process.env.SQUASHBERRYPAY_CLIENT_ID,
-
-            "X-SquashberryPay-Client-Secret":
-                process.env.SQUASHBERRYPAY_CLIENT_SECRET
-        },
-
-        body: JSON.stringify({
-            external_user_id: customer.id,
-            token: enteredCode
-        })
-    }
-);
-
-const result = await response.json();
-
-if (result.verified) {
-    // Give the customer what they paid for.
-}</code></pre>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================================================= -->
-        <!-- SETTINGS -->
-        <!-- ================================================= -->
-
-        <section
-            id="section-settings"
-            class="merchant-section"
-            hidden
-        >
-
-            <span class="eyebrow">
-                ACCOUNT
-            </span>
-
-            <h2>
-                Account settings
-            </h2>
-
-            <div
-                id="merchantProfile"
-                class="profile-card"
-            ></div>
-
-        </section>
-
-    </main>
-
-</div>
-
-
-<script
-    src="./merchant.js"
-></script>
-
+<div class="merchant-shell">
+<aside class="merchant-sidebar" aria-label="Dashboard navigation">
+  <div class="nav-label">Workspace</div>
+  <button data-section="overview" class="side-link active"><span>⌂</span> Overview</button>
+  <button data-section="payments" class="side-link"><span>◈</span> Payments</button>
+  <button data-section="customers" class="side-link"><span>◉</span> Customers</button>
+  <button data-section="balances" class="side-link"><span>₲</span> Balances</button>
+  <button data-section="links" class="side-link"><span>↗</span> Payment Links</button>
+  <button data-section="products" class="side-link"><span>□</span> Products</button>
+  <button data-section="subscriptions" class="side-link"><span>↻</span> Subscriptions</button>
+  <button data-section="donations" class="side-link"><span>♡</span> Donations</button>
+  <button data-section="analytics" class="side-link"><span>⌁</span> Analytics</button>
+  <div class="nav-label nav-gap">Build</div>
+  <button data-section="apps" class="side-link"><span>▦</span> Applications</button>
+  <button data-section="developers" class="side-link"><span>&lt;/&gt;</span> Developers</button>
+  <div class="nav-label nav-gap">Account</div>
+  <button data-section="settings" class="side-link"><span>⚙</span> Settings</button>
+</aside>
+
+<main class="merchant-main">
+<div id="merchantNotification" class="merchant-notification" hidden></div>
+
+<section id="section-overview" class="merchant-section active">
+  <div class="page-heading">
+    <div><span class="eyebrow">BUSINESS OVERVIEW</span><h1>Good to see you, <span id="overviewName">Business</span>.</h1><p>Everything happening across your SquashberryPay business.</p></div>
+    <div class="heading-actions"><select id="overviewRange"><option value="30">Last 30 days</option><option value="7">Last 7 days</option><option value="90">Last 90 days</option></select><button class="button primary" data-jump="links">Create payment link</button></div>
+  </div>
+  <div class="metric-grid">
+    <article class="metric-card"><span>Total collected</span><strong id="metricRevenue">GMD 0.00</strong><small id="metricRevenueHint">Completed payments</small></article>
+    <article class="metric-card"><span>Available balance</span><strong id="metricAvailable">GMD 0.00</strong><small>Calculated from completed payments</small></article>
+    <article class="metric-card"><span>Pending</span><strong id="metricPending">GMD 0.00</strong><small>Payments awaiting completion</small></article>
+    <article class="metric-card"><span>Successful payments</span><strong id="metricSuccessful">0</strong><small id="metricFailed">0 failed</small></article>
+  </div>
+  <div class="dashboard-grid">
+    <article class="panel chart-panel"><div class="panel-head"><div><h3>Revenue</h3><p>Completed payment volume</p></div><span class="panel-tag">GMD</span></div><div id="overviewChart" class="mini-chart"><div class="empty-state">Loading activity…</div></div></article>
+    <article class="panel"><div class="panel-head"><div><h3>Recent activity</h3><p>Your latest payment events</p></div><button class="link-button" data-jump="payments">View all</button></div><div id="recentActivity" class="activity-list"></div></article>
+  </div>
+  <div class="dashboard-grid">
+    <article class="panel"><div class="panel-head"><div><h3>Needs attention</h3><p>Items that may require action</p></div></div><div id="attentionList" class="attention-list"></div></article>
+    <article class="panel"><div class="panel-head"><div><h3>Quick actions</h3><p>Common tasks</p></div></div><div class="quick-actions"><button data-jump="payments">Review payments</button><button data-jump="customers">View customers</button><button data-jump="analytics">Open analytics</button><button data-jump="developers">Developer tools</button></div></article>
+  </div>
+</section>
+
+<section id="section-payments" class="merchant-section" hidden>
+  <div class="page-heading"><div><span class="eyebrow">MONEY MOVEMENT</span><h2>Payments</h2><p>Search, filter and inspect every payment connected to your applications.</p></div><button class="button secondary" id="exportPayments">Export CSV</button></div>
+  <div class="toolbar"><input id="paymentSearch" placeholder="Search reference, customer, product…"><select id="paymentStatus"><option value="">All statuses</option><option>completed</option><option>pending</option><option>awaiting_verification</option><option>approved</option><option>rejected</option><option>cancelled</option><option>expired</option></select><select id="paymentType"><option value="">All types</option><option value="pay_now">Pay now</option><option value="subscribe">Subscription</option><option value="donate">Donation</option></select></div>
+  <div id="paymentsTable" class="table-card"></div>
+</section>
+
+<section id="section-customers" class="merchant-section" hidden>
+  <div class="page-heading"><div><span class="eyebrow">RELATIONSHIPS</span><h2>Customers</h2><p>Understand who pays you and their payment history.</p></div></div>
+  <div class="toolbar"><input id="customerSearch" placeholder="Search customers…"></div>
+  <div id="customersTable" class="table-card"></div>
+</section>
+
+<section id="section-balances" class="merchant-section" hidden>
+  <div class="page-heading"><div><span class="eyebrow">MONEY</span><h2>Balances</h2><p>See completed value, pending value, refunds and payout readiness.</p></div></div>
+  <div class="balance-hero"><div><span>Available</span><strong id="balanceAvailable">GMD 0.00</strong><small>Calculated from completed payments</small></div><div><span>Pending</span><strong id="balancePending">GMD 0.00</strong><small>Not yet completed</small></div><div><span>Processed</span><strong id="balanceProcessed">GMD 0.00</strong><small>Lifetime in current dataset</small></div></div>
+  <div class="dashboard-grid"><article class="panel"><div class="panel-head"><div><h3>Refunds</h3><p>Refund requests and their status</p></div></div><div id="refundsTable"></div></article><article class="panel"><div class="panel-head"><div><h3>Payouts</h3><p>Settlement rail status</p></div></div><div class="info-box">Payout rails are not connected yet. This dashboard deliberately does not pretend that a payout has happened. Available balance is calculated from completed payments until a settlement provider is connected.</div></article></div>
+</section>
+
+<section id="section-links" class="merchant-section" hidden>
+  <div class="page-heading"><div><span class="eyebrow">CHECKOUT</span><h2>Payment Links</h2><p>Create and manage hosted checkout links and universal website buttons.</p></div><button class="button primary" data-jump="products">Create from a product</button></div>
+  <div id="linksList" class="resource-grid"></div>
+</section>
+
+<section id="section-products" class="merchant-section" hidden>
+  <div class="page-heading"><div><span class="eyebrow">CATALOG</span><h2>Products & services</h2><p>Manage what customers can pay for across each application.</p></div></div>
+  <div class="product-layout"><div class="merchant-form"><label>Application<select id="productApp"></select></label><label>Product name<input id="productName" placeholder="MediSquash Premium"></label><label>Product code<input id="productCode" placeholder="premium_monthly"></label><label>Description<textarea id="productDescription" rows="3"></textarea></label><label>Type<select id="productType"><option value="pay_now">Pay now — one-time</option><option value="subscribe">Subscribe — recurring</option><option value="donate">Donation campaign</option></select></label><label>Amount<input id="productAmount" type="number" min="0" step="0.01" placeholder="250"></label><div id="subscriptionIntervalGroup"><label>Billing period<select id="subscriptionInterval"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></label></div><div id="donationSettings" class="nested-form" hidden><label>Donation goal<input id="donationGoal" type="number" step="0.01"></label><label>Minimum donation<input id="donationMinimum" type="number" step="0.01"></label><label>Maximum donation<input id="donationMaximum" type="number" step="0.01"></label><label>Suggested amounts<input id="donationPresets" placeholder="50, 100, 250"></label><label>Goal message<textarea id="donationGoalMessage" rows="3"></textarea></label><label>End date<input id="donationEndAt" type="datetime-local"></label><label class="check"><input id="customDonation" type="checkbox" checked> Customer chooses donation amount</label><label class="check"><input id="showDonationGoal" type="checkbox" checked> Show goal and progress</label><label class="check"><input id="showDonorCount" type="checkbox" checked> Show donor count</label><label class="check"><input id="closeOnGoal" type="checkbox"> Close when goal is reached</label></div><button id="saveProduct" class="button primary">Save product</button></div><div id="productsList" class="resource-grid"></div></div>
+</section>
+
+<section id="section-subscriptions" class="merchant-section" hidden>
+  <div class="page-heading"><div><span class="eyebrow">RECURRING</span><h2>Subscriptions</h2><p>Recurring payment records and billing readiness.</p></div></div>
+  <div id="subscriptionsNotice" class="info-box"></div><div id="subscriptionsTable" class="table-card"></div>
+</section>
+
+<section id="section-donations" class="merchant-section" hidden>
+  <div class="page-heading"><div><span class="eyebrow">CAMPAIGNS</span><h2>Donations</h2><p>Track campaign goals, raised amounts and donor activity.</p></div></div>
+  <div id="donationsGrid" class="resource-grid"></div>
+</section>
+
+<section id="section-analytics" class="merchant-section" hidden>
+  <div class="page-heading"><div><span class="eyebrow">REPORTING</span><h2>Analytics</h2><p>Revenue trends, product performance and payment-method mix.</p></div><button class="button secondary" id="exportAnalytics">Export CSV</button></div>
+  <div class="metric-grid three"><article class="metric-card"><span>Revenue</span><strong id="analyticsRevenue">GMD 0.00</strong></article><article class="metric-card"><span>Transactions</span><strong id="analyticsTransactions">0</strong></article><article class="metric-card"><span>Average payment</span><strong id="analyticsAverage">GMD 0.00</strong></article></div>
+  <div class="dashboard-grid"><article class="panel chart-panel"><div class="panel-head"><h3>Revenue trend</h3></div><div id="analyticsChart" class="large-chart"></div></article><article class="panel"><div class="panel-head"><h3>By product</h3></div><div id="productAnalytics"></div></article></div>
+</section>
+
+<section id="section-apps" class="merchant-section" hidden>
+  <div class="page-heading"><div><span class="eyebrow">APPLICATIONS</span><h2>Connected applications</h2><p>Each website or app gets its own credentials, products and payment configuration.</p></div><button id="openAddApp" class="button primary">+ Add application</button></div>
+  <div id="appsList" class="resource-grid"></div>
+  <div id="addAppPanel" class="merchant-form" hidden><label>Application name<input id="newAppName" placeholder="MediSquash"></label><label>Website or app URL<input id="newAppUrl" placeholder="https://…"></label><label>Platform<select id="newAppPlatform"><option value="website">Website</option><option value="web_app">Web app</option><option value="mobile_app">Mobile app</option><option value="other">Other</option></select></label><div class="form-actions"><button id="cancelAddApp" class="button secondary">Cancel</button><button id="createApp" class="button primary">Create application</button></div></div>
+</section>
+
+<section id="section-developers" class="merchant-section" hidden>
+  <div class="page-heading"><div><span class="eyebrow">DEVELOPERS</span><h2>Developer tools</h2><p>Credentials, webhooks, activity and integration resources.</p></div></div>
+  <div class="dev-grid"><article class="panel"><div class="panel-head"><h3>Applications & credentials</h3></div><div id="developerApps"></div></article><article class="panel"><div class="panel-head"><h3>Webhooks</h3></div><div class="webhook-form"><input id="webhookUrl" placeholder="https://your-app.com/webhooks/squashberrypay"><button id="saveWebhook" class="button primary">Add webhook</button></div><div id="webhooksList"></div></article></div>
+  <div class="panel"><div class="panel-head"><div><h3>Activity logs</h3><p>Merchant-side events recorded by SquashberryPay.</p></div></div><div id="developerLogs" class="table-card"></div></div>
+  <div class="code-guide"><div class="guide-header"><strong>Universal button</strong><span>Never expose client secrets in browser code.</span></div><pre><code>&lt;script src="https://squashberrypay.squashberrypay.workers.dev/buttons.js"
+        data-squashberrypay-button="YOUR-LINK-SLUG"&gt;&lt;/script&gt;</code></pre></div>
+</section>
+
+<section id="section-settings" class="merchant-section" hidden>
+  <div class="page-heading"><div><span class="eyebrow">ACCOUNT</span><h2>Settings</h2><p>Business profile, team access, security and notifications.</p></div></div>
+  <div class="settings-grid"><article class="panel"><div class="panel-head"><h3>Business profile</h3></div><div id="merchantProfile" class="profile-card"></div></article><article class="panel"><div class="panel-head"><h3>Team</h3><p>Invite collaborators by role.</p></div><div class="team-form"><input id="teamEmail" type="email" placeholder="team@example.com"><select id="teamRole"><option value="viewer">Viewer</option><option value="developer">Developer</option><option value="finance">Finance</option><option value="admin">Admin</option></select><button id="inviteTeam" class="button primary">Invite</button></div><div id="teamList"></div></article></div>
+  <div class="settings-grid"><article class="panel"><div class="panel-head"><h3>Notifications</h3></div><div id="settingsNotifications"></div></article><article class="panel"><div class="panel-head"><h3>Security</h3></div><div class="info-box">Your dashboard uses a merchant access token stored in the active browser session. Never share it. Password and session controls remain managed through the account authentication flow.</div></article></div>
+</section>
+
+</main></div>
+<nav class="mobile-nav" aria-label="Mobile dashboard navigation">
+<button data-section="overview"><span>⌂</span>Home</button><button data-section="payments"><span>◈</span>Payments</button><button data-section="links"><span>↗</span>Links</button><button data-section="analytics"><span>⌁</span>Analytics</button><button id="mobileMore"><span>•••</span>More</button>
+</nav>
+<div id="mobileMenu" class="mobile-menu" hidden><div class="mobile-menu-sheet"><div class="mobile-menu-head"><strong>More</strong><button id="closeMobileMenu">×</button></div><div id="mobileMenuItems"></div></div></div>
+
+<script src="./merchant.js"></script>
 </body>
 </html>
