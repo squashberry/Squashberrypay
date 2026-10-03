@@ -671,163 +671,31 @@ revoke all on public.admin_users from anon, authenticated;
 -- ATOMIC TOKEN REDEMPTION
 -- ============================================================
 
-create or replace function public.redeem_payment_token(
-    p_service_id uuid,
-    p_external_user_id text,
-    p_token_hash text
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-    v_token payment_tokens%rowtype;
-    v_user_id uuid;
-    v_payment payments%rowtype;
-    v_service_status text;
+create or replace function public.redeem_payment_token(p_service_id uuid,p_external_user_id text,p_token_hash text)
+returns jsonb language plpgsql security definer set search_path=public as $$
+declare v_token payment_tokens%rowtype; v_user_id uuid; v_payment payments%rowtype; v_service_status text; v_subscription subscription_contracts%rowtype;
 begin
-
-    -- Service must still be active
-    select status
-    into v_service_status
-    from services
-    where id = p_service_id;
-
-
-    if v_service_status is null then
-        return jsonb_build_object(
-            'success', false,
-            'reason', 'SERVICE_NOT_FOUND'
-        );
-    end if;
-
-
-    if v_service_status <> 'active' then
-        return jsonb_build_object(
-            'success', false,
-            'reason', 'SERVICE_NOT_ACTIVE'
-        );
-    end if;
-
-
-    -- Find user
-    select id
-    into v_user_id
-    from service_users
-    where service_id = p_service_id
-      and external_user_id = p_external_user_id;
-
-
-    if v_user_id is null then
-        return jsonb_build_object(
-            'success', false,
-            'reason', 'USER_NOT_FOUND'
-        );
-    end if;
-
-
-    -- Lock token
-    select *
-    into v_token
-    from payment_tokens
-    where token_hash = p_token_hash
-      and service_id = p_service_id
-    for update;
-
-
-    if v_token.id is null then
-        return jsonb_build_object(
-            'success', false,
-            'reason', 'INVALID_TOKEN'
-        );
-    end if;
-
-
-    if v_token.service_user_id <> v_user_id then
-        return jsonb_build_object(
-            'success', false,
-            'reason', 'TOKEN_USER_MISMATCH'
-        );
-    end if;
-
-
-    if v_token.used_at is not null then
-        return jsonb_build_object(
-            'success', false,
-            'reason', 'TOKEN_ALREADY_USED'
-        );
-    end if;
-
-
-    if v_token.expires_at <= now() then
-        return jsonb_build_object(
-            'success', false,
-            'reason', 'TOKEN_EXPIRED'
-        );
-    end if;
-
-
-    select *
-    into v_payment
-    from payments
-    where id = v_token.payment_id
-    for update;
-
-
-    if v_payment.status <> 'approved' then
-        return jsonb_build_object(
-            'success', false,
-            'reason', 'PAYMENT_NOT_APPROVED'
-        );
-    end if;
-
-
-    -- Consume exactly once
-    update payment_tokens
-    set used_at = now()
-    where id = v_token.id;
-
-
-    update payments
-    set
-        status = 'completed',
-        completed_at = now()
-    where id = v_payment.id;
-
-
-    insert into audit_logs (
-        actor_type,
-        actor_id,
-        action,
-        payment_id,
-        metadata
-    )
-    values (
-        'system',
-        p_service_id::text,
-        'payment_token_redeemed',
-        v_payment.id,
-        jsonb_build_object(
-            'external_user_id',
-            p_external_user_id
-        )
-    );
-
-
-    return jsonb_build_object(
-        'success', true,
-        'reason', 'PAYMENT_VERIFIED',
-        'payment_id', v_payment.id,
-        'product_id', v_payment.product_id,
-        'amount', v_payment.amount,
-        'currency', v_payment.currency,
-        'payment_type', v_payment.payment_type
-    );
-
-end;
-$$;
-
+ select status into v_service_status from services where id=p_service_id;
+ if v_service_status is null then return jsonb_build_object('success',false,'reason','SERVICE_NOT_FOUND'); end if;
+ if v_service_status<>'active' then return jsonb_build_object('success',false,'reason','SERVICE_NOT_ACTIVE'); end if;
+ select id into v_user_id from service_users where service_id=p_service_id and external_user_id=p_external_user_id;
+ if v_user_id is null then return jsonb_build_object('success',false,'reason','USER_NOT_FOUND'); end if;
+ select * into v_token from payment_tokens where token_hash=p_token_hash and service_id=p_service_id for update;
+ if v_token.id is null then return jsonb_build_object('success',false,'reason','INVALID_TOKEN'); end if;
+ if v_token.service_user_id<>v_user_id then return jsonb_build_object('success',false,'reason','TOKEN_USER_MISMATCH'); end if;
+ if v_token.used_at is not null then return jsonb_build_object('success',false,'reason','TOKEN_ALREADY_USED'); end if;
+ if v_token.expires_at<=now() then return jsonb_build_object('success',false,'reason','TOKEN_EXPIRED'); end if;
+ select * into v_payment from payments where id=v_token.payment_id for update;
+ if v_payment.status<>'approved' then return jsonb_build_object('success',false,'reason','PAYMENT_NOT_APPROVED'); end if;
+ update payment_tokens set used_at=now() where id=v_token.id;
+ update payments set status='completed',completed_at=now() where id=v_payment.id;
+ select * into v_subscription from subscription_contracts where current_payment_id=v_payment.id for update;
+ if v_subscription.id is not null then
+   update subscription_contracts set next_due_at=case when interval='yearly' then next_due_at+interval '1 year' else next_due_at+interval '1 month' end,last_reminded_at=null,reminder_count=0,updated_at=now(),status='active' where id=v_subscription.id;
+ end if;
+ insert into audit_logs(actor_type,actor_id,action,payment_id,metadata) values('system',p_service_id::text,'payment_token_redeemed',v_payment.id,jsonb_build_object('external_user_id',p_external_user_id));
+ return jsonb_build_object('success',true,'reason','PAYMENT_VERIFIED','payment_id',v_payment.id,'product_id',v_payment.product_id,'amount',v_payment.amount,'currency',v_payment.currency,'payment_type',v_payment.payment_type);
+end; $$;
 -- SECURITY: payment-token redemption is backend-only.
 revoke execute
 on function public.redeem_payment_token(uuid, text, text)
@@ -837,3 +705,20 @@ from public, anon, authenticated;
 revoke execute
 on function public.rls_auto_enable()
 from public, anon, authenticated;
+
+-- SQUASHBERRYPAY PAYMENT OPERATIONS EXTENSION
+alter table public.payments alter column service_id drop not null;
+alter table public.payments alter column product_id drop not null;
+alter table public.payments add column if not exists customer_reference text;
+alter table public.payments add column if not exists processing_page_id text;
+alter table public.payments add column if not exists donation_campaign_id uuid;
+create unique index if not exists idx_payments_processing_page_id on public.payments(processing_page_id) where processing_page_id is not null;
+create index if not exists idx_payments_customer_reference on public.payments(customer_reference) where customer_reference is not null;
+create table if not exists public.subscription_contracts (id uuid primary key default gen_random_uuid(),merchant_id uuid not null references public.merchant_profiles(id) on delete cascade,service_id uuid not null references public.services(id) on delete restrict,product_id uuid not null references public.products(id) on delete restrict,service_user_id uuid not null references public.service_users(id) on delete restrict,initial_payment_id uuid references public.payments(id) on delete set null,current_payment_id uuid references public.payments(id) on delete set null,status text not null default 'active' check(status in ('active','past_due','cancelled','completed')),interval text not null check(interval in ('monthly','yearly')),next_due_at timestamptz not null,last_reminded_at timestamptz,reminder_count integer not null default 0,cancelled_at timestamptz,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+create index if not exists idx_subscription_contracts_due on public.subscription_contracts(status,next_due_at);
+create table if not exists public.donation_campaigns (id uuid primary key default gen_random_uuid(),merchant_id uuid not null references public.merchant_profiles(id) on delete cascade,slug text not null unique,name text not null,description text,currency text not null default 'GMD',allow_custom_amount boolean not null default true,fixed_amount numeric(12,2),minimum_amount numeric(12,2),maximum_amount numeric(12,2),presets jsonb not null default '[]'::jsonb,goal numeric(12,2),goal_message text,end_at timestamptz,status text not null default 'active' check(status in ('active','inactive','completed')),created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+create index if not exists idx_donation_campaigns_merchant on public.donation_campaigns(merchant_id,status);
+alter table public.payments add constraint payments_donation_campaign_fk foreign key (donation_campaign_id) references public.donation_campaigns(id) on delete restrict;
+create table if not exists public.donation_payment_methods (id uuid primary key default gen_random_uuid(),merchant_id uuid not null references public.merchant_profiles(id) on delete cascade,name text not null,type text not null,instructions text not null,account_name text,account_number text,bank_name text,phone_number text,enabled boolean not null default true,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+create index if not exists idx_donation_payment_methods_merchant on public.donation_payment_methods(merchant_id,enabled);
+alter table public.subscription_contracts enable row level security;alter table public.donation_campaigns enable row level security;alter table public.donation_payment_methods enable row level security;revoke all on public.subscription_contracts from anon,authenticated;revoke all on public.donation_campaigns from anon,authenticated;revoke all on public.donation_payment_methods from anon,authenticated;
