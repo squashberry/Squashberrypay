@@ -6087,10 +6087,10 @@ async function handleV1CreatePayment(
                 },
 
                 payment_url:
-                    BASE_URL + "/pay/" + rawSessionToken,
+                    PUBLIC_SITE_URL + "/index.html?pay=" + rawSessionToken,
 
                 receipt_url:
-                    BASE_URL + "/receipt/" + encodeURIComponent(payment.processing_page_id)
+                    PUBLIC_SITE_URL + "/receipt/" + encodeURIComponent(payment.processing_page_id)
             });
 
         } catch (error) {
@@ -6571,7 +6571,7 @@ app.get(
 
                     receipt_url:
                         payment.processing_page_id
-                            ? BASE_URL +
+                            ? PUBLIC_SITE_URL +
                               "/receipt/" +
                               encodeURIComponent(
                                   payment.processing_page_id
@@ -6746,7 +6746,7 @@ async function handleV1CancelPayment(
                     payment.return_url,
                 receipt_url:
                     payment.processing_page_id
-                        ? BASE_URL +
+                        ? PUBLIC_SITE_URL +
                           "/receipt/" +
                           encodeURIComponent(
                               payment.processing_page_id
@@ -8442,7 +8442,7 @@ app.post(
 
                 receipt_url:
                     payment.processing_page_id
-                        ? BASE_URL +
+                        ? PUBLIC_SITE_URL +
                           "/receipt/" +
                           encodeURIComponent(
                               payment.processing_page_id
@@ -10651,7 +10651,7 @@ async function sendPaymentLinkApprovedEmail({
 
     const destination =
         returnUrl ||
-        BASE_URL +
+        PUBLIC_SITE_URL +
         "/";
 
     await sendResendEmail({
