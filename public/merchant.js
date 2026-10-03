@@ -3,7 +3,7 @@ const apiBase=String(window.SQUASHBERRYPAY_API_BASE||"https://squashberrypay.squ
 const SITE_BASE="/Squashberrypay";
 const siteUrl=p=>location.origin+SITE_BASE+(String(p||"").startsWith("/")?String(p):"/"+String(p));
 const token=sessionStorage.getItem("sbp_access_token");if(!token)location.href=SITE_BASE+"/signin/?reason=session_expired&returnTo="+encodeURIComponent(location.pathname+location.search);
-const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));let merchant=null,dashboard=null,apps=[],range=7;
+const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));let merchant=(()=>{try{return JSON.parse(sessionStorage.getItem("sbp_merchant")||"null")}catch{return null}})(),dashboard=null,apps=[],range=7;
 const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/\x27/g,"&#039;");
 const money=(v,c="GMD")=>c+" "+Number(v||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmt=v=>{if(!v)return"—";const d=new Date(v);return Number.isNaN(d.getTime())?"—":d.toLocaleDateString(undefined,{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})};
