@@ -5467,72 +5467,6 @@ app.post(
                 });
             }
 
-            const {
-                data: existing,
-                error: existingError
-            } =
-                await supabase
-                    .from("payment_links")
-                    .select(`
-                        id,
-                        slug,
-                        title,
-                        description,
-                        button_label,
-                        return_url,
-                        cancel_url,
-                        status,
-                        created_at,
-                        updated_at
-                    `)
-                    .eq(
-                        "service_id",
-                        result.service.id
-                    )
-                    .eq(
-                        "product_id",
-                        product.id
-                    )
-                    .eq(
-                        "status",
-                        "active"
-                    )
-                    .order(
-                        "created_at",
-                        {
-                            ascending:
-                                false
-                        }
-                    )
-                    .limit(1)
-                    .maybeSingle();
-
-            if (existingError) {
-                console.error(
-                    "Payment-link existing lookup error:",
-                    existingError
-                );
-                return res.status(500).json({
-                    error:
-                        "Could not create payment link."
-                });
-            }
-
-            if (existing) {
-                return res.json({
-                    payment_link:
-                        existing,
-                    payment_url:
-                        BASE_URL +
-                        "/checkout/" +
-                        encodeURIComponent(
-                            existing.slug
-                        ),
-                    reused:
-                        true
-                });
-            }
-
             let returnUrl =
                 null;
 
@@ -5648,9 +5582,7 @@ app.post(
                     "/checkout/" +
                     encodeURIComponent(
                         data.slug
-                    ),
-                reused:
-                    false
+                    )
             });
 
         } catch (error) {
