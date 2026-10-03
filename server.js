@@ -7824,6 +7824,203 @@ app.get(
 );
 
 
+
+/* ============================================================
+   MERCHANT DASHBOARD API
+   Operational data for the merchant workspace.
+============================================================ */
+
+async function merchantServices(req) {
+    const { data, error } = await supabase
+        .from("services")
+        .select("id,name,slug,status,created_at")
+        .eq("merchant_id", req.merchant.id)
+        .order("created_at", { ascending: false });
+    return { data: data || [], error };
+}
+
+app.get("/api/merchant/dashboard", authenticateMerchant, async (req,res) => {
+    try {
+        const { data: services, error: serviceError } = await merchantServices(req);
+        if (serviceError) return res.status(500).json({error:"Could not load dashboard."});
+        const ids = services.map(s => s.id);
+        if (!ids.length) return res.json({summary:{revenue:0,pending:0,successful:0,failed:0,refunded:0,fees:0,available:0,pending_balance:0},services,trend:[],recent_payments:[],customers:[],notifications:[]});
+        const { data: payments, error } = await supabase
+            .from("payments")
+            .select("id,payment_reference,service_id,service_user_id,product_id,amount,currency,payment_type,status,donor_name,donor_anonymous,created_at,completed_at")
+            .in("service_id", ids).order("created_at",{ascending:false}).limit(500);
+        if (error) return res.status(500).json({error:"Could not load dashboard activity."});
+        const rows=payments||[];
+        const completed=rows.filter(p=>p.status==="completed");
+        const pending=rows.filter(p=>["pending","awaiting_receipt","awaiting_verification","approved"].includes(p.status));
+        const failed=rows.filter(p=>["rejected","expired","cancelled"].includes(p.status));
+        const revenue=completed.reduce((a,p)=>a+Number(p.amount||0),0);
+        const pendingBalance=pending.reduce((a,p)=>a+Number(p.amount||0),0);
+        const customers=[...new Map(rows.map(p=>[p.service_user_id,p])).values()].map(p=>({id:p.service_user_id,email:null}));
+        const dayMap={};
+        completed.forEach(p=>{const d=String(p.completed_at||p.created_at).slice(0,10);dayMap[d]=(dayMap[d]||0)+Number(p.amount||0);});
+        const trend=Object.entries(dayMap).sort(([a],[b])=>a.localeCompare(b)).slice(-30).map(([date,amount])=>({date,amount}));
+        const {data:users}=await supabase.from("service_users").select("id,email,external_user_id,created_at").in("service_id",ids).order("created_at",{ascending:false}).limit(500);
+        const userMap=new Map((users||[]).map(u=>[u.id,u]));
+        const recent=rows.slice(0,12).map(p=>({...p,customer:userMap.get(p.service_user_id)||null,service:services.find(s=>s.id===p.service_id)||null}));
+        const {data:notifications}=await supabase.from("merchant_notifications").select("id,title,message,type,read_at,created_at").eq("merchant_id",req.merchant.id).order("created_at",{ascending:false}).limit(20);
+        res.json({summary:{revenue, pending:pendingBalance, successful:completed.length, failed:failed.length, refunded:0, fees:0, available:revenue, pending_balance:pendingBalance},services,trend,recent_payments:recent,customers:(users||[]),notifications:notifications||[]});
+    } catch(e){ console.error("Merchant dashboard error:",e); res.status(500).json({error:"Could not load dashboard."}); }
+});
+
+app.get("/api/merchant/payments", authenticateMerchant, async (req,res) => {
+    try {
+        const {data:services,error:se}=await merchantServices(req); if(se) return res.status(500).json({error:"Could not load payments."});
+        const ids=services.map(s=>s.id); if(!ids.length) return res.json({payments:[]});
+        let q=supabase.from("payments").select("*,service_users(email,external_user_id),products(name,product_code),payment_methods(name,type),services(name,slug)").in("service_id",ids).order("created_at",{ascending:false}).limit(500);
+        if(req.query.status) q=q.eq("status",String(req.query.status));
+        const {data,error}=await q; if(error) return res.status(500).json({error:"Could not load payments."});
+        res.json({payments:data||[]});
+    } catch(e){console.error(e);res.status(500).json({error:"Could not load payments."});}
+});
+
+app.get("/api/merchant/customers", authenticateMerchant, async (req,res) => {
+    try {
+        const {data:services,error:se}=await merchantServices(req); if(se) return res.status(500).json({error:"Could not load customers."});
+        const ids=services.map(s=>s.id); if(!ids.length) return res.json({customers:[]});
+        const {data:users,error}=await supabase.from("service_users").select("id,service_id,email,external_user_id,created_at").in("service_id",ids).order("created_at",{ascending:false});
+        if(error) return res.status(500).json({error:"Could not load customers."});
+        const {data:payments}=await supabase.from("payments").select("service_user_id,amount,currency,status,created_at").in("service_id",ids);
+        const grouped=new Map();
+        (payments||[]).forEach(p=>{let x=grouped.get(p.service_user_id)||{count:0,total:0,last:null}; if(p.status==="completed"){x.count++;x.total+=Number(p.amount||0);} if(!x.last||p.created_at>x.last)x.last=p.created_at;grouped.set(p.service_user_id,x);});
+        res.json({customers:(users||[]).map(u=>({...u,...(grouped.get(u.id)||{count:0,total:0,last:null})}))});
+    } catch(e){console.error(e);res.status(500).json({error:"Could not load customers."});}
+});
+
+app.get("/api/merchant/balances", authenticateMerchant, async (req,res) => {
+    try {
+        const {data:services,error:se}=await merchantServices(req); if(se) return res.status(500).json({error:"Could not load balances."});
+        const ids=services.map(s=>s.id); if(!ids.length) return res.json({available:0,pending:0,processed:0,refunds:0,payouts:[]});
+        const {data:payments,error}=await supabase.from("payments").select("amount,currency,status").in("service_id",ids);
+        if(error) return res.status(500).json({error:"Could not load balances."});
+        const rows=payments||[], completed=rows.filter(p=>p.status==="completed"), pending=rows.filter(p=>["pending","awaiting_receipt","awaiting_verification","approved"].includes(p.status));
+        const sum=a=>a.reduce((n,p)=>n+Number(p.amount||0),0);
+        const {data:refunds}=await supabase.from("merchant_refunds").select("amount,currency,status,created_at").eq("merchant_id",req.merchant.id).order("created_at",{ascending:false}).limit(100);
+        res.json({available:sum(completed),pending:sum(pending),processed:sum(completed),refunds:sum((refunds||[]).filter(r=>r.status==="completed")),payouts:[],refund_requests:refunds||[],note:"Payout rails are not connected yet; available balance is calculated from completed payments."});
+    } catch(e){console.error(e);res.status(500).json({error:"Could not load balances."});}
+});
+
+app.get("/api/merchant/analytics", authenticateMerchant, async (req,res) => {
+    try {
+        const {data:services,error:se}=await merchantServices(req); if(se) return res.status(500).json({error:"Could not load analytics."});
+        const ids=services.map(s=>s.id); if(!ids.length) return res.json({totals:{revenue:0,transactions:0,average:0},by_product:[],by_method:[],trend:[]});
+        const {data:payments,error}=await supabase.from("payments").select("amount,currency,status,product_id,payment_method_id,created_at,completed_at,products(name),payment_methods(name,type)").in("service_id",ids).limit(5000);
+        if(error) return res.status(500).json({error:"Could not load analytics."});
+        const done=(payments||[]).filter(p=>p.status==="completed"), sum=done.reduce((a,p)=>a+Number(p.amount||0),0);
+        const aggregate=(key,label)=>{const m={};done.forEach(p=>{const k=p[key]||"unknown";m[k]=m[k]||{name:p[label]?.name||"Unknown",amount:0,count:0};m[k].amount+=Number(p.amount||0);m[k].count++;});return Object.values(m).sort((a,b)=>b.amount-a.amount);};
+        const dm={};done.forEach(p=>{const d=String(p.completed_at||p.created_at).slice(0,10);dm[d]=(dm[d]||0)+Number(p.amount||0);});
+        res.json({totals:{revenue:sum,transactions:done.length,average:done.length?sum/done.length:0},by_product:aggregate("product_id","products"),by_method:aggregate("payment_method_id","payment_methods"),trend:Object.entries(dm).sort(([a],[b])=>a.localeCompare(b)).slice(-90).map(([date,amount])=>({date,amount}))});
+    } catch(e){console.error(e);res.status(500).json({error:"Could not load analytics."});}
+});
+
+app.get("/api/merchant/payment-links", authenticateMerchant, async (req,res) => {
+    try {
+        const {data:services,error:se}=await merchantServices(req); if(se) return res.status(500).json({error:"Could not load links."});
+        const ids=services.map(s=>s.id); if(!ids.length)return res.json({payment_links:[]});
+        const {data,error}=await supabase.from("payment_links").select("id,service_id,product_id,slug,title,description,button_label,status,created_at,updated_at,products(name,amount,currency,payment_type)").in("service_id",ids).order("created_at",{ascending:false});
+        if(error)return res.status(500).json({error:"Could not load payment links."}); res.json({payment_links:data||[]});
+    }catch(e){console.error(e);res.status(500).json({error:"Could not load payment links."});}
+});
+
+app.get("/api/merchant/subscriptions", authenticateMerchant, async (req,res) => {
+    try {
+        const {data:services,error:se}=await merchantServices(req); if(se)return res.status(500).json({error:"Could not load subscriptions."});
+        const ids=services.map(s=>s.id); if(!ids.length)return res.json({subscriptions:[]});
+        const {data,error}=await supabase.from("payments").select("id,payment_reference,amount,currency,status,created_at,service_users(email),products(name,subscription_interval)").in("service_id",ids).eq("payment_type","subscribe").order("created_at",{ascending:false});
+        if(error)return res.status(500).json({error:"Could not load subscriptions."});
+        res.json({subscriptions:data||[],note:"Recurring billing automation is not yet connected; these are subscription payment records."});
+    }catch(e){console.error(e);res.status(500).json({error:"Could not load subscriptions."});}
+});
+
+app.get("/api/merchant/donations", authenticateMerchant, async (req,res) => {
+    try {
+        const {data:services,error:se}=await merchantServices(req); if(se)return res.status(500).json({error:"Could not load donations."});
+        const ids=services.map(s=>s.id); if(!ids.length)return res.json({campaigns:[]});
+        const {data:products}=await supabase.from("products").select("id,service_id,name,currency,donation_goal,donation_end_at,status").in("service_id",ids).eq("payment_type","donate");
+        const {data:payments}=await supabase.from("payments").select("product_id,amount,status").in("service_id",ids).eq("payment_type","donate");
+        const campaigns=(products||[]).map(p=>{const rows=(payments||[]).filter(x=>x.product_id===p.id&&x.status==="completed");const raised=rows.reduce((a,x)=>a+Number(x.amount||0),0);return {...p,raised,donor_count:rows.length,progress_percent:p.donation_goal?Math.min(100,raised/Number(p.donation_goal)*100):null};});
+        res.json({campaigns});
+    }catch(e){console.error(e);res.status(500).json({error:"Could not load donations."});}
+});
+
+app.get("/api/merchant/refunds", authenticateMerchant, async (req,res) => {
+    const {data,error}=await supabase.from("merchant_refunds").select("*,payments(payment_reference,amount,currency,status)").eq("merchant_id",req.merchant.id).order("created_at",{ascending:false}).limit(500);
+    if(error)return res.status(500).json({error:"Could not load refunds."}); res.json({refunds:data||[]});
+});
+
+app.post("/api/merchant/refunds", authenticateMerchant, async (req,res) => {
+    try {
+        const paymentId=String(req.body?.payment_id||""); const amount=Number(req.body?.amount);
+        if(!paymentId||!Number.isFinite(amount)||amount<=0)return res.status(400).json({error:"Payment and a positive refund amount are required."});
+        const {data:services}=await merchantServices(req); const ids=(services||[]).map(s=>s.id);
+        const {data:p}=await supabase.from("payments").select("id,service_id,amount,currency,status").eq("id",paymentId).in("service_id",ids).maybeSingle();
+        if(!p)return res.status(404).json({error:"Payment not found."}); if(p.status!=="completed")return res.status(409).json({error:"Only completed payments can be refund-requested."}); if(amount>Number(p.amount))return res.status(400).json({error:"Refund cannot exceed the payment amount."});
+        const {data,error}=await supabase.from("merchant_refunds").insert({merchant_id:req.merchant.id,payment_id:p.id,amount,currency:p.currency,reason:String(req.body?.reason||"").trim()||null}).select("*").single();
+        if(error)return res.status(500).json({error:"Could not create refund request."});
+        await supabase.from("audit_logs").insert({actor_type:"merchant",actor_id:req.merchant.id,action:"refund_requested",payment_id:p.id,metadata:{refund_id:data.id,amount}});
+        res.status(201).json({refund:data,message:"Refund request created. It is not a transfer until payout/refund rails are connected."});
+    }catch(e){console.error(e);res.status(500).json({error:"Could not create refund request."});}
+});
+
+app.get("/api/merchant/disputes", authenticateMerchant, async (req,res) => {
+    const {data,error}=await supabase.from("merchant_disputes").select("*,payments(payment_reference,amount,currency,status)").eq("merchant_id",req.merchant.id).order("created_at",{ascending:false}).limit(500);
+    if(error)return res.status(500).json({error:"Could not load disputes."}); res.json({disputes:data||[]});
+});
+
+app.post("/api/merchant/disputes", authenticateMerchant, async (req,res) => {
+    try {
+        const paymentId=String(req.body?.payment_id||""); const reason=String(req.body?.reason||"").trim();
+        if(!paymentId||!reason)return res.status(400).json({error:"Payment and dispute reason are required."});
+        const {data:services}=await merchantServices(req); const ids=(services||[]).map(s=>s.id);
+        const {data:p}=await supabase.from("payments").select("id,service_id").eq("id",paymentId).in("service_id",ids).maybeSingle(); if(!p)return res.status(404).json({error:"Payment not found."});
+        const {data,error}=await supabase.from("merchant_disputes").insert({merchant_id:req.merchant.id,payment_id:p.id,reason,description:String(req.body?.description||"").trim()||null}).select("*").single();
+        if(error)return res.status(500).json({error:"Could not create dispute."}); res.status(201).json({dispute:data});
+    }catch(e){console.error(e);res.status(500).json({error:"Could not create dispute."});}
+});
+
+app.get("/api/merchant/developer", authenticateMerchant, async (req,res) => {
+    const {data:services}=await merchantServices(req); const ids=(services||[]).map(s=>s.id);
+    const {data:logs}=await supabase.from("audit_logs").select("id,action,payment_id,metadata,created_at").eq("actor_type","merchant").eq("actor_id",req.merchant.id).order("created_at",{ascending:false}).limit(200);
+    const {data:webhooks}=await supabase.from("merchant_webhooks").select("id,url,events,enabled,created_at,updated_at").eq("merchant_id",req.merchant.id).order("created_at",{ascending:false});
+    res.json({services:services||[],logs:logs||[],webhooks:webhooks||[],api_logs:[],note:"HTTP request logging will appear here once API request telemetry is connected."});
+});
+
+app.post("/api/merchant/webhooks", authenticateMerchant, async (req,res) => {
+    const url=String(req.body?.url||"").trim(); if(!/^https?:\\/\\//i.test(url))return res.status(400).json({error:"Enter a valid HTTPS webhook URL."});
+    const {data,error}=await supabase.from("merchant_webhooks").insert({merchant_id:req.merchant.id,url,events:Array.isArray(req.body?.events)?req.body.events:["payment.completed","payment.failed"]}).select("id,url,events,enabled,created_at").single();
+    if(error)return res.status(500).json({error:"Could not save webhook."}); res.status(201).json({webhook:data});
+});
+
+app.get("/api/merchant/notifications", authenticateMerchant, async (req,res) => {
+    const {data,error}=await supabase.from("merchant_notifications").select("*").eq("merchant_id",req.merchant.id).order("created_at",{ascending:false}).limit(200);
+    if(error)return res.status(500).json({error:"Could not load notifications."}); res.json({notifications:data||[]});
+});
+
+app.post("/api/merchant/notifications/:id/read", authenticateMerchant, async (req,res) => {
+    const {error}=await supabase.from("merchant_notifications").update({read_at:new Date().toISOString()}).eq("id",req.params.id).eq("merchant_id",req.merchant.id);
+    if(error)return res.status(500).json({error:"Could not update notification."}); res.json({success:true});
+});
+
+app.get("/api/merchant/team", authenticateMerchant, async (req,res) => {
+    const {data,error}=await supabase.from("merchant_team_invitations").select("id,email,role,status,created_at").eq("merchant_id",req.merchant.id).order("created_at",{ascending:false});
+    if(error)return res.status(500).json({error:"Could not load team."}); res.json({members:data||[]});
+});
+
+app.post("/api/merchant/team/invite", authenticateMerchant, async (req,res) => {
+    const email=normalizeEmail(req.body?.email); const role=String(req.body?.role||"viewer");
+    if(!email||!isValidEmail(email))return res.status(400).json({error:"Enter a valid team member email."});
+    if(!["viewer","developer","finance","admin"].includes(role))return res.status(400).json({error:"Invalid team role."});
+    const {data,error}=await supabase.from("merchant_team_invitations").upsert({merchant_id:req.merchant.id,email,role,status:"pending"},{onConflict:"merchant_id,email"}).select("id,email,role,status,created_at").single();
+    if(error)return res.status(500).json({error:"Could not create invitation."});
+    res.status(201).json({member:data,message:"Invitation recorded. Team login/role enforcement will activate when multi-user merchant authentication is enabled."});
+});
+
+
 /* ============================================================
    ADMIN APPROVE APPLICATION
 ============================================================ */
