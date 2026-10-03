@@ -210,9 +210,7 @@ async function loadCheckout() {
         renderCheckout();
 
     } catch (error) {
-        setError(
-            error.message
-        );
+        setError(error.name==="AbortError"?"SquashberryPay took too long to respond. Please try again.":error.message);
     }
 }
 
@@ -702,7 +700,7 @@ async function startPayment(
 
     } catch (error) {
         if(sessionOverlay)sessionOverlay.hidden=true;
-        setFormError(error.message);
+        setFormError(error.name==="AbortError"?"The payment service took too long to respond. Please try again.":error.message);
         continueButton.disabled = false;
         $("#buttonText").textContent =
             originalText;
