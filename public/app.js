@@ -1412,6 +1412,21 @@ cancelPaymentBtn?.addEventListener(
    VERIFICATION
 ============================================================ */
 
+function renderProcessingReceiptActions(){
+    const host=approvedMessage||verificationContainer;
+    if(!host||!state.payment?.processing_page_id)return;
+    let box=document.getElementById("processingReceiptActions");
+    if(!box){
+        box=document.createElement("div");
+        box.id="processingReceiptActions";
+        box.className="processing-receipt-actions";
+        host.appendChild(box);
+    }
+    const url=window.location.origin+"/receipt/"+encodeURIComponent(state.payment.processing_page_id);
+    box.innerHTML='<a class="button secondary" href="'+escapeHtml(url)+'" target="_blank" rel="noopener">View processing receipt</a><button class="button secondary" type="button" id="copyProcessingReceipt">Copy receipt ID</button>';
+    document.getElementById("copyProcessingReceipt")?.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(state.payment.processing_page_id);notify("Processing receipt ID copied.","success",2200)}catch{notify("Could not copy the receipt ID.","error",2200)}});
+}
+
 function showVerification(
     justSubmitted = false
 ) {
@@ -1462,6 +1477,8 @@ function showVerification(
     const subtext =
         $("#verificationSubtext");
 
+
+    renderProcessingReceiptActions();
 
     if (
         state.payment.status ===
