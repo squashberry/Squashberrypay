@@ -37,7 +37,7 @@
   <div class="merchant-header-right">
     <button class="icon-button mobile-menu" id="openMobileNav" aria-label="Open dashboard navigation">☰</button>
     <button class="notification-button" id="openNotifications" aria-label="Notifications"><span>♢</span><i id="notificationDot" hidden></i></button>
-    <span id="merchantName">Loading…</span>
+    <span id="merchantName">Loading account…</span>
     <button id="signOut" class="text-button">Sign out</button>
   </div>
 </header>
@@ -46,7 +46,7 @@
   <aside class="merchant-sidebar" id="merchantSidebar">
     <div class="sidebar-top">
       <span class="sidebar-label">BUSINESS</span>
-      <div class="business-switcher"><span class="business-avatar" id="businessAvatar">…</span><span><strong id="sidebarBusinessName">Loading…</strong><small id="sidebarBusinessStatus">Loading…</small></span><b>⌄</b></div>
+      <div class="business-switcher"><span class="business-avatar" id="businessAvatar">…</span><span><strong id="sidebarBusinessName">Loading account…</strong><small id="sidebarBusinessStatus">Loading…</small></span><b>⌄</b></div>
     </div>
     <nav class="dashboard-nav" aria-label="Dashboard">
       <button data-section="overview" class="side-link active"><span>⌂</span>Overview</button><button data-section="applications" class="side-link"><span>▣</span>Applications</button>
@@ -74,7 +74,7 @@
 
     <section id="section-overview" class="merchant-section active">
       <div class="dashboard-welcome">
-        <div><span class="eyebrow">OVERVIEW</span><h1>Good morning, <span id="overviewName">Business</span></h1><p>Here's what’s happening across your SquashberryPay business.</p></div>
+        <div><span class="eyebrow">OVERVIEW</span><h1>Good morning, <span id="overviewName">Loading account…</span></h1><p>Here's what’s happening across your SquashberryPay business.</p></div>
         <div class="overview-actions"><button class="button secondary small" data-section-jump="payments">View payments</button><button class="button primary small" data-section-jump="payment-links">Create payment link</button></div>
       </div>
       <div class="range-bar"><div><button class="range active" data-range="7">7 days</button><button class="range" data-range="30">30 days</button><button class="range" data-range="90">90 days</button></div><span id="lastUpdated">Updating…</span></div>
@@ -134,11 +134,38 @@
     <label>Payment instructions<textarea id="methodInstructions" rows="5" placeholder="Explain exactly how customers should make the transfer."></textarea></label>
     <button id="saveMethod" class="button primary">Save payment method</button>
   </div></div></div></section>
-    <section id="section-products" class="merchant-section" hidden><div class="section-title-row"><div><span class="eyebrow">PRODUCTS</span><h2>Products.</h2><p>Review what customers can buy before opening the product creator.</p></div></div><div class="workspace-tabs" role="tablist"><button class="workspace-tab active" data-workspace-tab="products" data-workspace-target="products-products" type="button">Your products</button><button class="workspace-tab" data-workspace-tab="products" data-workspace-target="products-create" type="button">Create product</button></div><div class="workspace-panels"><div class="workspace-panel active" data-workspace-panel="products-products"><div id="productsList" class="product-list"></div></div><div class="workspace-panel" data-workspace-panel="products-create" hidden><div class="merchant-form product-form">
-        <label>Application<select id="productApp"></select></label><label>Product name<input id="productName" placeholder="MediSquash Premium"></label><label>Product code<input id="productCode" placeholder="premium_monthly"></label><label>Description<textarea id="productDescription" rows="3" placeholder="Describe what the customer gets."></textarea></label><label>Offering type<select id="productType"><option value="pay_now">Pay Now — one-time</option><option value="subscribe">Subscribe — recurring</option><option value="donate">Donation campaign</option></select></label><label>Amount<input id="productAmount" type="number" min="0" step="0.01" placeholder="250"></label>
-        <label id="subscriptionIntervalGroup" hidden>Billing period<select id="subscriptionInterval"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></label>
-        <label class="checkbox-line"><input id="customDonation" type="checkbox" checked> Allow customer to choose the donation amount</label>
-        <div id="donationSettings" class="donation-settings" hidden><div class="form-section-label">Donation campaign</div></div></div></section>
+    <section id="section-products" class="merchant-section" hidden>
+      <div class="section-title-row"><div><span class="eyebrow">PRODUCTS</span><h2>Products.</h2><p>Create and manage the things customers can pay for.</p></div></div>
+      <div class="workspace-tabs" role="tablist"><button class="workspace-tab active" data-workspace-tab="products" data-workspace-target="products-products" type="button">Your products</button><button class="workspace-tab" data-workspace-tab="products" data-workspace-target="products-create" type="button">Create product</button></div>
+      <div class="workspace-panels">
+        <div class="workspace-panel active" data-workspace-panel="products-products"><div id="productsList" class="product-list"></div></div>
+        <div class="workspace-panel" data-workspace-panel="products-create" hidden>
+          <div class="merchant-form product-form">
+            <label>Application<select id="productApp"></select></label>
+            <label>Product name<input id="productName" placeholder="MediSquash Premium"></label>
+            <label>Product code<input id="productCode" placeholder="premium_monthly"></label>
+            <label>Description<textarea id="productDescription" rows="3" placeholder="Describe what the customer gets."></textarea></label>
+            <label>Offering type<select id="productType"><option value="pay_now">Pay Now — one-time</option><option value="subscribe">Subscribe — recurring</option><option value="donate">Donation</option></select></label>
+            <label>Amount<input id="productAmount" type="number" min="0" step="0.01" placeholder="250"></label>
+            <label id="subscriptionIntervalGroup" hidden>Billing period<select id="subscriptionInterval"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></label>
+            <div id="donationSettings" class="donation-settings" hidden>
+              <div class="form-section-label">Donation settings</div>
+              <label class="checkbox-line"><input id="customDonation" type="checkbox" checked> Allow customer to choose the donation amount</label>
+              <label>Donation goal<input id="donationGoal" type="number" min="0" step="0.01" placeholder="10000"></label>
+              <label>Minimum donation<input id="donationMinimum" type="number" min="0" step="0.01" placeholder="50"></label>
+              <label>Maximum donation<input id="donationMaximum" type="number" min="0" step="0.01" placeholder="200"></label>
+              <label>Suggested amounts<input id="donationPresets" placeholder="50, 100, 150"></label>
+              <label>Goal message<input id="donationGoalMessage" placeholder="Help us reach our goal"></label>
+              <label>Donation end date<input id="donationEndAt" type="datetime-local"></label>
+              <label class="checkbox-line"><input id="showDonationGoal" type="checkbox" checked> Show donation goal</label>
+              <label class="checkbox-line"><input id="showDonorCount" type="checkbox"> Show donor count</label>
+              <label class="checkbox-line"><input id="closeOnGoal" type="checkbox"> Close campaign when goal is reached</label>
+            </div>
+            <div class="form-actions"><button id="saveProduct" class="button primary" type="button">Create product</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <section id="section-subscriptions" class="merchant-section" hidden><div class="section-title-row"><div><span class="eyebrow">SUBSCRIPTIONS</span><h2>Subscriptions.</h2><p>Separate recurring products from future subscription activity and billing management.</p></div></div><div class="workspace-tabs" role="tablist"><button class="workspace-tab active" data-workspace-tab="subscriptions" data-workspace-target="subscriptions-products" type="button">Subscription products</button><button class="workspace-tab" data-workspace-tab="subscriptions" data-workspace-target="subscriptions-activity" type="button">Subscription activity</button></div><div class="workspace-panels"><div class="workspace-panel active" data-workspace-panel="subscriptions-products"><div id="subscriptionProducts" class="subscription-grid"></div></div><div class="workspace-panel" data-workspace-panel="subscriptions-activity" hidden><div class="state-card neutral"><span class="state-icon">↻</span><div><h3>Subscription activity</h3><p>Active subscriptions, pauses, cancellations and upcoming renewal reminders will appear here as billing activity is recorded.</p></div></div></div></div></section>
 
