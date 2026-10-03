@@ -711,6 +711,7 @@ alter table public.payments alter column service_id drop not null;
 alter table public.payments alter column product_id drop not null;
 alter table public.payments alter column service_user_id drop not null;
 alter table public.payments add column if not exists customer_reference text;
+alter table public.payments add column if not exists customer_email text;
 alter table public.payments add column if not exists processing_page_id text;
 alter table public.payments add column if not exists donation_campaign_id uuid;
 create unique index if not exists idx_payments_processing_page_id on public.payments(processing_page_id) where processing_page_id is not null;
