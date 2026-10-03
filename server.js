@@ -1953,6 +1953,9 @@ app.post(
                     req.body?.email
                 );
 
+            const customerReference =
+                String(req.body?.customer_reference || "").trim().slice(0,160) || null;
+
 
             const businessName =
                 String(
@@ -5340,7 +5343,8 @@ app.post(
                 external_user_id,
                 product_code,
                 return_url,
-                amount
+                amount,
+                customer_reference
             } = req.body;
 
 
@@ -5532,6 +5536,12 @@ app.post(
 
                     payment_reference:
                         generateReference(),
+
+                    processing_page_id:
+                        "SPP-" + randomHex(10).toUpperCase(),
+
+                    customer_reference:
+                        customer_reference ? String(customer_reference).trim().slice(0,160) : null,
 
                     service_id:
                         req.service.id,
@@ -5938,6 +5948,37 @@ function serializeDonationCampaign(
     };
 }
 
+
+/* ============================================================
+   PUBLIC DONATIONS — NO APP INTEGRATION
+============================================================ */
+app.get("/api/public/donations/:slug",async(req,res)=>{
+  try{
+    const {data:c,error}=await supabase.from("donation_campaigns").select("*").eq("slug",String(req.params.slug||"").trim().toLowerCase()).eq("status","active").maybeSingle();
+    if(error)throw error;if(!c)return res.status(404).json({error:"Donation campaign not found."});
+    const {data:methods}=await supabase.from("donation_payment_methods").select("id,name,type,icon_path").eq("merchant_id",c.merchant_id).eq("enabled",true).order("name");
+    const {data:rows}=await supabase.from("payments").select("amount,status").eq("donation_campaign_id",c.id);
+    const done=(rows||[]).filter(x=>x.status==="completed");const raised=done.reduce((a,x)=>a+Number(x.amount||0),0);
+    const {data:merchant}=await supabase.from("merchant_profiles").select("business_name").eq("id",c.merchant_id).maybeSingle();
+    res.json({donation:{id:c.id,slug:c.slug,name:c.name,description:c.description,currency:c.currency,allow_custom_amount:c.allow_custom_amount,fixed_amount:c.fixed_amount,minimum_amount:c.minimum_amount,maximum_amount:c.maximum_amount,presets:c.presets,goal:c.goal,goal_message:c.goal_message,end_at:c.end_at,raised,donor_count:done.length},merchant:{name:merchant?.business_name||"Merchant"},payment_methods:methods||[]});
+  }catch(e){console.error(e);res.status(500).json({error:"Could not load donation campaign."});}
+});
+app.post("/api/public/donations/:slug/payments",async(req,res)=>{
+  try{
+    const email=normalizeEmail(req.body?.email);if(!isValidEmail(email))return res.status(400).json({error:"Enter a valid email address."});
+    const {data:c,error}=await supabase.from("donation_campaigns").select("*").eq("slug",String(req.params.slug||"").trim().toLowerCase()).eq("status","active").maybeSingle();if(error)throw error;if(!c)return res.status(404).json({error:"Donation campaign not found."});
+    if(c.end_at&&new Date(c.end_at)<=new Date())return res.status(410).json({error:"This donation campaign has ended."});
+    const amount=c.allow_custom_amount?Number(req.body?.amount):Number(c.fixed_amount);
+    if(!Number.isFinite(amount)||amount<=0)return res.status(400).json({error:"Enter a valid donation amount."});
+    if(c.minimum_amount!==null&&amount<Number(c.minimum_amount))return res.status(400).json({error:"Donation is below the minimum allowed amount."});
+    if(c.maximum_amount!==null&&amount>Number(c.maximum_amount))return res.status(400).json({error:"Donation exceeds the maximum allowed amount."});
+    const expiresAt=addMinutes(PAYMENT_SESSION_MINUTES);
+    const {data:p,error:pe}=await supabase.from("payments").insert({payment_reference:generateReference(),processing_page_id:"SPP-"+randomHex(10).toUpperCase(),customer_reference:String(req.body?.customer_reference||"").trim().slice(0,160)||null,service_id:null,service_user_id:null,product_id:null,donation_campaign_id:c.id,amount:Math.round(amount*100)/100,currency:c.currency,payment_type:"donate",status:"pending",donor_name:req.body?.donor_anonymous?null:String(req.body?.donor_name||"").trim().slice(0,120)||null,donor_message:String(req.body?.donor_message||"").trim().slice(0,500)||null,donor_anonymous:Boolean(req.body?.donor_anonymous),expires_at:expiresAt}).select("id,payment_reference,processing_page_id,customer_reference,amount,currency,payment_type,status,expires_at").single();
+    if(pe)throw pe;
+    const rawSessionToken=randomToken();const {error:se}=await supabase.from("payment_sessions").insert({payment_id:p.id,session_token_hash:hash(rawSessionToken),expires_at:expiresAt});if(se)throw se;
+    res.status(201).json({payment:p,payment_url:BASE_URL+"/pay/"+rawSessionToken});
+  }catch(e){console.error("Donation payment error:",e);res.status(500).json({error:"Could not start donation."});}
+});
 
 /* ============================================================
    PUBLIC HOSTED PAYMENT LINKS
@@ -6403,6 +6444,10 @@ app.post(
                     .insert({
                         payment_reference:
                             generateReference(),
+                        processing_page_id:
+                            "SPP-" + randomHex(10).toUpperCase(),
+                        customer_reference:
+                            customerReference,
                         service_id:
                             link.service_id,
                         service_user_id:
@@ -7616,6 +7661,42 @@ app.post(
 
 
 /* ============================================================
+   CUSTOMER PROCESSING RECEIPT + MERCHANT VERIFICATION
+============================================================ */
+app.get("/api/public/receipts/:reference",async(req,res)=>{
+  try{
+    const key=String(req.params.reference||"").trim();
+    const {data:p,error}=await supabase.from("payments").select("id,payment_reference,processing_page_id,customer_reference,amount,currency,payment_type,status,created_at,approved_at,completed_at,rejection_reason,services(name,slug),products(name,product_code,subscription_interval),donation_campaigns(name,slug)").or("payment_reference.eq."+key+",processing_page_id.eq."+key).maybeSingle();
+    if(error)throw error;if(!p)return res.status(404).json({error:"Processing receipt not found."});
+    res.json({receipt:{reference:p.payment_reference,processing_page_id:p.processing_page_id,customer_reference:p.customer_reference,amount:p.amount,currency:p.currency,payment_type:p.payment_type,status:p.status,created_at:p.created_at,approved_at:p.approved_at,completed_at:p.completed_at,rejection_reason:p.rejection_reason,service:p.services?{name:p.services.name,slug:p.services.slug}:null,product:p.products?{name:p.products.name,code:p.products.product_code,interval:p.products.subscription_interval}:null,donation:p.donation_campaigns?{name:p.donation_campaigns.name,slug:p.donation_campaigns.slug}:null}});
+  }catch(e){console.error(e);res.status(500).json({error:"Could not load processing receipt."});}
+});
+app.get("/receipt/:reference",(req,res)=>res.sendFile(path.join(__dirname,"public","receipt.html")));
+async function ensureSubscriptionContract(payment){
+  if(payment.payment_type!=="subscribe"||!payment.service_id||!payment.service_user_id||!payment.product_id)return null;
+  let {data:existing}=await supabase.from("subscription_contracts").select("*").eq("current_payment_id",payment.id).maybeSingle();if(existing)return existing;
+  ({data:existing}=await supabase.from("subscription_contracts").select("*").eq("initial_payment_id",payment.id).maybeSingle());if(existing)return existing;
+  const {data:service}=await supabase.from("services").select("merchant_id").eq("id",payment.service_id).maybeSingle();const {data:product}=await supabase.from("products").select("subscription_interval").eq("id",payment.product_id).maybeSingle();if(!service?.merchant_id||!product?.subscription_interval)return null;
+  const due=new Date();product.subscription_interval==="yearly"?due.setFullYear(due.getFullYear()+1):due.setMonth(due.getMonth()+1);
+  const {data:contract,error}=await supabase.from("subscription_contracts").insert({merchant_id:service.merchant_id,service_id:payment.service_id,product_id:payment.product_id,service_user_id:payment.service_user_id,initial_payment_id:payment.id,current_payment_id:payment.id,status:"active",interval:product.subscription_interval,next_due_at:due.toISOString()}).select("*").single();if(error)throw error;return contract;
+}
+async function sendDonationSuccessEmail({email,name,amount,currency,reference,customerReference}){if(!email)return;await sendResendEmail({to:email,subject:"Donation confirmed — "+reference,text:"Your donation to "+(name||"this campaign")+" has been successfully confirmed.\n\nAmount: "+currency+" "+amount+"\nReference: "+reference+(customerReference?"\nYour reference: "+customerReference:"")+"\n\nThank you for your support.",html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><h1>Donation confirmed</h1><p>Your donation to "+escapeHtml(name||"this campaign")+" has been successfully confirmed.</p><p><b>Amount:</b> "+escapeHtml(currency)+" "+Number(amount).toFixed(2)+"<br><b>Reference:</b> "+escapeHtml(reference)+"</p><p>Keep this email as your receipt.</p></div></div>"});}
+async function approveMerchantPayment(paymentId,merchantId){
+  const {data:p,error}=await supabase.from("payments").select("*,service_users(email,external_user_id),services(name,status,merchant_id),products(name,product_code,subscription_interval),donation_campaigns(name,merchant_id,status)").eq("id",paymentId).maybeSingle();if(error)throw error;if(!p)return{status:404,body:{error:"Payment not found."}};
+  const owner=p.donation_campaign_id?p.donation_campaigns?.merchant_id:p.services?.merchant_id;if(owner!==merchantId)return{status:404,body:{error:"Payment not found."}};if(p.status!=="awaiting_verification")return{status:409,body:{error:"Only payments awaiting verification can be approved."}};
+  const now=new Date().toISOString();
+  if(p.donation_campaign_id){const {error:e}=await supabase.from("payments").update({status:"completed",approved_at:now,completed_at:now}).eq("id",p.id).eq("status","awaiting_verification");if(e)throw e;await sendDonationSuccessEmail({email:p.service_users?.email,name:p.donation_campaigns?.name,amount:p.amount,currency:p.currency,reference:p.payment_reference,customerReference:p.customer_reference});return{status:200,body:{success:true,type:"donation",message:"Donation confirmed and success email sent."}};}
+  if(p.services?.status!=="active")return{status:403,body:{error:"The application associated with this payment is not active."}};
+  const rawCode=generatePaymentCode();const {error:te}=await supabase.from("payment_tokens").upsert({payment_id:p.id,service_id:p.service_id,service_user_id:p.service_user_id,token_hash:hash(rawCode),expires_at:addHours(PAYMENT_TOKEN_HOURS),used_at:null},{onConflict:"payment_id"});if(te)throw te;
+  const {error:ue}=await supabase.from("payments").update({status:"approved",approved_at:now}).eq("id",p.id).eq("status","awaiting_verification");if(ue)throw ue;
+  if(p.payment_type==="subscribe")await ensureSubscriptionContract(p);await sendPaymentCodeEmail({email:p.service_users?.email,code:rawCode,serviceName:p.services?.name,amount:p.amount,currency:p.currency,reference:p.payment_reference});return{status:200,body:{success:true,type:p.payment_type,message:"Payment approved and one-time code emailed."}};
+}
+app.get("/api/merchant/payment-requests",authenticateMerchant,async(req,res)=>{try{const {data:services}=await merchantServices(req);const ids=(services||[]).map(s=>s.id);const {data:campaigns}=await supabase.from("donation_campaigns").select("id").eq("merchant_id",req.merchant.id);const cids=(campaigns||[]).map(c=>c.id);const qs=[];if(ids.length)qs.push(supabase.from("payments").select("*,service_users(email,external_user_id),services(name,slug),products(name,product_code,subscription_interval),payment_methods(name,type)").in("service_id",ids).eq("status","awaiting_verification"));if(cids.length)qs.push(supabase.from("payments").select("*,service_users(email,external_user_id),donation_campaigns(name,slug)").in("donation_campaign_id",cids).eq("status","awaiting_verification"));const rs=await Promise.all(qs);res.json({payments:rs.flatMap(x=>x.data||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))});}catch(e){console.error(e);res.status(500).json({error:"Could not load payment requests."})}});
+app.get("/api/merchant/payments/:paymentId/receipt",authenticateMerchant,async(req,res)=>{try{const {data:p}=await supabase.from("payments").select("id,service_id,donation_campaign_id,receipt_path").eq("id",req.params.paymentId).maybeSingle();if(!p?.receipt_path)return res.status(404).json({error:"Receipt not found."});let allowed=false;if(p.service_id){const {data:x}=await supabase.from("services").select("id").eq("id",p.service_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(p.donation_campaign_id){const {data:x}=await supabase.from("donation_campaigns").select("id").eq("id",p.donation_campaign_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(!allowed)return res.status(404).json({error:"Receipt not found."});const {data,error}=await supabase.storage.from("payment-receipts").createSignedUrl(p.receipt_path,300);if(error)throw error;res.json({url:data?.signedUrl||data?.signedURL});}catch(e){console.error(e);res.status(500).json({error:"Could not open receipt."})}});
+app.post("/api/merchant/payments/:paymentId/approve",authenticateMerchant,async(req,res)=>{try{const r=await approveMerchantPayment(req.params.paymentId,req.merchant.id);res.status(r.status).json(r.body)}catch(e){console.error(e);res.status(500).json({error:"Could not approve payment."})}});
+app.post("/api/merchant/payments/:paymentId/reject",authenticateMerchant,async(req,res)=>{try{const reason=String(req.body?.reason||"Payment could not be verified.").trim().slice(0,500);const {data:p}=await supabase.from("payments").select("id,service_id,donation_campaign_id,status").eq("id",req.params.paymentId).maybeSingle();if(!p)return res.status(404).json({error:"Payment not found."});let allowed=false;if(p.service_id){const {data:x}=await supabase.from("services").select("id").eq("id",p.service_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(p.donation_campaign_id){const {data:x}=await supabase.from("donation_campaigns").select("id").eq("id",p.donation_campaign_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(!allowed)return res.status(404).json({error:"Payment not found."});if(p.status!=="awaiting_verification")return res.status(409).json({error:"Only payments awaiting verification can be rejected."});const {error}=await supabase.from("payments").update({status:"rejected",rejection_reason:reason}).eq("id",p.id).eq("status","awaiting_verification");if(error)throw error;res.json({success:true});}catch(e){console.error(e);res.status(500).json({error:"Could not reject payment."})}});
+
+/* ============================================================
    ADMIN LOGIN
 ============================================================ */
 
@@ -7840,32 +7921,29 @@ async function merchantServices(req) {
 }
 
 app.get("/api/merchant/dashboard", authenticateMerchant, async (req,res) => {
-    try {
-        const { data: services, error: serviceError } = await merchantServices(req);
-        if (serviceError) return res.status(500).json({error:"Could not load dashboard."});
-        const ids = services.map(s => s.id);
-        if (!ids.length) return res.json({summary:{revenue:0,pending:0,successful:0,failed:0,refunded:0,fees:0,available:0,pending_balance:0},services,trend:[],recent_payments:[],customers:[],notifications:[]});
-        const { data: payments, error } = await supabase
-            .from("payments")
-            .select("id,payment_reference,service_id,service_user_id,product_id,amount,currency,payment_type,status,donor_name,donor_anonymous,created_at,completed_at")
-            .in("service_id", ids).order("created_at",{ascending:false}).limit(500);
-        if (error) return res.status(500).json({error:"Could not load dashboard activity."});
-        const rows=payments||[];
-        const completed=rows.filter(p=>p.status==="completed");
-        const pending=rows.filter(p=>["pending","awaiting_receipt","awaiting_verification","approved"].includes(p.status));
-        const failed=rows.filter(p=>["rejected","expired","cancelled"].includes(p.status));
-        const revenue=completed.reduce((a,p)=>a+Number(p.amount||0),0);
-        const pendingBalance=pending.reduce((a,p)=>a+Number(p.amount||0),0);
-        const customers=[...new Map(rows.map(p=>[p.service_user_id,p])).values()].map(p=>({id:p.service_user_id,email:null}));
-        const dayMap={};
-        completed.forEach(p=>{const d=String(p.completed_at||p.created_at).slice(0,10);dayMap[d]=(dayMap[d]||0)+Number(p.amount||0);});
-        const trend=Object.entries(dayMap).sort(([a],[b])=>a.localeCompare(b)).slice(-30).map(([date,amount])=>({date,amount}));
-        const {data:users}=await supabase.from("service_users").select("id,email,external_user_id,created_at").in("service_id",ids).order("created_at",{ascending:false}).limit(500);
-        const userMap=new Map((users||[]).map(u=>[u.id,u]));
-        const recent=rows.slice(0,12).map(p=>({...p,customer:userMap.get(p.service_user_id)||null,service:services.find(s=>s.id===p.service_id)||null}));
-        const {data:notifications}=await supabase.from("merchant_notifications").select("id,title,message,type,read_at,created_at").eq("merchant_id",req.merchant.id).order("created_at",{ascending:false}).limit(20);
-        res.json({summary:{revenue, pending:pendingBalance, successful:completed.length, failed:failed.length, refunded:0, fees:0, available:revenue, pending_balance:pendingBalance},services,trend,recent_payments:recent,customers:(users||[]),notifications:notifications||[]});
-    } catch(e){ console.error("Merchant dashboard error:",e); res.status(500).json({error:"Could not load dashboard."}); }
+  try{
+    const {data:services,error:serviceError}=await merchantServices(req);if(serviceError)throw serviceError;
+    const ids=(services||[]).map(s=>s.id);
+    const {data:products}=ids.length?await supabase.from("products").select("*").in("service_id",ids).order("created_at",{ascending:false}):{data:[]};
+    const {data:methods}=ids.length?await supabase.from("payment_methods").select("*").in("service_id",ids).order("created_at",{ascending:false}):{data:[]};
+    const {data:links}=ids.length?await supabase.from("payment_links").select("id,service_id,product_id,slug,title,description,button_label,status,created_at,updated_at,products(name,amount,currency,payment_type)").in("service_id",ids).order("created_at",{ascending:false}):{data:[]};
+    const {data:servicePayments}=ids.length?await supabase.from("payments").select("*,service_users(email,external_user_id),products(name,product_code,subscription_interval),payment_methods(name,type),services(name,slug)").in("service_id",ids).order("created_at",{ascending:false}).limit(1000):{data:[]};
+    const {data:campaigns}=await supabase.from("donation_campaigns").select("*").eq("merchant_id",req.merchant.id).order("created_at",{ascending:false});
+    const cids=(campaigns||[]).map(c=>c.id);
+    const {data:donationPayments}=cids.length?await supabase.from("payments").select("*,service_users(email,external_user_id),donation_campaigns(name,slug)").in("donation_campaign_id",cids).order("created_at",{ascending:false}).limit(1000):{data:[]};
+    const payments=[...(servicePayments||[]),...(donationPayments||[])].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    const completed=payments.filter(p=>p.status==="completed"),pending=payments.filter(p=>["pending","awaiting_receipt","awaiting_verification","approved"].includes(p.status)),failed=payments.filter(p=>["rejected","expired","cancelled"].includes(p.status));
+    const revenue=completed.reduce((a,p)=>a+Number(p.amount||0),0),pendingAmount=pending.reduce((a,p)=>a+Number(p.amount||0),0);
+    const users=ids.length?(await supabase.from("service_users").select("id,service_id,email,external_user_id,created_at").in("service_id",ids).order("created_at",{ascending:false}).limit(1000)).data||[]:[];
+    const userMap=new Map(users.map(u=>[u.id,u]));
+    const normalized=payments.map(p=>({...p,customer:userMap.get(p.service_user_id)||p.service_users||null,app:p.services||null,product:p.products||null}));
+    const dayMap={};completed.forEach(p=>{const d=String(p.completed_at||p.created_at).slice(0,10);dayMap[d]=(dayMap[d]||0)+Number(p.amount||0)});
+    const trend=Object.entries(dayMap).sort(([a],[b])=>a.localeCompare(b)).slice(-30).map(([date,amount])=>({date,amount}));
+    const {data:notifications}=await supabase.from("merchant_notifications").select("id,title,message,type,read_at,created_at").eq("merchant_id",req.merchant.id).order("created_at",{ascending:false}).limit(20);
+    const {data:contracts}=await supabase.from("subscription_contracts").select("id,status,next_due_at,service_id,product_id,service_user_id").eq("merchant_id",req.merchant.id);
+    const donationStats=(campaigns||[]).map(c=>{const rows=payments.filter(p=>p.donation_campaign_id===c.id&&p.status==="completed");return {...c,raised:rows.reduce((a,p)=>a+Number(p.amount||0),0),donor_count:rows.length}});
+    res.json({summary:{gross_collected:revenue,pending_amount:pendingAmount,pending_verification_count:pending.filter(p=>p.status==="awaiting_verification").length,successful_count:completed.length,failed_count:failed.length,refunded_count:0,transaction_count:payments.length,customer_count:users.length},apps:services||[],services:services||[],products:products||[],payment_methods:methods||[],payment_links:links||[],payments:normalized,recent_payments:normalized.slice(0,12),customers:users,notifications:notifications||[],donation_campaigns:donationStats,subscription_contracts:contracts||[],trend,generated_at:new Date().toISOString()});
+  }catch(e){console.error("Merchant dashboard error:",e);res.status(500).json({error:"Could not load dashboard."});}
 });
 
 app.get("/api/merchant/payments", authenticateMerchant, async (req,res) => {
