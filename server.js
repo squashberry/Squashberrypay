@@ -6020,6 +6020,41 @@ app.post(
             const verified =
                 Boolean(result.data?.success);
 
+            if (verified) {
+                const {
+                    error:
+                        completionError
+                } = await supabase
+                    .from("payments")
+                    .update({
+                        payment_state:
+                            "completed"
+                    })
+                    .eq(
+                        "id",
+                        result.data.payment_id
+                    )
+                    .eq(
+                        "service_id",
+                        req.service.id
+                    )
+                    .eq(
+                        "payment_state",
+                        "redeemed"
+                    );
+
+                if (completionError) {
+                    console.error(
+                        "Payment completion state update error:",
+                        completionError
+                    );
+                    return res.status(500).json({
+                        error:
+                            "Payment verification completed but could not finalize the payment state."
+                    });
+                }
+            }
+
             await supabase
                 .from("payment_verification_attempts")
                 .insert({
@@ -7835,7 +7870,7 @@ app.post(
                         "awaiting_verification",
 
                     payment_state:
-                        "awaiting_verification"
+                        "payment_submitted"
                 })
                 .eq(
                     "id",
