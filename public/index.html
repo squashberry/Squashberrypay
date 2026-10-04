@@ -29,23 +29,44 @@
 
     <link
         rel="stylesheet"
-        href="./styles.css?v=20261004-20"
+        href="./styles.css?v=20261004-24"
     >
 
     <link
         rel="stylesheet"
-        href="./ui-overhaul.css?v=20261004-20"
+        href="./ui-overhaul.css?v=20261004-24"
     >
 
 <script>
     (() => {
         const q = new URLSearchParams(window.location.search);
-        if (q.has("pay")) document.documentElement.classList.add("customer-payment-page");
+        if (q.has("pay")) {
+            document.documentElement.classList.add("customer-payment-page");
+            return;
+        }
+
+        const token = (() => {
+            try { return sessionStorage.getItem("sbp_access_token"); }
+            catch { return null; }
+        })();
+
+        if (token) {
+            document.documentElement.classList.add("auth-redirecting");
+            document.documentElement.style.background = "#111";
+            document.documentElement.innerHTML += '<style id="authRedirectSplash">html.auth-redirecting{background:#111!important}body{background:#111!important}.auth-redirect-splash{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#111;color:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.auth-redirect-splash-inner{display:grid;justify-items:center;gap:14px}.auth-redirect-spinner{width:30px;height:30px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:authRedirectSpin .72s linear infinite}@keyframes authRedirectSpin{to{transform:rotate(360deg)}}.auth-redirect-splash strong{font-size:14px;letter-spacing:-.02em}.auth-redirect-splash span{font-size:11px;color:#999}</style>';
+            document.addEventListener("DOMContentLoaded", () => {
+                const splash=document.createElement("div");
+                splash.className="auth-redirect-splash";
+                splash.innerHTML='<div class="auth-redirect-splash-inner"><i class="auth-redirect-spinner"></i><strong>Opening your dashboard</strong><span>SquashberryPay</span></div>';
+                document.body.appendChild(splash);
+            });
+            window.location.replace("./merchant.html");
+        }
     })();
 </script>
 <link rel="icon" href="/Squashberrypay/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/Squashberrypay/favicon.svg">
-    <link rel="stylesheet" href="./layout-v3.css?v=20261004-22">
+    <link rel="stylesheet" href="./layout-v3.css?v=20261004-24">
 </head>
 
 <body>
