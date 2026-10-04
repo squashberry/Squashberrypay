@@ -82,21 +82,56 @@ function identity(){const n=merchant?.business_name||"Loading account…";["merc
 function all(){overview();renderApplicationsPrimary();renderPaymentRequests();populateApps();prepareLinkGenerator();renderApps();renderProducts();renderMethods();renderLinks();renderSubscriptions();renderDonations();renderCustomers();renderPayments();renderAnalytics();profile()}
 function animateMetric(el,target,isMoney){
   if(!el)return;
-  const start=Number(el.dataset.metricValue||0), end=Number(target||0), duration=520, started=performance.now();
-  if(Math.abs(end-start)<0.001){el.textContent=isMoney?money(end):String(Math.round(end));el.dataset.metricValue=String(end);return}
-  const tick=now=>{
-    const p=Math.min(1,(now-started)/duration), eased=1-Math.pow(1-p,3), value=start+(end-start)*eased;
-    el.textContent=isMoney?money(value):String(Math.round(value));
-    if(p<1)requestAnimationFrame(tick); else el.dataset.metricValue=String(end);
+  const end=Number(target||0);
+  el.dataset.metricTarget=String(end);
+  el.dataset.metricMoney=isMoney?"1":"0";
+  el.textContent=isMoney?money(0):"0";
+  const run=()=>{
+    if(el.dataset.metricAnimated==="1")return;
+    el.dataset.metricAnimated="1";
+    const start=0,duration=620,started=performance.now();
+    const tick=now=>{
+      const p=Math.min(1,(now-started)/duration),eased=1-Math.pow(1-p,3),value=start+(end-start)*eased;
+      el.textContent=isMoney?money(value):String(Math.round(value));
+      if(p<1)requestAnimationFrame(tick); else {el.textContent=isMoney?money(end):String(Math.round(end));}
+    };
+    requestAnimationFrame(tick);
   };
-  requestAnimationFrame(tick);
+  el._runMetric=run;
 }
 function applyDashboardDensity(){
   document.body.classList.toggle("dashboard-compact",dashboardDensity==="compact");
   const b=$("#toggleDashboardDensity");
   if(b){b.setAttribute("aria-pressed",String(dashboardDensity==="compact")); const label=b.querySelector("span:last-child"); if(label)label.textContent=dashboardDensity==="compact"?"Density · Compact":"Density · Comfortable";}
 }
+function initDashboardScrollMotion(){
+  const targets=qsa(".money-card,.chart-panel,.dashboard-two-col.lower>.panel,.quick-actions");
+  if(!targets.length)return;
+  const reveal=(el)=>{
+    el.classList.add("dashboard-scroll-ready");
+    if(el.dataset.motionObserved==="1")return;
+    el.dataset.motionObserved="1";
+    el.classList.remove("dashboard-scroll-visible");
+  };
+  targets.forEach(reveal);
+  const io=new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{
+      if(!entry.isIntersecting)return;
+      const el=entry.target;
+      el.classList.add("dashboard-scroll-visible");
+      el.querySelectorAll("[data-metric-target]").forEach(m=>m._runMetric?.());
+      if(el.id==="revenueChart" || el.querySelector("#revenueChart")) el.querySelector("#revenueChart")?.classList.add("chart-scroll-visible");
+      io.unobserve(el);
+    });
+  },{threshold:.16,rootMargin:"0px 0px -8% 0px"});
+  targets.forEach(el=>io.observe(el));
+  qsa("[data-metric-target]").forEach(m=>{
+    const parent=m.closest(".money-card");
+    if(parent&&!parent.dataset.motionObserved)io.observe(parent);
+  });
+}
 function initDashboardInteractions(){
+  initDashboardScrollMotion();
   applyDashboardDensity();
   $("#toggleDashboardDensity")?.addEventListener("click",()=>{
     dashboardDensity=dashboardDensity==="compact"?"comfortable":"compact";
@@ -136,6 +171,8 @@ const grid=[.25,.5,.75].map(v=>{const y=padTop+(h-padTop-padBottom)*v;return "<l
 const labels=b.map((x,i)=>"<text x=\""+points[i].x.toFixed(1)+"\" y=\"239\" class=\"chart-axis-label\" text-anchor=\"middle\">"+esc(x.l)+"</text>").join("");
 const dots=points.map(p=>"<circle cx=\""+p.x.toFixed(1)+"\" cy=\""+p.y.toFixed(1)+"\" r=\"3.5\" class=\"chart-point\"/>").join("");
 e.innerHTML="<svg viewBox=\"0 0 760 250\" preserveAspectRatio=\"none\" class=\"revenue-svg\" aria-label=\"Revenue over time\"><defs><linearGradient id=\"revenueFill\" x1=\"0\" x2=\"0\" y1=\"0\" y2=\"1\"><stop offset=\"0%\" stop-opacity=\".13\"/><stop offset=\"100%\" stop-opacity=\"0\"/></linearGradient></defs>"+grid+"<path d=\""+area+"\" class=\"chart-area\"/><path d=\""+line+"\" class=\"chart-line\"/>"+dots+labels+"</svg>";
+e.classList.remove("chart-scroll-visible");
+if(e.closest(".chart-panel")?.classList.contains("dashboard-scroll-visible")) e.classList.add("chart-scroll-visible");
 }
 function recent(){const e=$("#recentPayments");if(!e)return;const r=(dashboard?.payments||[]).slice(0,6);e.innerHTML=r.length?r.map(p=>"<button class=\"payment-row\" data-payment-id=\""+esc(p.id)+"\"><span class=\"payment-icon\">"+esc((p.product?.name||"P").charAt(0))+"</span><span class=\"payment-main\"><strong>"+esc(p.product?.name||"Payment")+"</strong><small>"+esc(p.customer?.email||"Guest")+" · "+esc(p.payment_reference||"—")+"</small></span><span class=\"payment-amount\"><strong>"+money(p.amount,p.currency)+"</strong><small class=\"status-text "+statusClass(p.status)+"\">"+esc(p.status||"unknown")+"</small></span></button>").join(""):empty("No payments yet","Recorded activity will appear here.")}
 qsa(".range").forEach(b=>b.onclick=()=>{qsa(".range").forEach(x=>x.classList.remove("active"));b.classList.add("active");range=Number(b.dataset.range);chart()});
