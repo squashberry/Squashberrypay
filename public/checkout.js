@@ -435,14 +435,18 @@ function renderDonationCampaign(
     const raisedValue=Number(donation.raised);
     const raised=Number.isFinite(raisedValue)?raisedValue:0;
 
-    const progress =
-        Number(
-            donation.progress_percent || 0
-        );
+    // Calculate from the authoritative raised/goal values and round the
+    // result so IEEE-754 artifacts such as 14.000000000000002 never reach the UI.
+    const calculatedProgress=hasFiniteGoal ? (raised / goal) * 100 : 0;
+    const progress=Number.isFinite(calculatedProgress)
+        ? Math.min(100,Math.max(0,Math.round(calculatedProgress * 100) / 100))
+        : 0;
+    const progressLabel=Number.isInteger(progress)
+        ? String(progress)
+        : progress.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
 
-    donationProgressPercent.textContent=showGoal && Number.isFinite(progress) ? String(Math.min(100,Math.max(0,progress)))+"%" : "";
-
-    donationProgressBar.style.width=showGoal && Number.isFinite(progress) ? String(Math.min(100,Math.max(0,progress)))+"%" : "0%";
+    donationProgressPercent.textContent=showGoal ? progressLabel+"%" : "";
+    donationProgressBar.style.width=showGoal ? progress+"%" : "0%";
 
     donationRaised.textContent =
         money(
