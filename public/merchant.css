@@ -977,3 +977,39 @@ body.dashboard-compact .merchant-main{
   .skeleton-card{height:105px}
   .skeleton-panel{height:220px}
 }
+
+/* Viewport-triggered dashboard motion */
+.dashboard-scroll-ready{
+  opacity:0;
+  transform:translateY(18px);
+  transition:opacity .52s cubic-bezier(.16,1,.3,1),transform .52s cubic-bezier(.16,1,.3,1);
+}
+.dashboard-scroll-ready.dashboard-scroll-visible{
+  opacity:1;
+  transform:none;
+}
+.dashboard-scroll-ready:nth-child(2){transition-delay:.05s}
+.dashboard-scroll-ready:nth-child(3){transition-delay:.1s}
+.dashboard-scroll-ready:nth-child(4){transition-delay:.15s}
+.dashboard-scroll-ready .chart-line,
+.dashboard-scroll-ready .chart-area,
+.dashboard-scroll-ready .chart-point{
+  animation-play-state:paused!important;
+}
+.dashboard-scroll-ready.dashboard-scroll-visible .chart-line{
+  animation-play-state:running!important;
+}
+.dashboard-scroll-ready.dashboard-scroll-visible .chart-area{
+  animation-play-state:running!important;
+}
+.dashboard-scroll-ready.dashboard-scroll-visible .chart-point{
+  animation-play-state:running!important;
+}
+#revenueChart.chart-scroll-visible .chart-line,
+#revenueChart.chart-scroll-visible .chart-area,
+#revenueChart.chart-scroll-visible .chart-point{
+  animation-play-state:running!important;
+}
+@media(prefers-reduced-motion:reduce){
+  .dashboard-scroll-ready{opacity:1;transform:none;transition:none!important}
+}
