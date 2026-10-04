@@ -951,3 +951,29 @@ body.dashboard-compact .merchant-main{
     scroll-behavior:auto!important;
   }
 }
+
+
+/* Dashboard skeleton: keep the structure calm and legible while data loads. */
+.dashboard-data-loading .dashboard-skeleton{opacity:1}
+.dashboard-skeleton{padding-bottom:4px}
+.skeleton-line,.skeleton-box,.skeleton-card,.skeleton-panel{
+  background:linear-gradient(100deg,#ededE9 0%,#f5f5f2 45%,#e7e7e3 100%);
+}
+.dashboard-skeleton .skeleton-card-featured{
+  background:linear-gradient(100deg,#151515 0%,#242424 45%,#151515 100%);
+}
+.skeleton-line::after,.skeleton-box::after,.skeleton-card::after,.skeleton-panel::after{
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.48),transparent);
+  animation-duration:1.7s;
+}
+.dashboard-data-loading{
+  min-height:760px;
+}
+@media(max-width:720px){
+  .dashboard-data-loading{min-height:900px}
+  .dashboard-skeleton{gap:12px}
+  .dashboard-skeleton-welcome{gap:14px}
+  .skeleton-title{height:34px}
+  .skeleton-card{height:105px}
+  .skeleton-panel{height:220px}
+}
