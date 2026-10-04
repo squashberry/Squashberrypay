@@ -162,6 +162,39 @@
         <div class="form-actions"><button id="createPaymentLink" class="button primary" type="button">Create secure payment link</button></div>
       </div>
       <div id="paymentLinksGrid" class="links-grid"></div>
+
+      <section class="link-analytics-panel" aria-labelledby="linkAnalyticsTitle">
+        <div class="link-analytics-head">
+          <div>
+            <span class="eyebrow">LINK ANALYTICS</span>
+            <h3 id="linkAnalyticsTitle">Who is engaging with your links.</h3>
+            <p>Track visits, unique browsers, payment starts and completed payments for any date range.</p>
+          </div>
+          <div class="analytics-range-controls">
+            <div class="analytics-range-presets" role="group" aria-label="Analytics date range">
+              <button class="analytics-range active" data-link-range="7" type="button">7 days</button>
+              <button class="analytics-range" data-link-range="30" type="button">30 days</button>
+              <button class="analytics-range" data-link-range="90" type="button">90 days</button>
+            </div>
+            <div class="analytics-custom-range">
+              <input id="linkAnalyticsStart" type="date" aria-label="Analytics start date">
+              <span>to</span>
+              <input id="linkAnalyticsEnd" type="date" aria-label="Analytics end date">
+              <button id="applyLinkAnalyticsRange" class="button secondary small" type="button">Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="link-analytics-metrics">
+          <article><span>Clicks</span><strong id="linkAnalyticsClicks">0</strong><small>Total visits to your payment links</small></article>
+          <article><span>Unique visitors</span><strong id="linkAnalyticsVisitors">0</strong><small>Distinct first-party browser IDs</small></article>
+          <article><span>Payment starts</span><strong id="linkAnalyticsStarts">0</strong><small>Checkout sessions created</small></article>
+          <article><span>Completed</span><strong id="linkAnalyticsCompleted">0</strong><small>Approved or completed payments</small></article>
+          <article><span>Conversion</span><strong id="linkAnalyticsConversion">0%</strong><small>Completed payments ÷ clicks</small></article>
+        </div>
+
+        <div id="linkAnalyticsTable" class="link-analytics-table"></div>
+      </section>
     </section>
 
     <section id="section-methods" class="merchant-section" hidden>
