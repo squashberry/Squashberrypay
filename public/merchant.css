@@ -315,3 +315,34 @@ body{background:var(--dash-bg);color:var(--dash-text)}
 .workspace-form-head .text-button:hover{background:#f2f2ef;color:#111;border-color:#c9c9c4}
 @media(max-width:760px){.section-title-row{align-items:stretch;flex-direction:column;gap:14px}.section-title-row>.button{width:100%}.form-grid.two,.checkbox-grid{grid-template-columns:1fr}.card-actions{width:100%}.small-action{flex:1 1 auto;min-width:92px}}
 @media(prefers-reduced-motion:reduce){.link-card,.product-card,.method-card,.app-card,.donation-card,.subscription-card,.merchant-section{animation:none!important}.link-card:hover,.product-card:hover,.method-card:hover,.app-card:hover,.donation-card:hover,.subscription-card:hover{transform:none!important}}
+
+
+/* Payment-link analytics */
+.link-analytics-panel{margin-top:28px;padding:22px;border:1px solid #deded9;border-radius:18px;background:#fff;box-shadow:0 12px 32px rgba(0,0,0,.04)}
+.link-analytics-head{display:flex;justify-content:space-between;align-items:flex-start;gap:22px}
+.link-analytics-head h3{margin:6px 0 5px;font-size:19px;letter-spacing:-.03em}
+.link-analytics-head p{margin:0;color:#777;font-size:11px;line-height:1.55;max-width:620px}
+.analytics-range-controls{display:grid;gap:8px;justify-items:end}
+.analytics-range-presets{display:flex;gap:4px;padding:3px;background:#efefec;border-radius:10px}
+.analytics-range{border:0;background:transparent;border-radius:8px;padding:7px 9px;color:#777;font-size:10px;font-weight:800;cursor:pointer}
+.analytics-range.active{background:#fff;color:#111;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.analytics-custom-range{display:flex;align-items:center;gap:6px;color:#888;font-size:10px}
+.analytics-custom-range input{width:132px;height:36px;border:1px solid #d9d9d4;border-radius:9px;background:#fafaf8;padding:0 8px;font:inherit;font-size:10px}
+.analytics-custom-range .button{margin:0;height:36px;min-height:36px}
+.link-analytics-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:18px}
+.link-analytics-metrics article{padding:14px;border:1px solid #e2e2dd;border-radius:13px;background:#fafaf8}
+.link-analytics-metrics span,.link-analytics-metrics small{display:block;color:#888;font-size:9px}
+.link-analytics-metrics strong{display:block;margin:8px 0 4px;font-size:22px;letter-spacing:-.04em}
+.link-analytics-table{margin-top:18px;overflow:hidden;border:1px solid #e2e2dd;border-radius:13px}
+.link-analytics-table-head,.link-analytics-row{display:grid;grid-template-columns:minmax(230px,1.8fr) .8fr .8fr .8fr .8fr 1fr;gap:12px;align-items:center;padding:12px 14px}
+.link-analytics-table-head{background:#f6f6f3;color:#888;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.link-analytics-row{border-top:1px solid #eee;font-size:11px;background:#fff}
+.link-analytics-row span:first-child strong,.link-analytics-row span:first-child small{display:block}
+.link-analytics-row span:first-child small{margin-top:3px;color:#999;font-size:9px}
+.link-analytics-row>strong:last-child{justify-self:end}
+.link-analytics-empty{padding:25px;text-align:center;color:#888;font-size:11px}
+.link-analytics-empty.error{color:#a32c25}
+.link-stats{margin-top:10px;color:#888;font-size:9px;font-weight:750}
+@media(max-width:1000px){.link-analytics-metrics{grid-template-columns:repeat(3,1fr)}.link-analytics-head{flex-direction:column}.analytics-range-controls{justify-items:stretch}.analytics-range-presets{width:max-content}.analytics-custom-range{flex-wrap:wrap}}
+@media(max-width:700px){.link-analytics-panel{padding:16px}.link-analytics-metrics{grid-template-columns:1fr 1fr}.link-analytics-table{overflow:auto}.link-analytics-table-head,.link-analytics-row{min-width:760px}.analytics-custom-range input{flex:1;min-width:120px}.analytics-custom-range .button{width:auto}.link-analytics-head{gap:14px}}
+@media(max-width:430px){.link-analytics-metrics{grid-template-columns:1fr}.analytics-range-presets{width:100%}.analytics-range{flex:1}.analytics-custom-range{display:grid;grid-template-columns:1fr 1fr}.analytics-custom-range span{display:none}.analytics-custom-range .button{grid-column:1/-1;width:100%}}
