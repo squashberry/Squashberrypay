@@ -3849,3 +3849,68 @@ html.customer-payment-page #cancelPaymentTop{
   cursor:pointer!important;
   touch-action:manipulation!important;
 }
+
+
+/* HOSTED CHECKOUT — FINAL POINTER / HIT-TEST LAYER
+   Keep the payment detail sheet as one normal fixed element.
+   No transforms, no portal stacking context, no clickable scrim. */
+html.customer-payment-page #detailsContainer.payment-sheet-open,
+html.customer-payment-page #detailsContainer.mobile-bottom-sheet-open{
+  position:fixed!important;
+  top:auto!important;
+  right:0!important;
+  bottom:0!important;
+  left:0!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  max-height:92dvh!important;
+  margin:0!important;
+  transform:none!important;
+  animation:none!important;
+  z-index:2147481000!important;
+  pointer-events:auto!important;
+  touch-action:auto!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  isolation:isolate!important;
+}
+html.customer-payment-page #detailsContainer.payment-sheet-open::before,
+html.customer-payment-page #detailsContainer.mobile-bottom-sheet-open::before{
+  pointer-events:none!important;
+}
+html.customer-payment-page .mobile-bottom-sheet-scrim{
+  z-index:2147480000!important;
+  pointer-events:none!important;
+}
+html.customer-payment-page .payment-fixed-actions,
+html.customer-payment-page .payment-fixed-actions .button,
+html.customer-payment-page #cancelPaymentTop{
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  position:relative!important;
+}
+html.customer-payment-page .payment-fixed-actions{
+  z-index:10!important;
+}
+@media(min-width:761px){
+  html.customer-payment-page #detailsContainer.payment-sheet-open,
+  html.customer-payment-page #detailsContainer.mobile-bottom-sheet-open{
+    width:min(720px,calc(100vw - 28px))!important;
+    left:0!important;
+    right:0!important;
+    margin-inline:auto!important;
+    border-radius:26px 26px 0 0!important;
+  }
+}
+@media(max-width:760px){
+  html.customer-payment-page #detailsContainer.payment-sheet-open,
+  html.customer-payment-page #detailsContainer.mobile-bottom-sheet-open{
+    width:100%!important;
+    left:0!important;
+    right:0!important;
+    border-radius:26px 26px 0 0!important;
+  }
+}
