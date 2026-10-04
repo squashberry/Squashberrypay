@@ -28,6 +28,8 @@ const state = {
     clickId:
         null,
     mobileSheetOpen:
+        false,
+    retrying:
         false
 };
 
@@ -45,8 +47,14 @@ const errorState =
 const checkoutState =
     $("#checkoutState");
 
+const checkoutCard =
+    $(".checkout-card");
+
 const errorMessage =
     $("#errorMessage");
+
+const retryStatus =
+    $("#retryStatus");
 
 const retryButton =
     $("#retryButton");
@@ -191,10 +199,40 @@ function setCheckoutStage(step){
 }
 function setError(message){
     document.querySelectorAll(".checkout-session-overlay").forEach(el=>el.remove());
+
+    const retryFailure=Boolean(state.retrying);
+    state.retrying=false;
+
     loadingState.hidden=true;
     checkoutState.hidden=true;
     errorState.hidden=false;
-    errorMessage.textContent=message;
+    errorMessage.textContent=message || "This checkout could not be opened right now.";
+
+    document.body.classList.add("checkout-error-mode");
+    checkoutCard?.classList.remove("checkout-error-rewind");
+    checkoutCard?.classList.add("checkout-error-morph");
+    errorState?.classList.remove("is-visible","is-rewinding");
+
+    if(retryStatus){
+        retryStatus.textContent=retryFailure
+            ? "We checked again, but this checkout is still unavailable."
+            : "This can happen when a link has expired, been removed, or is temporarily unavailable.";
+    }
+    if(retryButton){
+        retryButton.disabled=false;
+        retryButton.dataset.loading="false";
+        retryButton.setAttribute("aria-busy","false");
+    }
+
+    requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+            errorState?.classList.add("is-visible");
+            if(retryFailure){
+                checkoutCard?.classList.add("checkout-error-failed");
+                setTimeout(()=>checkoutCard?.classList.remove("checkout-error-failed"),720);
+            }
+        });
+    });
 }
 
 
@@ -265,6 +303,12 @@ async function trackPaymentLinkClick(){
     }
 }
 async function loadCheckout() {
+    if(!state.retrying){
+        document.body.classList.remove("checkout-error-mode");
+        checkoutCard?.classList.remove("checkout-error-morph","checkout-error-rewind","checkout-error-failed");
+        errorState?.classList.remove("is-visible","is-rewinding");
+    }
+
     const loaderStartedAt=performance.now();
     const minimumLoaderMs=2000;
     loadingState.hidden = false;
@@ -319,6 +363,10 @@ async function loadCheckout() {
         const loaderRemaining=minimumLoaderMs-(performance.now()-loaderStartedAt);
         if(loaderRemaining>0) await new Promise(resolve=>setTimeout(resolve,loaderRemaining));
         renderCheckout();
+        state.retrying=false;
+        document.body.classList.remove("checkout-error-mode");
+        checkoutCard?.classList.remove("checkout-error-morph","checkout-error-rewind","checkout-error-failed");
+        errorState?.classList.remove("is-visible","is-rewinding");
 
     } catch (error) {
         setError(error.name==="AbortError"?"SquashberryPay took too long to respond. Please try again.":error.message);
@@ -896,7 +944,23 @@ checkoutDetails?.addEventListener("touchend",()=>{
 
 retryButton?.addEventListener(
     "click",
-    loadCheckout
+    ()=>{
+        if(state.retrying || retryButton.disabled)return;
+
+        state.retrying=true;
+        retryButton.disabled=true;
+        retryButton.dataset.loading="true";
+        retryButton.setAttribute("aria-busy","true");
+        if(retryStatus)retryStatus.textContent="Checking the payment link again…";
+
+        errorState?.classList.remove("is-visible");
+        errorState?.classList.add("is-rewinding");
+        checkoutCard?.classList.add("checkout-error-rewind");
+
+        setTimeout(()=>{
+            loadCheckout();
+        },560);
+    }
 );
 
 checkoutForm?.addEventListener(
