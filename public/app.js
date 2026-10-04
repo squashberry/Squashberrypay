@@ -919,7 +919,8 @@ async function openMethod(
              * the customer is never trapped on a stale method UUID.
              */
             if (response.status !== 410) {
-                await loadSession();
+                await bindCheckoutActionButtons();
+loadSession();
                 if (
                     state.payment?.status === "awaiting_receipt" &&
                     state.paymentDeadlineAt &&
@@ -1025,6 +1026,7 @@ function renderDetails(
     }else{
         detailsContainer.classList.remove("payment-sheet-desktop");
     }
+    bindCheckoutActionButtons();
     if(false){
         animateState(detailsContainer);
     }
@@ -1139,7 +1141,42 @@ function showExistingAttempt() {
 }
 
 
-document.getElementById("ivePaidButton")?.addEventListener("click",openReceiptUploadModal);
+function bindCheckoutActionButtons(){
+    const paid=document.getElementById("ivePaidButton");
+    if(paid && paid.dataset.bound!=="true"){
+        paid.dataset.bound="true";
+        const open=event=>{
+            event.preventDefault();
+            event.stopPropagation();
+            if(paid.disabled)return;
+            openReceiptUploadModal();
+        };
+        paid.addEventListener("click",open);
+        paid.addEventListener("pointerup",event=>{
+            if(event.pointerType==="touch")open(event);
+        });
+    }
+
+    const topCancel=document.getElementById("cancelPaymentTop");
+    const mainCancel=document.getElementById("cancelPayment");
+    if(topCancel && topCancel.dataset.bound!=="true"){
+        topCancel.dataset.bound="true";
+        const trigger=event=>{
+            event.preventDefault();
+            event.stopPropagation();
+            if(mainCancel && !mainCancel.disabled)mainCancel.click();
+        };
+        topCancel.addEventListener("click",trigger);
+        topCancel.addEventListener("pointerup",event=>{
+            if(event.pointerType==="touch")trigger(event);
+        });
+    }
+
+    if(mainCancel && mainCancel.dataset.bound!=="true"){
+        mainCancel.dataset.bound="true";
+        mainCancel.addEventListener("click",handleCancelPayment);
+    }
+}
 
 /* ============================================================
    RECEIPT INPUT
@@ -1286,106 +1323,43 @@ mobileSheetHandle?.addEventListener("touchend",()=>{
    CANCEL
 ============================================================ */
 
-document.getElementById("cancelPaymentTop")?.addEventListener("click",()=>cancelPaymentBtn?.click());
+async function handleCancelPayment(event){
+    event?.preventDefault?.();
 
-cancelPaymentBtn?.addEventListener(
-    "click",
-    async () => {
+    const button=document.getElementById("cancelPayment");
+    if(!button || button.disabled)return;
 
-        const confirmed=await showCancelConfirmation();
-        if(!confirmed)return;
+    const confirmed=await showCancelConfirmation();
+    if(!confirmed)return;
 
+    setButtonLoading(button,"Cancelling…");
 
-        setButtonLoading(
-            cancelPaymentBtn,
-            "Cancelling…"
+    try{
+        const response=await fetch(
+            apiBase + `/api/public/session/${encodeURIComponent(state.token)}/cancel`,
+            {method:"POST"}
         );
+        const data=await response.json().catch(()=>({}));
 
-
-        try {
-
-            const response =
-                await fetch(
-                    apiBase + `/api/public/session/${encodeURIComponent(
-                        state.token
-                    )}/cancel`,
-                    {
-                        method:
-                            "POST"
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error ||
-                    "Could not cancel payment."
-                );
-            }
-
-
-            clearInterval(
-                state.paymentTimer
-            );
-
-            clearInterval(
-                state.pollTimer
-            );
-
-
-            notify(
-                "Payment cancelled.",
-                "success"
-            );
-
-
-            setTimeout(
-                () => {
-
-                    const cancelDestination =
-                        data.cancel_url ||
-                        data.return_url;
-
-                    if (
-                        cancelDestination
-                    ) {
-
-                        window.location.href =
-                            cancelDestination;
-
-                    } else {
-
-                        window.location.href=SITE_BASE+"/";
-                    }
-
-                },
-                650
-            );
-
-        } catch (error) {
-
-            cancelPaymentBtn.classList.add(
-                "error-shake"
-            );
-
-
-            notify(
-                error.message,
-                "error"
-            );
-
-
-            resetButton(
-                cancelPaymentBtn
-            );
+        if(!response.ok){
+            throw new Error(data.error||"Could not cancel payment.");
         }
-    }
-);
 
+        clearInterval(state.paymentTimer);
+        clearInterval(state.pollTimer);
+        notify("Payment cancelled.","success");
+
+        setTimeout(()=>{
+            const destination=data.cancel_url||data.return_url||SITE_BASE+"/";
+            window.location.href=destination;
+        },650);
+    }catch(error){
+        button.classList.add("error-shake");
+        notify(error.message||"Could not cancel payment.","error");
+        resetButton(button);
+        setTimeout(()=>button.classList.remove("error-shake"),500);
+    }
+}
 
 /* ============================================================
    VERIFICATION
