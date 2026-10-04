@@ -1013,3 +1013,150 @@ body.dashboard-compact .merchant-main{
 @media(prefers-reduced-motion:reduce){
   .dashboard-scroll-ready{opacity:1;transform:none;transition:none!important}
 }
+
+
+/* ============================================================
+   MOBILE DASHBOARD — FLOATING ACTIONS / CLEAN HEADER
+   Keep the overview header as a single aligned composition.
+   Secondary actions live in the side floating control instead of
+   stacking underneath the greeting.
+   ============================================================ */
+@media(max-width:760px){
+  body.merchant-page .merchant-header{
+    height:64px;
+    min-height:64px;
+    padding:0 15px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  body.merchant-page .merchant-header .brand{
+    min-width:0;
+    white-space:nowrap;
+  }
+  body.merchant-page .merchant-header .merchant-header-right{
+    margin-left:auto;
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  body.merchant-page .merchant-header .merchant-menu-button,
+  body.merchant-page .merchant-header #signOut,
+  body.merchant-page .merchant-header-right>span{
+    display:none!important;
+  }
+  body.merchant-page .merchant-main{
+    padding:20px 14px calc(40px + env(safe-area-inset-bottom));
+  }
+  body.merchant-page #section-overview .dashboard-welcome{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:0;
+    align-items:start;
+    margin-bottom:18px;
+  }
+  body.merchant-page #section-overview .dashboard-welcome>div:first-child{
+    min-width:0;
+  }
+  body.merchant-page #section-overview .eyebrow{
+    margin-bottom:7px;
+  }
+  body.merchant-page #section-overview .dashboard-welcome h1{
+    margin:0 0 9px;
+    max-width:100%;
+    font-size:clamp(31px,9.6vw,43px);
+    line-height:1.02;
+    letter-spacing:-.055em;
+  }
+  body.merchant-page #section-overview .dashboard-welcome p{
+    max-width:34rem;
+    font-size:13px;
+    line-height:1.5;
+  }
+  body.merchant-page #section-overview .overview-actions{
+    display:none!important;
+  }
+  body.merchant-page #section-overview .range-bar{
+    margin-top:2px;
+    margin-bottom:14px;
+    padding-bottom:11px;
+    flex-direction:row;
+    align-items:center;
+    gap:8px;
+  }
+  body.merchant-page #section-overview .range-bar>div{
+    min-width:0;
+    overflow:auto;
+    scrollbar-width:none;
+  }
+  body.merchant-page #section-overview .range-bar>div::-webkit-scrollbar{display:none}
+  body.merchant-page #section-overview .range{
+    white-space:nowrap;
+  }
+  body.merchant-page #section-overview .dashboard-live-status{
+    flex:0 0 auto;
+    white-space:nowrap;
+  }
+
+  /* The old bottom shortcut bar becomes one viewport-level floating control. */
+  body.merchant-page .merchant-mobile-bar{
+    position:fixed;
+    right:14px;
+    bottom:calc(18px + env(safe-area-inset-bottom));
+    left:auto;
+    width:52px;
+    height:52px;
+    z-index:5200;
+    display:block;
+    padding:0;
+    border:0;
+    background:transparent;
+    box-shadow:none;
+    pointer-events:none;
+  }
+  body.merchant-page .merchant-mobile-bar>button{
+    display:none!important;
+  }
+  body.merchant-page .merchant-mobile-bar>#mobileMoreNav{
+    display:grid!important;
+    pointer-events:auto;
+    place-items:center;
+    width:52px;
+    height:52px;
+    padding:0;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:17px;
+    background:#111;
+    color:#fff;
+    box-shadow:0 16px 35px rgba(0,0,0,.22),0 2px 7px rgba(0,0,0,.14);
+    -webkit-tap-highlight-color:transparent;
+  }
+  body.merchant-page .merchant-mobile-bar>#mobileMoreNav span{
+    font-size:20px;
+    line-height:1;
+  }
+  body.merchant-page .merchant-mobile-bar>#mobileMoreNav small{
+    display:none;
+  }
+  body.merchant-page .merchant-mobile-bar>#mobileMoreNav::after{
+    content:"";
+    position:absolute;
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#fff;
+    opacity:.28;
+  }
+  body.merchant-page .mobile-nav-scrim{
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    background:rgba(0,0,0,.18)!important;
+  }
+}
+@media(max-width:420px){
+  body.merchant-page .merchant-main{padding-left:12px;padding-right:12px}
+  body.merchant-page #section-overview .dashboard-welcome h1{font-size:32px}
+  body.merchant-page #section-overview .range-bar>span{font-size:9px}
+  body.merchant-page .merchant-mobile-bar{right:12px}
+}
