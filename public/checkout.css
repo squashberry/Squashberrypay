@@ -394,3 +394,23 @@ textarea:focus{
     .campaign-stats strong{font-size:12px}
     .preset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* Hosted checkout conversion polish */
+.checkout-card{animation:checkoutCardIn .34s cubic-bezier(.2,.8,.2,1) both}
+.checkout-stage{animation:checkoutStageIn .28s ease both}
+.summary-card{box-shadow:0 8px 24px rgba(0,0,0,.035)}
+.summary-card strong{font-weight:850}
+.donation-action-stack{display:grid;gap:9px;margin-top:16px}
+.donation-action-stack .button{margin-top:0}
+.donation-secondary{background:#fff!important;border:1px solid var(--line)!important;color:var(--text)!important}
+.donation-secondary:hover{border-color:#111!important;background:#f7f7f4!important}
+.security-note span{font-weight:800;color:#5f615d}
+.back-button:hover{color:#111}
+.checkout-progress span{transition:transform .18s ease,background .18s ease,border-color .18s ease}
+.checkout-progress span.active{transform:translateY(-1px)}
+.preset-button{transition:transform .16s ease,background .16s ease,border-color .16s ease}
+.preset-button:active{transform:scale(.98)}
+@keyframes checkoutCardIn{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes checkoutStageIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.checkout-card,.checkout-stage{animation:none!important}}
