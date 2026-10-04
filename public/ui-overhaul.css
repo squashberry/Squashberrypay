@@ -725,3 +725,392 @@ table th{background:#f0f0ed!important;color:#555!important}
     padding:8px 12px;
   }
 }
+
+
+/* ============================================================
+   FINAL DASHBOARD / MOBILE POLISH
+   Keep the existing black-and-white SquashberryPay language,
+   but normalize section rhythm, cards, tabs and touch targets.
+============================================================ */
+.merchant-page{
+  overflow-x:hidden;
+  background:#f5f5f3!important;
+}
+.merchant-main{
+  min-width:0;
+}
+.merchant-section:not([hidden]){
+  animation:sbpSectionMorph .36s cubic-bezier(.22,.8,.24,1) both;
+}
+@keyframes sbpSectionMorph{
+  from{opacity:0;transform:translateY(10px) scale(.995);filter:blur(1px)}
+  to{opacity:1;transform:none;filter:none}
+}
+
+.section-title-row{
+  align-items:center!important;
+  margin-bottom:24px!important;
+}
+.section-title-row>div{
+  min-width:0;
+}
+.section-title-row>.button{
+  align-self:center;
+  min-height:42px;
+  padding-inline:15px;
+}
+.section-title-row h2{
+  font-size:clamp(30px,3.2vw,43px)!important;
+  line-height:1.02!important;
+  letter-spacing:-.055em!important;
+  margin:8px 0 8px!important;
+}
+.section-title-row p{
+  max-width:720px!important;
+  font-size:13px!important;
+  color:#747470!important;
+}
+
+.workspace-tabs{
+  display:flex!important;
+  align-items:stretch;
+  gap:4px!important;
+  padding:4px!important;
+  margin:0 0 20px!important;
+  border:1px solid #dfdfda!important;
+  border-radius:16px!important;
+  background:#ecece8!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
+}
+.workspace-tab{
+  flex:1 1 0;
+  min-height:42px;
+  border:0!important;
+  border-radius:12px!important;
+  padding:9px 13px!important;
+  color:#777!important;
+  background:transparent!important;
+  font-size:11px;
+  font-weight:800!important;
+  white-space:nowrap;
+  transition:background .24s cubic-bezier(.22,.8,.24,1),color .2s ease,box-shadow .24s ease,transform .24s ease;
+}
+.workspace-tab:hover{
+  color:#111!important;
+  transform:translateY(-1px);
+}
+.workspace-tab.active{
+  color:#111!important;
+  background:#fff!important;
+  box-shadow:0 5px 16px rgba(0,0,0,.07),inset 0 0 0 1px rgba(0,0,0,.03)!important;
+  transform:none;
+}
+
+.workspace-panel{
+  min-width:0;
+  animation:sbpPanelIn .32s cubic-bezier(.22,.8,.24,1) both;
+}
+.workspace-panel[hidden]{display:none!important}
+@keyframes sbpPanelIn{
+  from{opacity:0;transform:translateY(7px)}
+  to{opacity:1;transform:none}
+}
+
+.workspace-content-head{
+  margin:0 0 14px!important;
+  padding:18px 18px 16px;
+  border:1px solid #e1e1dc;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 10px 26px rgba(0,0,0,.035);
+}
+.workspace-content-head>div{
+  min-width:0;
+}
+.workspace-content-head h3{
+  font-size:18px!important;
+  line-height:1.18;
+  letter-spacing:-.025em;
+}
+.workspace-content-head p{
+  font-size:12px!important;
+  line-height:1.55;
+}
+.destination-add-button{
+  min-width:150px;
+}
+
+.donation-destination-intro{
+  display:flex;
+  align-items:flex-start;
+  gap:15px;
+  margin:0 0 14px!important;
+  padding:16px 18px!important;
+  border-radius:18px!important;
+}
+.donation-destination-intro h3{
+  margin:0 0 5px!important;
+  font-size:18px;
+  letter-spacing:-.025em;
+}
+.donation-destination-intro p{
+  margin:0!important;
+  color:#777!important;
+  line-height:1.55;
+  font-size:12px!important;
+}
+
+.method-list{
+  display:grid!important;
+  gap:10px!important;
+}
+.method-card{
+  display:grid!important;
+  grid-template-columns:48px minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:14px!important;
+  min-width:0;
+  min-height:96px;
+  padding:15px 16px!important;
+  border:1px solid #deded9!important;
+  border-radius:18px!important;
+  background:linear-gradient(180deg,#fff,#fbfbf8)!important;
+  box-shadow:0 9px 24px rgba(0,0,0,.035)!important;
+  overflow:hidden;
+}
+.method-card:hover{
+  transform:translateY(-2px);
+  border-color:#c7c7c2!important;
+  box-shadow:0 18px 42px rgba(0,0,0,.08)!important;
+}
+.method-icon{
+  width:48px!important;
+  height:48px!important;
+  flex:0 0 48px;
+  border-radius:15px!important;
+  display:grid!important;
+  place-items:center!important;
+  background:#111!important;
+  color:#fff!important;
+  border:1px solid #111;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 18px rgba(0,0,0,.08);
+  font-size:13px!important;
+  font-weight:900!important;
+}
+.method-card-main{
+  min-width:0;
+}
+.method-card-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  flex-wrap:wrap;
+}
+.method-card-title h3{
+  margin:0!important;
+  font-size:15px!important;
+  letter-spacing:-.02em;
+}
+.method-card-main p{
+  margin:5px 0 3px!important;
+  color:#666!important;
+  font-size:11px!important;
+  line-height:1.35!important;
+  overflow-wrap:anywhere;
+}
+.method-card-main small{
+  display:block;
+  color:#999!important;
+  font-size:10px!important;
+  line-height:1.35!important;
+  overflow-wrap:anywhere;
+}
+.method-card-actions{
+  justify-content:flex-end;
+  margin:0!important;
+}
+.method-card-actions .small-action{
+  min-height:36px;
+  padding:0 11px!important;
+  border-radius:10px!important;
+}
+.status-badge{
+  white-space:nowrap;
+}
+
+.link-card,.product-card,.donation-card,.subscription-card,.app-card,.customer-card{
+  border-radius:18px!important;
+  overflow:hidden;
+}
+.link-card .link-url,.donation-card .link-url{
+  border:1px solid #ecece7;
+  background:#f8f8f5!important;
+  padding:9px 10px!important;
+}
+.card-actions{
+  min-width:0;
+}
+.small-action{
+  min-height:36px;
+  padding:0 11px!important;
+  border-radius:10px!important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.merchant-form{
+  border-radius:18px!important;
+  box-shadow:0 14px 38px rgba(0,0,0,.045);
+}
+.merchant-form input,.merchant-form select,.merchant-form textarea{
+  min-width:0;
+}
+
+@media (max-width:900px){
+  .merchant-layout{
+    grid-template-columns:1fr!important;
+  }
+  .merchant-main{
+    padding:30px 28px 100px!important;
+  }
+  .method-card{
+    grid-template-columns:46px minmax(0,1fr)!important;
+  }
+  .method-card-actions{
+    grid-column:2;
+    justify-content:flex-start;
+    padding-top:2px;
+  }
+}
+
+@media (max-width:760px){
+  .merchant-header{
+    position:sticky!important;
+    top:0!important;
+    min-height:64px!important;
+    height:64px!important;
+    padding:0 12px!important;
+    z-index:5000!important;
+  }
+  .merchant-header-right{
+    gap:7px!important;
+  }
+  .merchant-header-right #signOut{
+    min-height:40px;
+    padding-inline:11px!important;
+  }
+  .merchant-header-right #merchantName{
+    max-width:140px!important;
+    min-height:40px;
+  }
+  .merchant-main{
+    padding:24px 14px calc(110px + env(safe-area-inset-bottom))!important;
+  }
+  .section-title-row{
+    align-items:stretch!important;
+    gap:14px!important;
+    margin-bottom:18px!important;
+  }
+  .section-title-row>.button{
+    width:100%!important;
+    align-self:stretch;
+  }
+  .section-title-row h2{
+    font-size:clamp(31px,9vw,39px)!important;
+  }
+  .section-title-row p{
+    font-size:12px!important;
+    line-height:1.55!important;
+  }
+  .workspace-tabs{
+    overflow-x:auto;
+    scrollbar-width:none;
+    scroll-snap-type:x proximity;
+  }
+  .workspace-tabs::-webkit-scrollbar{display:none}
+  .workspace-tab{
+    flex:0 0 auto;
+    min-width:132px;
+    scroll-snap-align:start;
+  }
+  .workspace-content-head{
+    align-items:stretch!important;
+    gap:13px!important;
+    padding:16px!important;
+  }
+  .destination-add-button{
+    width:100%;
+  }
+  .method-card{
+    grid-template-columns:44px minmax(0,1fr)!important;
+    gap:12px!important;
+    padding:14px!important;
+    min-height:0;
+  }
+  .method-icon{
+    width:44px!important;
+    height:44px!important;
+    border-radius:14px!important;
+  }
+  .method-card-title h3{
+    font-size:15px!important;
+  }
+  .method-card-actions{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px!important;
+    width:100%;
+  }
+  .method-card-actions .small-action{
+    width:100%;
+    min-width:0!important;
+  }
+  .merchant-form{
+    padding:16px!important;
+    border-radius:17px!important;
+  }
+  .merchant-form .form-actions{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    width:100%;
+  }
+  .merchant-form .form-actions .button{
+    width:100%!important;
+  }
+  .link-card .card-actions,.product-card .card-actions,.donation-card .card-actions{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .link-card .card-actions .small-action,.product-card .card-actions .small-action,.donation-card .card-actions .small-action{
+    width:100%;
+    min-width:0!important;
+  }
+  .link-analytics-panel{
+    margin-top:18px!important;
+    border-radius:18px!important;
+  }
+}
+
+@media (max-width:430px){
+  .merchant-main{
+    padding-inline:11px!important;
+  }
+  .merchant-header-right #merchantName{
+    max-width:112px!important;
+  }
+  .workspace-tab{
+    min-width:116px;
+    padding-inline:10px!important;
+  }
+  .method-card-actions{
+    grid-template-columns:1fr 1fr;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .merchant-section:not([hidden]),.workspace-panel,.method-card,.workspace-tab{
+    animation:none!important;
+    transition:none!important;
+  }
+}
