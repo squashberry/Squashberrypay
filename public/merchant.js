@@ -7,7 +7,9 @@ const normalizePublicUrl=u=>{try{const x=new URL(String(u||""),SITE_ORIGIN);if(x
 const authUrl=(p="")=>SITE_ORIGIN+SITE_BASE+"/signin/index.html"+(String(p||"").startsWith("?")?String(p):String(p||""));
 const token=sessionStorage.getItem("sbp_access_token");
 if(!token)location.replace(authUrl("?reason=session_expired"));
-const $=s=>document.querySelector(s),qsa=s=>Array.from(document.querySelectorAll(s));let merchant=(()=>{try{return JSON.parse(sessionStorage.getItem("sbp_merchant")||"null")}catch{return null}})(),dashboard=null,apps=[],range=7;let linkAnalytics={totals:{clicks:0,unique_visitors:0,payment_starts:0,completed_payments:0,revenue:0,conversion_rate:0},links:[]};
+const $=s=>document.querySelector(s),qsa=s=>Array.from(document.querySelectorAll(s));
+let dashboardDensity=localStorage.getItem("sbp_dashboard_density")==="compact"?"compact":"comfortable";
+let merchant=(()=>{try{return JSON.parse(sessionStorage.getItem("sbp_merchant")||"null")}catch{return null}})(),dashboard=null,apps=[],range=7;let linkAnalytics={totals:{clicks:0,unique_visitors:0,payment_starts:0,completed_payments:0,revenue:0,conversion_rate:0},links:[]};
 const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/\x27/g,"&#039;");
 function setDashboardLoading(loading){
     const section=$("#section-overview");
@@ -21,8 +23,31 @@ const money=(v,c="GMD")=>c+" "+Number(v||0).toLocaleString(undefined,{minimumFra
 const fmt=v=>{if(!v)return"—";const d=new Date(v);return Number.isNaN(d.getTime())?"—":d.toLocaleDateString(undefined,{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})};
 const good=s=>["completed","success","successful"].includes(String(s||"").toLowerCase());
 const statusClass=s=>{s=String(s||"").toLowerCase();return good(s)?"success":["failed","cancelled","canceled","expired"].includes(s)?"danger":["refunded","partially_refunded"].includes(s)?"neutral":"pending"};
-const empty=(a,b)=>"<div class=\"empty-state\"><strong>"+esc(a)+"</strong><p>"+esc(b)+"</p></div>";
-function notify(m,t){const e=$("#merchantNotification");if(!e)return;e.textContent=m;e.className="merchant-notification "+(t||"normal");e.hidden=false;clearTimeout(notify.t);notify.t=setTimeout(()=>e.hidden=true,4500)}
+const empty=(a,b)=>"<div class=\"empty-state premium-empty\"><div class=\"empty-illustration\" aria-hidden=\"true\"><svg viewBox=\"0 0 96 72\" role=\"img\"><g class=\"empty-illustration-float\"><circle cx=\"46\" cy=\"34\" r=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"M61 49 76 62\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"4\" stroke-linecap=\"round\"/><path d=\"M37 34c2-7 5-10 10-10s8 3 10 10c-2-2-4-3-7-3-5 0-8 3-13 3Z\" fill=\"currentColor\" opacity=\".14\"/></g></svg></div><strong>"+esc(a)+"</strong><p>"+esc(b)+"</p></div>";
+function notify(m,t){
+      const host=$("#merchantNotification"); if(!host)return;
+      host.hidden=false; host.className="merchant-notification merchant-toast-stack";
+      const toast=document.createElement("div");
+      toast.className="merchant-toast "+(t||"normal");
+      toast.setAttribute("role","status");
+      toast.innerHTML="<span class=\"merchant-toast-mark\">"+(t==="error"?"!":t==="success"?"✓":"•")+"</span><span>"+esc(m)+"</span><button type=\"button\" aria-label=\"Dismiss\">×</button>";
+      toast.querySelector("button")?.addEventListener("click",()=>dismissToast(toast));
+      host.appendChild(toast);
+      requestAnimationFrame(()=>toast.classList.add("is-visible"));
+      const timer=setTimeout(()=>dismissToast(toast),4500);
+      toast.dataset.timer=String(timer);
+    }
+    function dismissToast(toast){
+      if(!toast)return;
+      clearTimeout(Number(toast.dataset.timer||0));
+      toast.classList.remove("is-visible");
+      toast.classList.add("is-leaving");
+      setTimeout(()=>{
+        toast.remove();
+        const host=$("#merchantNotification");
+        if(host&&!host.children.length)host.hidden=true;
+      },220);
+    }
 function setCreatePanel(id,open,focusId){const panel=$("#"+id);if(!panel)return;panel.hidden=!open;panel.classList.toggle("workspace-form-active",open);if(open&&focusId)setTimeout(()=>$("#"+focusId)?.focus(),40)}
 function openPaymentLinkCreator(){show("payment-links");setCreatePanel("paymentLinkCreateWrap",true,"linkApp")}
 function openProductCreator(){show("products");setCreatePanel("productCreateWrap",true,"productName")}
@@ -53,8 +78,63 @@ $("#openNotifications")?.addEventListener("click",()=>$("#notificationDrawer").h
 async function load(){setDashboardLoading(true);identity();try{const me=await api("/api/merchant/me");merchant=me.merchant;sessionStorage.setItem("sbp_merchant",JSON.stringify(merchant));identity();const r=await Promise.all([api("/api/merchant/dashboard"),api("/api/merchant/payment-requests"),loadDonationPaymentMethods()]);dashboard=r[0];dashboard.payment_requests=r[1].payments||[];apps=dashboard.apps||dashboard.services||[];all();renderReadiness();$("#lastUpdated").textContent="Updated "+fmt(dashboard.generated_at);setDashboardLoading(false)}catch(e){setDashboardLoading(false);notify(e.message,"error")}}
 function identity(){const n=merchant?.business_name||"Loading account…";["merchantName","overviewName","sidebarBusinessName"].forEach(id=>{const e=$("#"+id);if(e)e.textContent=n});const status=$("#sidebarBusinessStatus");if(status)status.textContent=merchant?.status||"Account";const avatar=$("#businessAvatar");if(avatar)avatar.textContent=n.charAt(0).toUpperCase()}
 function all(){overview();renderApplicationsPrimary();renderPaymentRequests();populateApps();prepareLinkGenerator();renderApps();renderProducts();renderMethods();renderLinks();renderSubscriptions();renderDonations();renderCustomers();renderPayments();renderAnalytics();profile()}
-function overview(){const s=dashboard.summary||{};$("#grossCollected").textContent=money(s.gross_collected);$("#pendingAmount").textContent=money(s.pending_amount);$("#successfulCount").textContent=s.successful_count||0;$("#customerCount").textContent=s.customer_count||0;$("#pendingCount").textContent=(s.pending_count||0)+" payments";$("#failedCount").textContent=s.failed_count||0;$("#refundCount").textContent=s.refunded_count||0;$("#navPaymentCount").textContent=s.transaction_count||0;$("#navVerificationCount").textContent=s.pending_verification_count||0;$("#balanceGross").textContent=money(s.gross_collected);$("#balancePending").textContent=money(s.pending_amount);$("#balanceTransactions").textContent=s.transaction_count||0;$("#balanceMethods").textContent=(dashboard.payment_methods||[]).length;const x=(s.successful_count||0)+(s.failed_count||0);$("#successRate").textContent=x?Math.round(s.successful_count/x*100)+"%":"0%";chart();recent()}
-function chart(){const e=$("#revenueChart");if(!e||!dashboard)return;const now=Date.now(),days=range<=7?range:10,b=[];for(let i=days-1;i>=0;i--){const d=new Date(now-i*86400000);b.push({k:d.toISOString().slice(0,10),l:d.toLocaleDateString(undefined,{day:"numeric",month:"short"}),v:0})}const m=new Map(b.map(x=>[x.k,x]));(dashboard.payments||[]).forEach(p=>{if(good(p.status)){const k=new Date(p.created_at).toISOString().slice(0,10);if(m.has(k))m.get(k).v+=Number(p.amount||0)}});const max=Math.max(...b.map(x=>x.v),1);$("#chartTotal").textContent=money(b.reduce((a,x)=>a+x.v,0));e.innerHTML=b.map(x=>"<div class=\"chart-col\"><div class=\"chart-value\" style=\"height:"+Math.max(4,x.v/max*100)+"%\"><span>"+(x.v?money(x.v).replace("GMD ",""):"")+"</span></div><small>"+esc(x.l)+"</small></div>").join("")}
+function animateMetric(el,target,isMoney){
+  if(!el)return;
+  const start=Number(el.dataset.metricValue||0), end=Number(target||0), duration=520, started=performance.now();
+  if(Math.abs(end-start)<0.001){el.textContent=isMoney?money(end):String(Math.round(end));el.dataset.metricValue=String(end);return}
+  const tick=now=>{
+    const p=Math.min(1,(now-started)/duration), eased=1-Math.pow(1-p,3), value=start+(end-start)*eased;
+    el.textContent=isMoney?money(value):String(Math.round(value));
+    if(p<1)requestAnimationFrame(tick); else el.dataset.metricValue=String(end);
+  };
+  requestAnimationFrame(tick);
+}
+function applyDashboardDensity(){
+  document.body.classList.toggle("dashboard-compact",dashboardDensity==="compact");
+  const b=$("#toggleDashboardDensity");
+  if(b){b.setAttribute("aria-pressed",String(dashboardDensity==="compact")); const label=b.querySelector("span:last-child"); if(label)label.textContent=dashboardDensity==="compact"?"Comfortable":"Compact";}
+}
+function initDashboardInteractions(){
+  applyDashboardDensity();
+  $("#toggleDashboardDensity")?.addEventListener("click",()=>{
+    dashboardDensity=dashboardDensity==="compact"?"comfortable":"compact";
+    localStorage.setItem("sbp_dashboard_density",dashboardDensity);
+    applyDashboardDensity();
+  });
+  qsa(".magnetic").forEach(el=>{
+    if(el.dataset.magneticReady)return;
+    el.dataset.magneticReady="1";
+    el.addEventListener("pointermove",e=>{
+      if(window.matchMedia("(pointer:coarse)").matches)return;
+      const r=el.getBoundingClientRect(), dx=(e.clientX-(r.left+r.width/2))/r.width, dy=(e.clientY-(r.top+r.height/2))/r.height;
+      el.style.setProperty("--mx",(dx*5).toFixed(2)+"px"); el.style.setProperty("--my",(dy*4).toFixed(2)+"px");
+    });
+    el.addEventListener("pointerleave",()=>{el.style.removeProperty("--mx");el.style.removeProperty("--my")});
+  });
+}
+function overview(){
+const s=dashboard.summary||{};
+animateMetric($("#grossCollected"),Number(s.gross_collected||0),true);
+animateMetric($("#pendingAmount"),Number(s.pending_amount||0),true);
+animateMetric($("#successfulCount"),Number(s.successful_count||0),false);
+animateMetric($("#customerCount"),Number(s.customer_count||0),false);$("#pendingCount").textContent=(s.pending_count||0)+" payments";$("#failedCount").textContent=s.failed_count||0;$("#refundCount").textContent=s.refunded_count||0;$("#navPaymentCount").textContent=s.transaction_count||0;$("#navVerificationCount").textContent=s.pending_verification_count||0;$("#balanceGross").textContent=money(s.gross_collected);$("#balancePending").textContent=money(s.pending_amount);$("#balanceTransactions").textContent=s.transaction_count||0;$("#balanceMethods").textContent=(dashboard.payment_methods||[]).length;const x=(s.successful_count||0)+(s.failed_count||0);$("#successRate").textContent=x?Math.round(s.successful_count/x*100)+"%":"0%";chart();recent()}
+function chart(){
+const e=$("#revenueChart"); if(!e||!dashboard)return;
+const now=Date.now(), days=range<=7?range:10, b=[];
+for(let i=days-1;i>=0;i--){const d=new Date(now-i*86400000);b.push({k:d.toISOString().slice(0,10),l:d.toLocaleDateString(undefined,{day:"numeric",month:"short"}),v:0})}
+const m=new Map(b.map(x=>[x.k,x]));
+(dashboard.payments||[]).forEach(p=>{if(good(p.status)){const k=new Date(p.created_at).toISOString().slice(0,10);if(m.has(k))m.get(k).v+=Number(p.amount||0)}});
+const total=b.reduce((a,x)=>a+x.v,0); $("#chartTotal").textContent=money(total);
+if(!b.some(x=>x.v)){e.innerHTML="<div class=\"chart-empty\" role=\"status\"><div class=\"chart-empty-art\"><svg viewBox=\"0 0 160 90\" aria-hidden=\"true\"><path class=\"chart-empty-line\" d=\"M16 67c18-3 22-33 42-28 19 5 24 22 41 7 10-9 19-20 45-20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\"/><circle cx=\"16\" cy=\"67\" r=\"4\" fill=\"currentColor\"/></svg></div><strong>No collected revenue yet</strong><span>Your revenue line will draw here as payments complete.</span></div>";return}
+const w=760,h=250,padX=20,padTop=24,padBottom=34,max=Math.max(...b.map(x=>x.v),1);
+const points=b.map((x,i)=>({x:padX+(i*(w-padX*2)/(b.length-1||1)),y:padTop+(h-padTop-padBottom)*(1-x.v/max)}));
+const line=points.map((p,i)=>(i?"L":"M")+p.x.toFixed(1)+" "+p.y.toFixed(1)).join(" ");
+const area=line+" L "+points[points.length-1].x.toFixed(1)+" "+(h-padBottom)+" L "+points[0].x.toFixed(1)+" "+(h-padBottom)+" Z";
+const grid=[.25,.5,.75].map(v=>{const y=padTop+(h-padTop-padBottom)*v;return "<line x1=\"20\" x2=\"740\" y1=\""+y.toFixed(1)+"\" y2=\""+y.toFixed(1)+"\" class=\"chart-grid-line\"/>"}).join("");
+const labels=b.map((x,i)=>"<text x=\""+points[i].x.toFixed(1)+"\" y=\"239\" class=\"chart-axis-label\" text-anchor=\"middle\">"+esc(x.l)+"</text>").join("");
+const dots=points.map(p=>"<circle cx=\""+p.x.toFixed(1)+"\" cy=\""+p.y.toFixed(1)+"\" r=\"3.5\" class=\"chart-point\"/>").join("");
+e.innerHTML="<svg viewBox=\"0 0 760 250\" preserveAspectRatio=\"none\" class=\"revenue-svg\" aria-label=\"Revenue over time\"><defs><linearGradient id=\"revenueFill\" x1=\"0\" x2=\"0\" y1=\"0\" y2=\"1\"><stop offset=\"0%\" stop-opacity=\".13\"/><stop offset=\"100%\" stop-opacity=\"0\"/></linearGradient></defs>"+grid+"<path d=\""+area+"\" class=\"chart-area\"/><path d=\""+line+"\" class=\"chart-line\"/>"+dots+labels+"</svg>";
+}
 function recent(){const e=$("#recentPayments");if(!e)return;const r=(dashboard?.payments||[]).slice(0,6);e.innerHTML=r.length?r.map(p=>"<button class=\"payment-row\" data-payment-id=\""+esc(p.id)+"\"><span class=\"payment-icon\">"+esc((p.product?.name||"P").charAt(0))+"</span><span class=\"payment-main\"><strong>"+esc(p.product?.name||"Payment")+"</strong><small>"+esc(p.customer?.email||"Guest")+" · "+esc(p.payment_reference||"—")+"</small></span><span class=\"payment-amount\"><strong>"+money(p.amount,p.currency)+"</strong><small class=\"status-text "+statusClass(p.status)+"\">"+esc(p.status||"unknown")+"</small></span></button>").join(""):empty("No payments yet","Recorded activity will appear here.")}
 qsa(".range").forEach(b=>b.onclick=()=>{qsa(".range").forEach(x=>x.classList.remove("active"));b.classList.add("active");range=Number(b.dataset.range);chart()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-payment-id]");if(!b)return;const p=(dashboard?.payments||[]).find(x=>String(x.id)===String(b.dataset.paymentId));if(!p)return;const drawerBody=$("#paymentDrawerBody");if(!drawerBody)return;const duration=(a,b)=>{if(!a||!b)return"—";const ms=new Date(b)-new Date(a);if(!Number.isFinite(ms)||ms<0)return"—";const s=Math.round(ms/1000),m=Math.floor(s/60),h=Math.floor(m/60);return h?(h+"h "+(m%60)+"m"):m?(m+"m "+(s%60)+"s"):(s+"s")}; const started=p.payment_started_at,submitted=p.receipt_uploaded_at,approved=p.approved_at,completed=p.completed_at||p.redeemed_at; drawerBody.innerHTML="<div class=\"drawer-payment-amount\">"+money(p.amount,p.currency)+"</div><span class=\"status-badge "+statusClass(p.status)+"\">"+esc(p.status||"unknown")+"</span><div class=\"detail-grid\"><div><span>Reference</span><strong>"+esc(p.payment_reference||p.id)+"</strong></div><div><span>Created</span><strong>"+esc(fmt(p.created_at))+"</strong></div><div><span>Payment started</span><strong>"+esc(fmt(started))+"</strong></div><div><span>Receipt submitted</span><strong>"+esc(fmt(submitted))+"</strong></div><div><span>Approved</span><strong>"+esc(fmt(approved))+"</strong></div><div><span>Completed</span><strong>"+esc(fmt(completed))+"</strong></div><div><span>Time to start</span><strong>"+esc(duration(p.created_at,started))+"</strong></div><div><span>Time to submit</span><strong>"+esc(duration(started,submitted))+"</strong></div><div><span>Review time</span><strong>"+esc(duration(submitted,approved))+"</strong></div><div><span>Total time</span><strong>"+esc(duration(p.created_at,completed))+"</strong></div><div><span>Customer</span><strong>"+esc(p.customer?.email||"Guest")+"</strong></div><div><span>Product</span><strong>"+esc(p.product?.name||"Payment")+"</strong></div><div><span>Application</span><strong>"+esc(p.app?.name||"—")+"</strong></div><div><span>Type</span><strong>"+esc(p.payment_type||"—")+"</strong></div></div>";$("#paymentDrawer").hidden=false});
