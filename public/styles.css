@@ -3244,6 +3244,9 @@ html.customer-payment-page .site-header .brand{
 @media(prefers-reduced-motion:reduce){#detailsContainer.payment-sheet-open{animation:none!important}}
 
 
+/* Public/auth headers stay crisp; modal blur must never leak into the page shell. */
+body:not(.home-nav-open) .site-header,body:not(.home-nav-open) .home-page,body:not(.home-nav-open) .site-footer{filter:none!important;-webkit-filter:none!important}
+.auth-loading-splash{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#111;color:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.auth-loading-splash[hidden]{display:none!important}.auth-loading-splash-inner{display:grid;justify-items:center;gap:13px;text-align:center}.auth-loading-splash-spinner{width:34px;height:34px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:authSplashSpin .72s linear infinite}.auth-loading-splash strong{font-size:14px}.auth-loading-splash span{font-size:11px;color:#999}@keyframes authSplashSpin{to{transform:rotate(360deg)}}
 /* Mobile homepage account access */
 .mobile-auth-link{display:none}
 @media(max-width:760px){
