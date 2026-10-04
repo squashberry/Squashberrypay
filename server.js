@@ -76,7 +76,7 @@ const PAYMENT_ATTEMPT_MINUTES =
 const PAYMENT_TOKEN_MINUTES =
     Number(
         process.env.PAYMENT_TOKEN_MINUTES ||
-        (Number(process.env.PAYMENT_TOKEN_HOURS || 1) * 60)
+        (6 * 30 * 24 * 60)
     );
 
 const PAYMENT_VERIFICATION_MAX_ATTEMPTS =
@@ -7676,6 +7676,7 @@ app.get(
                         service_user_id,
                         donation_campaign_id,
                         payment_method_id,
+                        donation_payment_method_id,
                         payment_started_at,
                         payment_deadline_at,
                         return_url,
@@ -7830,6 +7831,19 @@ app.get(
             }
 
 
+            const merchantId = payment.donation_campaign_id
+                ? payment.donation_campaigns?.merchant_id
+                : (payment.services?.merchant_id || null);
+            let merchantContact = null;
+            if(merchantId){
+                const {data:merchantProfile}=await supabase
+                    .from("merchant_profiles")
+                    .select("business_name,phone")
+                    .eq("id",merchantId)
+                    .maybeSingle();
+                merchantContact=merchantProfile||null;
+            }
+
             res.json({
 
                 expired:
@@ -7878,6 +7892,12 @@ app.get(
                     payment_deadline_at:
                         payment.payment_deadline_at,
 
+                    payment_method_id:
+                        payment.payment_method_id,
+
+                    donation_payment_method_id:
+                        payment.donation_payment_method_id,
+
                     return_url:
                         payment.return_url,
 
@@ -7886,8 +7906,8 @@ app.get(
                 },
 
                 service: payment.donation_campaign_id
-                    ? {name: payment.donation_campaigns.name, slug: payment.donation_campaigns.slug}
-                    : {name: payment.services.name, slug: payment.services.slug},
+                    ? {name: payment.donation_campaigns.name, slug: payment.donation_campaigns.slug, phone: merchantContact?.phone || null, business_name: merchantContact?.business_name || payment.donation_campaigns.name}
+                    : {name: payment.services.name, slug: payment.services.slug, phone: merchantContact?.phone || null, business_name: merchantContact?.business_name || payment.services.name},
 
                 payment_methods:
                     methods || []
@@ -8355,6 +8375,26 @@ app.post(
                 "payment_submitted"
             );
 
+
+            try{
+                const email=String(payment.customer_email||"").trim();
+                if(email){
+                    const merchantInfo=payment.service_id
+                        ? (await supabase.from("services").select("name,merchant_id").eq("id",payment.service_id).maybeSingle()).data
+                        : null;
+                    const donationInfo=payment.donation_campaign_id
+                        ? (await supabase.from("donation_campaigns").select("name,merchant_id").eq("id",payment.donation_campaign_id).maybeSingle()).data
+                        : null;
+                    await sendPaymentSubmittedEmail({
+                        email,
+                        serviceName:merchantInfo?.name||donationInfo?.name||"the business",
+                        amount:payment.amount,
+                        currency:payment.currency,
+                        reference:payment.payment_reference
+                    });
+                }
+            }catch(emailError){console.error("Payment submission email error:",emailError);}
+
             await enqueueWebhookEvent(
                 "payment.receipt_submitted",
                 {
@@ -8617,6 +8657,16 @@ async function ensureSubscriptionContract(payment){
   const due=new Date();product.subscription_interval==="yearly"?due.setFullYear(due.getFullYear()+1):due.setMonth(due.getMonth()+1);
   const {data:contract,error}=await supabase.from("subscription_contracts").insert({merchant_id:service.merchant_id,service_id:payment.service_id,product_id:payment.product_id,service_user_id:payment.service_user_id,initial_payment_id:payment.id,current_payment_id:payment.id,status:"active",interval:product.subscription_interval,next_due_at:due.toISOString()}).select("*").single();if(error)throw error;return contract;
 }
+async function sendPaymentSubmittedEmail({email,serviceName,amount,currency,reference}){
+  if(!email)return;
+  await sendResendEmail({
+    to:email,
+    subject:"Payment received — "+reference,
+    text:"We have received your payment submission for "+(serviceName||"the business")+".\\n\\nAmount: "+currency+" "+amount+"\\nReference: "+reference+"\\n\\nYour receipt is now waiting for merchant verification. Please hold on while the business reviews it. You will receive another email when the payment is approved. If approved, that email will contain your one-time payment code.",
+    html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;background:#f5f5f2\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><div style=\"margin-top:22px;font-size:11px;font-weight:800;letter-spacing:2px;color:#777\">PAYMENT RECEIVED</div><h1 style=\"margin:8px 0 12px\">Your payment has been sent.</h1><p style=\"color:#666;line-height:1.7\">We received your payment receipt for <strong>"+escapeHtml(serviceName||"the business")+"</strong>.</p><div style=\"padding:16px;border:1px solid #e5e5df;border-radius:14px;background:#fafaf7\"><b>Amount:</b> "+escapeHtml(currency)+" "+Number(amount).toFixed(2)+"<br><b>Reference:</b> "+escapeHtml(reference)+"</div><p style=\"color:#666;line-height:1.7\">Please hold on while the business verifies your payment. You will receive another email if it is approved. For regular payments, that approval email will contain your one-time payment code.</p><p style=\"color:#999;font-size:12px\">Do not make another payment unless the business tells you to.</p></div></div>"
+  });
+}
+
 async function sendDonationSuccessEmail({email,name,amount,currency,reference,customerReference}){if(!email)return;await sendResendEmail({to:email,subject:"Donation confirmed — "+reference,text:"Your donation to "+(name||"this campaign")+" has been successfully confirmed.\n\nAmount: "+currency+" "+amount+"\nReference: "+reference+(customerReference?"\nYour reference: "+customerReference:"")+"\n\nProcessing receipt: "+PUBLIC_SITE_URL+"/receipt/"+encodeURIComponent(reference)+"\n\nThank you for your support.",html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><h1>Donation confirmed</h1><p>Your donation to "+escapeHtml(name||"this campaign")+" has been successfully confirmed.</p><p><b>Amount:</b> "+escapeHtml(currency)+" "+Number(amount).toFixed(2)+"<br><b>Reference:</b> "+escapeHtml(reference)+"</p><p>Keep this email as your receipt.</p></div></div>"});}
 
 async function approveMerchantPayment(paymentId,merchantId){
