@@ -124,6 +124,40 @@ async function finishCustomerSessionLoader(startedAt){
 }
 
 
+function isMobilePaymentSheet(){
+    return window.matchMedia("(max-width: 760px)").matches;
+}
+function getPaymentSheetScrim(){
+    let scrim=document.getElementById("paymentSheetScrim");
+    if(!scrim){
+        scrim=document.createElement("div");
+        scrim.id="paymentSheetScrim";
+        scrim.className="mobile-bottom-sheet-scrim";
+        scrim.hidden=true;
+        document.body.appendChild(scrim);
+    }
+    return scrim;
+}
+function closePaymentMobileSheet(){
+    detailsContainer?.classList.remove("mobile-bottom-sheet-open");
+    document.body.classList.remove("mobile-sheet-locked");
+    const scrim=getPaymentSheetScrim();
+    scrim.classList.remove("is-visible");
+    setTimeout(()=>{
+        if(!detailsContainer?.classList.contains("mobile-bottom-sheet-open"))scrim.hidden=true;
+    },260);
+}
+function openPaymentMobileSheet(){
+    if(!detailsContainer||!isMobilePaymentSheet())return false;
+    detailsContainer.hidden=false;
+    detailsContainer.classList.add("mobile-bottom-sheet-open");
+    document.body.classList.add("mobile-sheet-locked");
+    const scrim=getPaymentSheetScrim();
+    scrim.hidden=false;
+    requestAnimationFrame(()=>scrim.classList.add("is-visible"));
+    return true;
+}
+
 /* ============================================================
    TOAST
 ============================================================ */
@@ -920,10 +954,17 @@ function renderDetails(
     rows.push('<div class="instructions item-enter"><strong>Instructions</strong><p>'+escapeHtml(method.instructions||"Follow the payment instructions provided by the merchant.")+'</p></div>');
 
     paymentDetails.innerHTML=rows.join("");
-    methodContainer.hidden=true;
-    detailsContainer.hidden=false;
-    verificationContainer.hidden=true;
-    animateState(detailsContainer);
+    if(isMobilePaymentSheet()){
+        methodContainer.hidden=false;
+        detailsContainer.hidden=false;
+        verificationContainer.hidden=true;
+        openPaymentMobileSheet();
+    }else{
+        methodContainer.hidden=true;
+        detailsContainer.hidden=false;
+        verificationContainer.hidden=true;
+        animateState(detailsContainer);
+    }
 }
 
 /* ============================================================
@@ -933,7 +974,7 @@ function renderDetails(
 function showExistingAttempt() {
 
     methodContainer.hidden =
-        true;
+        isMobilePaymentSheet() ? false : true;
 
     detailsContainer.hidden =
         false;
@@ -1228,6 +1269,43 @@ async function showCancelConfirmation(){
     });
 }
 
+const backToMethodsButton=document.getElementById("backToMethods");
+backToMethodsButton?.addEventListener("click",()=>{
+    closePaymentMobileSheet();
+    detailsContainer.hidden=true;
+    methodContainer.hidden=false;
+    verificationContainer.hidden=true;
+});
+getPaymentSheetScrim().addEventListener("click",()=>{
+    if(isMobilePaymentSheet()){
+        closePaymentMobileSheet();
+        detailsContainer.hidden=true;
+        methodContainer.hidden=false;
+    }
+});
+const mobileSheetHandle=document.querySelector(".mobile-sheet-handle");
+let paymentSheetStartY=null;
+mobileSheetHandle?.addEventListener("touchstart",event=>{
+    if(!isMobilePaymentSheet()||!detailsContainer?.classList.contains("mobile-bottom-sheet-open"))return;
+    paymentSheetStartY=event.touches[0].clientY;
+},{passive:true});
+mobileSheetHandle?.addEventListener("touchmove",event=>{
+    if(paymentSheetStartY===null)return;
+    const delta=event.touches[0].clientY-paymentSheetStartY;
+    if(delta>0)detailsContainer.style.setProperty("--sheet-drag-y",Math.min(delta,180)+"px");
+},{passive:true});
+mobileSheetHandle?.addEventListener("touchend",()=>{
+    if(paymentSheetStartY===null)return;
+    const delta=parseFloat(detailsContainer.style.getPropertyValue("--sheet-drag-y"))||0;
+    detailsContainer.style.removeProperty("--sheet-drag-y");
+    paymentSheetStartY=null;
+    if(delta>80){
+        closePaymentMobileSheet();
+        detailsContainer.hidden=true;
+        methodContainer.hidden=false;
+    }
+});
+
 /* ============================================================
    CANCEL
 ============================================================ */
@@ -1359,6 +1437,7 @@ function showVerification(
     );
 
 
+    closePaymentMobileSheet();
     methodContainer.hidden =
         true;
 
