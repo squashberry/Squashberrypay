@@ -1479,171 +1479,91 @@ function renderProcessingReceiptActions(){
     document.getElementById("copyProcessingReceipt")?.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(state.payment.processing_page_id);notify("Processing receipt ID copied.","success",2200)}catch{notify("Could not copy the receipt ID.","error",2200)}});
 }
 
-function showVerification(
-    justSubmitted = false
-) {
+function playCheckoutSuccessMorph(kind="payment"){
+    const existing=document.getElementById("checkoutSuccessMorph");
+    existing?.remove();
+    const morph=document.createElement("div");
+    morph.id="checkoutSuccessMorph";
+    morph.className="checkout-success-morph "+(kind==="donation"?"is-donation":"is-payment");
+    morph.innerHTML='<span class="morph-liquid morph-liquid-a"></span><span class="morph-liquid morph-liquid-b"></span><span class="morph-liquid morph-liquid-c"></span><span class="morph-success-ring"><span>✓</span></span>';
+    document.body.appendChild(morph);
+    requestAnimationFrame(()=>morph.classList.add("is-active"));
+    setTimeout(()=>morph.classList.add("is-settling"),520);
+    setTimeout(()=>morph.remove(),1250);
+}
 
-    clearInterval(
-        state.paymentTimer
-    );
+function isDonationPayment(){
+    return String(state.payment?.payment_type||"").toLowerCase()==="donate" || Boolean(state.payment?.donation_campaign_id);
+}
 
-
+function showVerification(justSubmitted=false){
+    clearInterval(state.paymentTimer);
     closePaymentMobileSheet();
-    methodContainer.hidden =
-        true;
+    methodContainer.hidden=true;
+    detailsContainer.hidden=true;
+    verificationContainer.hidden=false;
+    verificationContainer.classList.remove("success-morph-donation","success-morph-payment","verification-waiting");
+    void verificationContainer.offsetWidth;
 
-    detailsContainer.hidden =
-        true;
-
-    verificationContainer.hidden =
-        false;
-
-
-    animateState(
-        verificationContainer
-    );
-
-
-    const icon =
-        $(".verification-icon");
-
-
-    if (icon) {
-
-        icon.classList.remove(
-            "animate-check"
-        );
-
-
+    const icon=$(".verification-icon");
+    if(icon){
+        icon.classList.remove("animate-check");
         void icon.offsetWidth;
-
-
-        icon.classList.add(
-            "animate-check"
-        );
+        icon.classList.add("animate-check");
     }
 
-
-    const heading =
-        $("#verificationHeading");
-
-    const subtext =
-        $("#verificationSubtext");
-
+    const heading=$("#verificationHeading");
+    const subtext=$("#verificationSubtext");
+    const eyebrow=verificationContainer.querySelector(".verification-state .eyebrow");
+    const donation=isDonationPayment();
+    const terminal=["approved","completed"].includes(String(state.payment?.status||""));
 
     renderProcessingReceiptActions();
 
-    if (
-        state.payment.status ===
-            "approved"
-    ) {
-
-        heading.textContent =
-            "Payment approved.";
-
-        subtext.textContent =
-            "A one-time payment code has been sent to the email associated with this payment.";
-
-        waitingApprovalBox.hidden =
-            true;
-
-        approvedMessage.hidden =
-            false;
-
-
-        animateState(
-            approvedMessage
-        );
-
+    if(!terminal){
+        verificationContainer.classList.add("verification-waiting");
+        heading.textContent="Payment is being verified.";
+        subtext.textContent=justSubmitted
+            ? (donation
+                ? "Your donation receipt has been received. The business is verifying your donation now. You will receive a confirmation email when it is approved."
+                : "Your receipt has been received. The business is verifying your payment now. You will receive another email when it is approved, and that email will contain your payment code.")
+            : (donation
+                ? "Your donation receipt has been received and is waiting for verification."
+                : "Your receipt has been received and is waiting for payment verification.");
+        if(eyebrow)eyebrow.textContent=donation?"DONATION RECEIVED":"RECEIPT SUBMITTED";
+        waitingApprovalBox.hidden=false;
+        approvedMessage.hidden=true;
         return;
     }
 
+    waitingApprovalBox.hidden=true;
+    approvedMessage.hidden=false;
+    verificationContainer.classList.add(donation?"success-morph-donation":"success-morph-payment");
+    playCheckoutSuccessMorph(donation?"donation":"payment");
 
-    if (
-        state.payment.status ===
-            "completed"
-    ) {
-
-        heading.textContent =
-            "Payment completed.";
-
-        waitingApprovalBox.hidden =
-            true;
-
-        approvedMessage.hidden =
-            false;
-
-        if (
-            state.payment.payment_link_id
-        ) {
-
-            subtext.textContent =
-                "Your payment has been confirmed successfully.";
-
-            const messages =
-                approvedMessage.querySelectorAll(
-                    "p"
-                );
-
-            if (
-                messages[0]
-            ) {
-                messages[0].textContent =
-                    "Your payment has been confirmed.";
-            }
-
-            if (
-                messages[1]
-            ) {
-                messages[1].textContent =
-                    state.payment.return_url
-                        ? "Returning you to the merchant…"
-                        : "You may close this page.";
-            }
-
-            if (
-                state.payment.return_url &&
-                !state.returning
-            ) {
-
-                state.returning =
-                    true;
-
-                setTimeout(
-                    () => {
-
-                        window.location.href =
-                            state.payment.return_url;
-
-                    },
-                    900
-                );
-            }
-
-        } else {
-
-            subtext.textContent =
-                "This payment has already been redeemed successfully.";
-
+    if(donation){
+        heading.textContent="Donation completed.";
+        subtext.textContent="Your donation has been confirmed successfully.";
+        if(eyebrow)eyebrow.textContent="DONATION CONFIRMED";
+        approvedMessage.innerHTML='<strong>Thank you for your support.</strong><p>Your donation has been confirmed and a confirmation email has been sent to your email address.</p><p>Keep your payment reference for your records.</p>';
+    }else if(state.payment.status==="completed"){
+        heading.textContent="Payment completed.";
+        subtext.textContent=state.payment.payment_link_id?"Your payment has been confirmed successfully.":"Your payment code has already been redeemed successfully.";
+        if(eyebrow)eyebrow.textContent="PAYMENT COMPLETED";
+        approvedMessage.innerHTML='<strong>Payment completed.</strong><p>This payment has been confirmed successfully.</p><p>'+ (state.payment.return_url?"Returning you to the merchant…":"You may close this page.") +'</p>';
+        if(state.payment.payment_link_id && state.payment.return_url && !state.returning){
+            state.returning=true;
+            setTimeout(()=>{window.location.href=state.payment.return_url;},1100);
         }
-
-        return;
+    }else{
+        heading.textContent="Payment approved.";
+        subtext.textContent="Your one-time payment code has been sent to the email associated with this payment.";
+        if(eyebrow)eyebrow.textContent="PAYMENT APPROVED";
+        approvedMessage.innerHTML='<strong>Your payment has been approved.</strong><p>Your one-time payment code has been sent to your email.</p><p>Return to the app or website where you started the payment and enter the code there.</p>';
     }
 
-
-    heading.textContent =
-        "Payment is being verified.";
-
-    subtext.textContent =
-        justSubmitted
-            ? "Your receipt has been received. Once approved, SquashberryPay will send your one-time payment code to your email."
-            : "Your receipt has been received. Once the payment is approved, SquashberryPay will send your one-time code to your email.";
-
-    waitingApprovalBox.hidden =
-        false;
-
-    approvedMessage.hidden =
-        true;
+    animateState(verificationContainer);
+    animateState(approvedMessage);
 }
 
 
