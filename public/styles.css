@@ -2910,7 +2910,7 @@ html,body{overflow-x:hidden}
   position:fixed;
   inset:0;
   z-index:9000;
-  background:rgba(8,8,8,.24);
+  background:transparent;
   opacity:0;
   pointer-events:none;
   transition:opacity .24s ease;
@@ -3199,3 +3199,9 @@ html.customer-payment-page .site-header .brand{
 @keyframes morphSuccessRing{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-8deg)}60%{opacity:1;transform:translate(-50%,-50%) scale(1.12) rotate(3deg)}100%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}}
 @media(max-width:760px){.checkout-success-morph .morph-liquid{width:88vw;height:88vw}.checkout-success-morph .morph-liquid-b{width:60vw;height:60vw}.checkout-success-morph .morph-liquid-c{width:54vw;height:54vw}}
 @media(prefers-reduced-motion:reduce){.checkout-success-morph,.morph-liquid,.morph-success-ring,#verificationContainer.success-morph-donation .verification-state,#verificationContainer.success-morph-payment .verification-state,#verificationContainer.success-morph-donation .approved-message,#verificationContainer.success-morph-payment .approved-message{animation:none!important;transition:none!important}.checkout-success-morph.is-active{opacity:0}}
+
+
+/* CUSTOMER REJECTED PAYMENT / DONATION STATE */
+.verification-rejected .verification-icon{background:#fff1f1!important;color:#9f2020!important;border:1px solid #e5c8c8;}
+.verification-rejected .verification-state{border-color:#e2c7c7!important;background:#fffafa!important;}
+.verification-rejected #approvedMessage{border-color:#e4caca!important;background:#fff8f8!important;}
