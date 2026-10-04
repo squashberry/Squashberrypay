@@ -546,10 +546,13 @@ async function loadSession() {
 
         state.paymentDeadlineAt =
             data.payment.payment_deadline_at
-                ? new Date(
-                    data.payment.payment_deadline_at
-                )
+                ? new Date(data.payment.payment_deadline_at)
                 : null;
+
+    state.payment.payment_method_id =
+        data.payment.payment_method_id ||
+        data.payment.donation_payment_method_id ||
+        null;
 
 
         await finishCustomerSessionLoader(sessionLoaderStartedAt);
@@ -634,13 +637,11 @@ function renderPayment() {
 
 
     if (
-        state.payment.status ===
-            "awaiting_receipt" &&
-        state.paymentDeadlineAt
+        state.payment.status === "awaiting_receipt" &&
+        state.paymentDeadlineAt &&
+        state.payment.payment_method_id
     ) {
-
         showExistingAttempt();
-
         return;
     }
 
@@ -960,12 +961,13 @@ function renderDetails(
     if(method.bank_name)rows.push(paymentDetailRow("Bank",method.bank_name));
     if(method.account_name)rows.push(paymentDetailRow("Account name",method.account_name));
     if(method.account_number)rows.push(paymentDetailRow("Account number",method.account_number));
-    if(method.phone_number)rows.push(paymentDetailRow("Phone number",method.phone_number));
     rows.push(paymentDetailRow("Amount",formatMoney(state.payment.amount,state.payment.currency)));
     rows.push(paymentDetailRow("Reference",state.payment.reference));
     rows.push('<div class="instructions item-enter"><strong>Instructions</strong><p>'+escapeHtml(method.instructions||"Follow the payment instructions provided by the merchant.")+'</p></div>');
 
     paymentDetails.innerHTML=rows.join("");
+    ensurePaymentContactAction();
+    setReceiptStage(false);
     if(isMobilePaymentSheet()){
         methodContainer.hidden=false;
         detailsContainer.hidden=false;
@@ -977,6 +979,69 @@ function renderDetails(
         verificationContainer.hidden=true;
         animateState(detailsContainer);
     }
+}
+
+/* ============================================================
+   PAYMENT CONTACT + RECEIPT STAGES
+============================================================ */
+
+function ensurePaymentContactAction(){
+    if(!detailsContainer)return;
+    let contact=document.getElementById("contactBusinessAction");
+    if(!contact){
+        contact=document.createElement("button");
+        contact.id="contactBusinessAction";
+        contact.type="button";
+        contact.className="payment-contact-action";
+        contact.innerHTML='<span>Need help with this payment?</span><strong>Contact the business</strong>';
+        detailsContainer.insertBefore(contact,document.getElementById("paymentAttemptBox"));
+        contact.addEventListener("click",showBusinessContact);
+    }
+}
+
+function showBusinessContact(){
+    const phone=String(state.service?.phone||"").trim();
+    const name=String(state.service?.business_name||state.service?.name||"the business").trim();
+    let modal=document.getElementById("businessContactModal");
+    if(modal)modal.remove();
+    modal=document.createElement("div");
+    modal.id="businessContactModal";
+    modal.className="payment-contact-modal";
+    modal.innerHTML='<div class="payment-contact-backdrop"></div><div class="payment-contact-card" role="dialog" aria-modal="true" aria-labelledby="businessContactTitle"><span class="eyebrow">PAYMENT SUPPORT</span><h2 id="businessContactTitle">Contact '+escapeHtml(name)+'</h2><p>If you are having an issue with the transfer, contact the business directly. SquashberryPay does not handle the merchant’s transfer account.</p>'+(phone?'<a class="button primary full" href="tel:'+escapeHtml(phone)+'">Call '+escapeHtml(phone)+'</a>':'<div class="payment-contact-empty">The business has not provided a support phone number.</div>')+'<button class="button secondary full" type="button" data-close-business-contact>Close</button></div>';
+    document.body.appendChild(modal);
+    modal.addEventListener("click",e=>{if(e.target.closest("[data-close-business-contact]")||e.target.classList.contains("payment-contact-backdrop"))modal.remove()});
+}
+
+function setReceiptStage(show){
+    const receipt=document.querySelector(".receipt-box");
+    const selected=document.getElementById("selectedFile");
+    const submit=document.getElementById("submitReceipt");
+    const cancel=document.getElementById("cancelPayment");
+    if(!receipt)return;
+    let paid=document.getElementById("ivePaidButton");
+    if(!paid){
+        paid=document.createElement("button");
+        paid.id="ivePaidButton";
+        paid.type="button";
+        paid.className="button primary full payment-paid-button";
+        paid.textContent="I’ve paid — upload receipt";
+        receipt.parentElement.insertBefore(paid,receipt);
+        paid.addEventListener("click",()=>setReceiptStage(true));
+    }
+    paid.hidden=show;
+    receipt.hidden=!show;
+    if(selected)selected.hidden=!show || !selected.textContent;
+    if(submit)submit.hidden=!show;
+    if(cancel)cancel.hidden=!show;
+    let heading=document.getElementById("receiptStageHeading");
+    if(!heading){
+        heading=document.createElement("p");
+        heading.id="receiptStageHeading";
+        heading.className="receipt-stage-heading";
+        heading.textContent="Only upload your receipt after you have completed the transfer.";
+        receipt.parentElement.insertBefore(heading,paid);
+    }
+    heading.hidden=show;
 }
 
 /* ============================================================
@@ -1012,35 +1077,8 @@ function showExistingAttempt() {
          * resetting the attempt.
          */
 
-        fetch(
-            apiBase + `/api/public/session/${encodeURIComponent(
-                state.token
-            )}/method/${encodeURIComponent(
-                method.id
-            )}`
-        )
-            .then(
-                response =>
-                    response.json()
-            )
-            .then(
-                data => {
-
-                    if (
-                        data.method
-                    ) {
-
-                        renderDetails(
-                            data.method
-                        );
-
-                        startPaymentTimer();
-                    }
-                }
-            )
-            .catch(
-                console.error
-            );
+        renderDetails(method);
+        startPaymentTimer();
     }
 }
 
