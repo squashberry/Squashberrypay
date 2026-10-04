@@ -2910,11 +2910,12 @@ html,body{overflow-x:hidden}
   position:fixed;
   inset:0;
   z-index:9000;
-  background:rgba(8,8,8,.36);
-  backdrop-filter:blur(7px) saturate(.85);
+  background:rgba(8,8,8,.24);
   opacity:0;
   pointer-events:none;
-  transition:opacity .28s ease;
+  transition:opacity .24s ease;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
 }
 .mobile-bottom-sheet-scrim.is-visible{
   opacity:1;
@@ -2935,7 +2936,7 @@ html,body{overflow-x:hidden}
     bottom:0;
     z-index:9001;
     width:100%!important;
-    max-height:min(88dvh,760px);
+    max-height:min(92dvh,820px);
     overflow:auto;
     overscroll-behavior:contain;
     margin:0!important;
@@ -2944,7 +2945,7 @@ html,body{overflow-x:hidden}
     border-bottom:0;
     border-radius:28px 28px 0 0!important;
     background:rgba(255,255,255,.985);
-    box-shadow:0 -25px 90px rgba(0,0,0,.18);
+    box-shadow:0 -24px 80px rgba(0,0,0,.16);
     transform:translateY(var(--sheet-drag-y,0));
     animation:paymentSheetIn .42s cubic-bezier(.22,.8,.24,1) both;
     -webkit-overflow-scrolling:touch;
