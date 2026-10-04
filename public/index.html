@@ -29,14 +29,20 @@
 
     <link
         rel="stylesheet"
-        href="./styles.css?v=20261004-02"
+        href="./styles.css?v=20261004-06"
     >
 
     <link
         rel="stylesheet"
-        href="./ui-overhaul.css?v=20261004-02"
+        href="./ui-overhaul.css?v=20261004-06"
     >
 
+<script>
+    (() => {
+        const q = new URLSearchParams(window.location.search);
+        if (q.has("pay")) document.documentElement.classList.add("customer-payment-page");
+    })();
+</script>
 <link rel="icon" href="/Squashberrypay/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/Squashberrypay/favicon.svg">
 </head>
@@ -801,6 +807,15 @@
         hidden
     >
 
+        <aside class="payment-support-banner" aria-label="SquashberryPay support for businesses">
+            <div class="payment-support-copy">
+                <span class="payment-support-kicker">RECEIVE SUPPORT</span>
+                <strong>Want to receive support too?</strong>
+                <p>Use SquashberryPay to accept payments and support for your own app, project or business.</p>
+            </div>
+            <a class="payment-support-action" href="./signup.html">Use SquashberryPay <span aria-hidden="true">→</span></a>
+        </aside>
+
         <div
             class="payment-head"
         >
@@ -1178,7 +1193,7 @@
 
 
 <script
-    src="./app.js?v=20261004-02"
+    src="./app.js?v=20261004-06"
 ></script>
 
 <script src="/Squashberrypay/offline.js" defer></script>
