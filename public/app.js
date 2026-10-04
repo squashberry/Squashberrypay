@@ -1061,11 +1061,48 @@ function showBusinessContact(){
     modal.addEventListener("click",e=>{if(e.target.closest("[data-close-business-contact]")||e.target.classList.contains("payment-contact-backdrop"))modal.remove()});
 }
 
+function closeReceiptUploadModal(){
+    const modal=document.getElementById("receiptUploadModal");
+    if(!modal)return;
+    const receipt=modal.querySelector(".receipt-box");
+    const selected=modal.querySelector("#selectedFile");
+    const submit=modal.querySelector("#submitReceipt");
+    const original=document.getElementById("detailsContainer");
+    const actions=original?.querySelector(".payment-actions");
+    if(receipt&&actions)actions.parentElement?.insertBefore(receipt,actions);
+    if(selected&&actions)actions.parentElement?.insertBefore(selected,actions);
+    if(submit&&actions)actions.prepend(submit);
+    modal.remove();
+}
+function openReceiptUploadModal(){
+    if(document.getElementById("receiptUploadModal"))return;
+    const receipt=document.querySelector(".receipt-box");
+    const selected=document.getElementById("selectedFile");
+    const submit=document.getElementById("submitReceipt");
+    if(!receipt||!selected||!submit)return;
+    const modal=document.createElement("div");
+    modal.id="receiptUploadModal";
+    modal.className="receipt-upload-modal";
+    modal.innerHTML='<div class="receipt-upload-backdrop"></div><div class="receipt-upload-card" role="dialog" aria-modal="true" aria-labelledby="receiptUploadTitle"><div class="receipt-upload-head"><div><span class="eyebrow">RECEIPT</span><h2 id="receiptUploadTitle">Upload your payment receipt</h2><p>Only upload the image after you have completed the transfer.</p></div><button type="button" class="receipt-upload-close" aria-label="Close">×</button></div><div class="receipt-upload-body"></div><div class="receipt-upload-actions"><button type="button" class="button secondary" data-receipt-close>Close</button></div></div>';
+    document.body.appendChild(modal);
+    const body=modal.querySelector(".receipt-upload-body");
+    const actions=modal.querySelector(".receipt-upload-actions");
+    body.append(receipt,selected);
+    actions.append(submit);
+    receipt.hidden=false;
+    selected.hidden=true;
+    submit.hidden=false;
+    submit.classList.add("receipt-upload-submit");
+    const close=()=>closeReceiptUploadModal();
+    modal.querySelector(".receipt-upload-close")?.addEventListener("click",close);
+    modal.querySelector("[data-receipt-close]")?.addEventListener("click",close);
+    modal.querySelector(".receipt-upload-backdrop")?.addEventListener("click",close);
+    setTimeout(()=>receipt.querySelector("input")?.focus(),30);
+}
 function setReceiptStage(show){
     const receipt=document.querySelector(".receipt-box");
     const selected=document.getElementById("selectedFile");
     const submit=document.getElementById("submitReceipt");
-    const cancel=document.getElementById("cancelPayment");
     if(!receipt)return;
     let paid=document.getElementById("ivePaidButton");
     if(!paid){
@@ -1075,24 +1112,13 @@ function setReceiptStage(show){
         paid.className="button primary full payment-paid-button";
         paid.textContent="I’ve paid — upload receipt";
         receipt.parentElement.insertBefore(paid,receipt);
-        paid.addEventListener("click",()=>setReceiptStage(true));
+        paid.addEventListener("click",openReceiptUploadModal);
     }
     paid.hidden=show;
-    receipt.hidden=!show;
-    if(selected)selected.hidden=!show || !selected.textContent;
-    if(submit)submit.hidden=!show;
-    if(cancel)cancel.hidden=!show;
-    let heading=document.getElementById("receiptStageHeading");
-    if(!heading){
-        heading=document.createElement("p");
-        heading.id="receiptStageHeading";
-        heading.className="receipt-stage-heading";
-        heading.textContent="Only upload your receipt after you have completed the transfer.";
-        receipt.parentElement.insertBefore(heading,paid);
-    }
-    heading.hidden=show;
+    receipt.hidden=true;
+    if(selected)selected.hidden=true;
+    if(submit)submit.hidden=true;
 }
-
 /* ============================================================
    EXISTING ATTEMPT
 ============================================================ */
