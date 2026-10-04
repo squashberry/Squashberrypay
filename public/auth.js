@@ -140,7 +140,7 @@ function showAuthErrorAlert(
                 class="auth-error-alert-close"
                 type="button"
                 aria-label="Dismiss error"
-            >Ã</button>
+            >&times;</button>
         `;
 
         document.body.appendChild(
@@ -178,12 +178,14 @@ function showAuthErrorAlert(
     ).textContent =
         message;
 
-    alert.querySelector(
+    const guidance = alert.querySelector(
         ".auth-error-alert-guidance"
-    ).textContent =
-        networkError
-            ? "Check your internet connection and try again. If it keeps happening, wait a moment and try again."
-            : "Review the message and correct the highlighted information, then try again.";
+    );
+
+    guidance.textContent = networkError
+        ? "Check your internet connection and try again. If it keeps happening, wait a moment and try again."
+        : "";
+    guidance.hidden = !networkError;
 
     alert.classList.remove(
         "is-visible"
@@ -3595,7 +3597,10 @@ showSignupStep(
 (() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("reason") === "session_expired") {
-        window.setTimeout(() => showMessage("Your session expired because you were inactive for a while. Please sign in again to continue."), 0);
+        params.delete("reason");
+        const cleanQuery = params.toString();
+        const cleanUrl = window.location.pathname + (cleanQuery ? "?" + cleanQuery : "") + window.location.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
     } else if (params.get("signed_out") === "1") {
         window.setTimeout(() => showMessage("You have been signed out.", "success"), 0);
     }
