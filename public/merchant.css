@@ -359,3 +359,145 @@ body{background:var(--dash-bg);color:var(--dash-text)}
 .payment-contact-action span{color:#777;font-size:11px}.payment-contact-action strong{font-size:12px}
 .payment-contact-modal{position:fixed;inset:0;z-index:10080;display:grid;place-items:center;padding:18px}.payment-contact-backdrop{position:absolute;inset:0;background:rgba(10,10,10,.46);backdrop-filter:blur(8px)}.payment-contact-card{position:relative;z-index:1;width:min(440px,100%);padding:26px;border:1px solid #e1e1dc;border-radius:22px;background:#fff;box-shadow:0 30px 90px rgba(0,0,0,.2)}.payment-contact-card h2{margin:8px 0 10px}.payment-contact-card p{color:#666;line-height:1.6;font-size:12px}.payment-contact-empty{padding:14px;border:1px solid #e5e5df;border-radius:12px;color:#777;font-size:12px}.payment-contact-card .button{display:flex;margin-top:10px;text-decoration:none;align-items:center;justify-content:center}
 .receipt-stage-heading{margin:16px 0 8px;color:#666;font-size:12px;line-height:1.5}.payment-paid-button{margin-top:16px!important}
+
+
+/* ============================================================
+   SQUASHBERRYPAY — DASHBOARD EXPERIENCE LAYER
+============================================================ */
+
+.mobile-auth-link{display:none}
+@media(max-width:720px){
+  .mobile-auth-link{
+    display:flex;align-items:center;justify-content:center;gap:5px;
+    margin:15px auto 0;font-size:12px;color:#787874;
+  }
+  .mobile-auth-link a{color:#111;font-weight:850;text-decoration:none}
+  .mobile-auth-link a::after{content:" →";font-weight:700}
+}
+
+/* Dashboard chrome */
+.merchant-page{
+  --dash-bg:#f4f4f1;
+  --dash-card:#fff;
+  --dash-ink:#111;
+  --dash-muted:#7b7b77;
+  --dash-line:#dfdfda;
+  background:
+    radial-gradient(circle at 88% 5%, rgba(0,0,0,.035), transparent 28rem),
+    var(--dash-bg);
+}
+.merchant-header{
+  background:rgba(255,255,255,.82);
+  backdrop-filter:blur(24px) saturate(1.04);
+  -webkit-backdrop-filter:blur(24px) saturate(1.04);
+}
+.merchant-main{padding-top:38px}
+.dashboard-welcome h1{max-width:760px}
+.dashboard-welcome h1 span{background:linear-gradient(90deg,#111,#444);-webkit-background-clip:text;background-clip:text;color:transparent}
+.overview-actions{align-items:center}
+.overview-actions .button,
+.density-toggle{transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s,border-color .22s,background .22s}
+.overview-actions .magnetic{transform:translate3d(var(--mx,0),var(--my,0),0)}
+.overview-actions .button:hover,.density-toggle:hover{box-shadow:0 12px 24px rgba(0,0,0,.09)}
+.density-toggle{
+  min-height:36px;padding:0 11px;border:1px solid #deded8;border-radius:10px;background:#fff;
+  color:#666;font-size:10px;font-weight:850;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+}
+.density-icon{font-size:12px;color:#111}
+
+.dashboard-live-status{display:inline-flex;align-items:center;gap:7px;color:#999;font-size:10px}
+.dashboard-live-status i{display:block;width:7px;height:7px;border-radius:50%;background:#111;box-shadow:0 0 0 0 rgba(17,17,17,.22);animation:dashboardPulse 2s infinite}
+@keyframes dashboardPulse{70%{box-shadow:0 0 0 6px rgba(17,17,17,0)}100%{box-shadow:0 0 0 0 rgba(17,17,17,0)}}
+
+.money-card{position:relative;overflow:hidden;isolation:isolate;transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s,border-color .28s}
+.money-card::after{content:"";position:absolute;inset:auto -22% -58% 22%;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(0,0,0,.055),transparent 66%);pointer-events:none}
+.money-card.featured{box-shadow:0 22px 46px rgba(0,0,0,.13)}
+.money-card:not(.featured):hover,.panel:hover,.link-card:hover,.product-card:hover,.method-card:hover,.app-card:hover,.donation-card:hover,.subscription-card:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(0,0,0,.075)}
+.money-card strong{font-variant-numeric:tabular-nums}
+.dashboard-compact .money-card{min-height:112px;padding:16px}
+.dashboard-compact .dashboard-welcome{margin-bottom:18px}
+.dashboard-compact .dashboard-two-col{gap:10px}
+.dashboard-compact .panel{padding:17px}
+.dashboard-compact .money-grid{gap:8px}
+.dashboard-compact .revenue-chart{min-height:210px}
+
+.dashboard-two-col{gap:12px}
+.panel{box-shadow:0 9px 28px rgba(0,0,0,.035);transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s,border-color .28s}
+.chart-panel{min-height:320px}
+.panel-heading h3{letter-spacing:-.035em}
+
+.revenue-chart{position:relative;min-height:255px;padding-top:4px}
+.revenue-svg{display:block;width:100%;height:255px;overflow:visible}
+.chart-grid-line{stroke:#eaeae5;stroke-width:1}
+.chart-area{fill:url(#revenueFill);opacity:0;animation:chartAreaIn .7s .18s ease forwards}
+.chart-line{fill:none;stroke:#111;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1800;stroke-dashoffset:1800;animation:chartLineDraw 1s cubic-bezier(.65,0,.35,1) forwards}
+.chart-point{fill:#fff;stroke:#111;stroke-width:2;opacity:0;animation:chartPointIn .28s ease forwards}
+.chart-point:nth-of-type(2){animation-delay:.15s}.chart-point:nth-of-type(3){animation-delay:.22s}.chart-point:nth-of-type(4){animation-delay:.29s}.chart-point:nth-of-type(5){animation-delay:.36s}.chart-point:nth-of-type(6){animation-delay:.43s}.chart-point:nth-of-type(7){animation-delay:.50s}
+.chart-axis-label{fill:#999;font-size:10px;font-family:inherit}
+@keyframes chartLineDraw{to{stroke-dashoffset:0}}
+@keyframes chartAreaIn{to{opacity:1}}
+@keyframes chartPointIn{to{opacity:1}}
+.chart-empty{height:245px;display:grid;place-items:center;align-content:center;gap:7px;text-align:center;color:#858580}
+.chart-empty-art{width:160px;height:90px;display:grid;place-items:center}
+.chart-empty svg{width:100%;height:100%;overflow:visible}
+.chart-empty-line{stroke-dasharray:360;stroke-dashoffset:360;animation:chartEmptyDraw 1.5s ease-in-out infinite alternate}
+.chart-empty-art circle{animation:chartEmptyDot 1.5s ease-in-out infinite alternate}
+@keyframes chartEmptyDraw{to{stroke-dashoffset:0}}@keyframes chartEmptyDot{to{transform:translate(8px,-4px)}}
+.chart-empty strong{color:#333;font-size:12px}.chart-empty span{font-size:11px;max-width:280px;line-height:1.5}
+
+.quick-actions button{transition:transform .2s,box-shadow .2s,border-color .2s}
+.quick-actions button:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.07);border-color:#cfcfca}
+
+.merchant-toast-stack{
+  position:fixed!important;right:18px!important;top:80px!important;z-index:6000!important;
+  width:min(360px,calc(100vw - 28px));display:grid;gap:8px;pointer-events:none;
+}
+.merchant-toast{
+  display:grid;grid-template-columns:24px minmax(0,1fr) 24px;gap:8px;align-items:center;
+  padding:11px 12px;border:1px solid rgba(0,0,0,.08);border-radius:14px;background:rgba(17,17,17,.96);
+  color:#fff;box-shadow:0 18px 38px rgba(0,0,0,.17);font-size:11px;
+  transform:translate3d(22px,-8px,0) scale(.97);opacity:0;
+  transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .22s;
+}
+.merchant-toast.is-visible{transform:none;opacity:1}
+.merchant-toast.is-leaving{transform:translate3d(14px,-4px,0) scale(.98);opacity:0}
+.merchant-toast.error{background:#17110f;border-color:#5a2b23}.merchant-toast.success{background:#111;border-color:#2c432f}
+.merchant-toast-mark{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#111;font-size:11px;font-weight:900}
+.merchant-toast button{border:0;background:rgba(255,255,255,.08);color:#fff;width:24px;height:24px;border-radius:7px;cursor:pointer;font-size:14px}
+.merchant-toast button:hover{background:rgba(255,255,255,.16)}
+.premium-empty{padding:34px 20px}
+.empty-illustration{width:74px;height:58px;color:#1b1b1b;display:grid;place-items:center;margin:auto}
+.empty-illustration svg{width:72px;height:56px}
+.empty-illustration-float{transform-origin:50% 50%;animation:emptyFloat 3.1s ease-in-out infinite}
+@keyframes emptyFloat{50%{transform:translateY(-4px) rotate(1.5deg)}}
+
+.merchant-page .side-link{transition:transform .18s,background .18s,color .18s}
+.merchant-page .side-link:hover{transform:translateX(2px)}
+.merchant-page .side-link.active{box-shadow:0 10px 28px rgba(0,0,0,.13)}
+
+@media(max-width:720px){
+  .merchant-main{padding-top:24px}
+  .dashboard-welcome{gap:18px}
+  .dashboard-welcome h1{font-size:clamp(31px,10vw,44px)}
+  .overview-actions{display:grid;grid-template-columns:1fr 1fr}
+  .overview-actions .density-toggle{grid-column:1/-1;justify-content:center}
+  .range-bar{align-items:flex-start;gap:10px;flex-direction:column}
+  .range-bar>div{max-width:100%;overflow:auto}
+  .money-grid{grid-template-columns:1fr 1fr}
+  .money-card.featured{grid-column:1/-1}
+  .dashboard-two-col{grid-template-columns:1fr!important}
+  .chart-panel{min-height:285px}
+  .revenue-chart,.revenue-svg{height:220px;min-height:220px}
+  .chart-axis-label{font-size:9px}
+  .merchant-toast-stack{right:12px!important;top:74px!important;width:calc(100vw - 24px)}
+}
+@media(max-width:430px){
+  .overview-actions{grid-template-columns:1fr}
+  .overview-actions .density-toggle{grid-column:auto}
+  .money-grid{grid-template-columns:1fr}
+  .money-card.featured{grid-column:auto}
+}
+@media(prefers-reduced-motion:reduce){
+  .money-card,.panel,.quick-actions button,.overview-actions .button,.density-toggle{transition:none!important}
+  .dashboard-live-status i,.chart-line,.chart-area,.chart-point,.chart-empty-line,.chart-empty-art circle,.empty-illustration-float{animation:none!important}
+}
