@@ -238,6 +238,7 @@ body:has(.signup-page) .site-header{
   min-height:40px;
   font-weight:850;
 }
+@media(max-width:720px){body:has(.signup-page) .site-header .header-actions .nav-login,body:has(.auth-page) .site-header .header-actions .nav-login{display:inline-flex!important;visibility:visible!important;opacity:1!important;position:relative!important;z-index:20!important}}
 
 /* ---------- Merchant dashboard ---------- */
 
@@ -728,6 +729,7 @@ body.dashboard-compact .panel{
     min-height:40px;
     font-size:12px;
   }
+@media(max-width:720px){body:has(.signup-page) .site-header .header-actions .nav-login,body:has(.auth-page) .site-header .header-actions .nav-login{display:inline-flex!important;visibility:visible!important;opacity:1!important;position:relative!important;z-index:20!important}}
 
   body:has(#welcomeView:not([hidden])) .hero{
     padding:44px 0 72px;
@@ -929,6 +931,7 @@ body.dashboard-compact .panel{
     border-radius:10px;
     background:#fff;
   }
+@media(max-width:720px){body:has(.signup-page) .site-header .header-actions .nav-login,body:has(.auth-page) .site-header .header-actions .nav-login{display:inline-flex!important;visibility:visible!important;opacity:1!important;position:relative!important;z-index:20!important}}
 
   body:has(.auth-page) .site-header .brand,
   body:has(.signup-page) .site-header .brand{
