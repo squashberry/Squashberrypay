@@ -279,6 +279,26 @@ function clearMessage() {
 }
 
 
+
+// Full-page auth transition: use this for real authentication work so the
+// user never sees a half-submitted form or a frozen skeleton.
+let authLoadingSplash=null;
+function showAuthLoadingSplash(message="Signing you in…"){
+    document.body?.classList.add("auth-loading");
+    if(!authLoadingSplash){
+        authLoadingSplash=document.createElement("div");
+        authLoadingSplash.className="auth-loading-splash";
+        authLoadingSplash.innerHTML='<div class="auth-loading-splash-inner"><i class="auth-loading-splash-spinner" aria-hidden="true"></i><strong></strong><span>SquashberryPay</span></div>';
+        document.body.appendChild(authLoadingSplash);
+    }
+    authLoadingSplash.querySelector("strong").textContent=message;
+    authLoadingSplash.hidden=false;
+}
+function hideAuthLoadingSplash(){
+    document.body?.classList.remove("auth-loading");
+    if(authLoadingSplash)authLoadingSplash.hidden=true;
+}
+
 /* ============================================================
    BUTTON LOADING
 ============================================================ */
@@ -1332,8 +1352,14 @@ signupForm?.addEventListener(
 
         try {
 
-            const result =
-                await sendSignupOtp();
+            showAuthLoadingSplash("Creating your account…");
+            let result;
+            try {
+                result = await sendSignupOtp();
+            } catch(error) {
+                hideAuthLoadingSplash();
+                throw error;
+            }
 
 
             console.log(
@@ -1371,6 +1397,8 @@ signupForm?.addEventListener(
             );
 
 
+            hideAuthLoadingSplash();
+
             showMessage(
                 "Verification code sent to your email.",
                 "success"
@@ -1383,6 +1411,8 @@ signupForm?.addEventListener(
                 error
             );
 
+
+            hideAuthLoadingSplash();
 
             showMessage(
                 error.message
@@ -2082,6 +2112,8 @@ async function verifySignupOtp(
             true;
 
 
+        showAuthLoadingSplash("Finishing your account…");
+
         document
             .getElementById(
                 "signupProgress"
@@ -2609,6 +2641,7 @@ signinForm?.addEventListener(
                 "Signed in successfully.",
                 "success"
             );
+            showAuthLoadingSplash("Opening your dashboard…");
 
             hideSignin();
 
@@ -2625,6 +2658,7 @@ signinForm?.addEventListener(
             );
 
         } catch (error) {
+            hideAuthLoadingSplash();
             console.error(
                 "Sign-in error:",
                 error
