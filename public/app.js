@@ -104,6 +104,26 @@ if ($("#year")) {
 }
 
 
+function showCustomerSessionLoader(){
+    let loader=document.getElementById("customerSessionLoader");
+    if(loader)return;
+    loader=document.createElement("div");
+    loader.id="customerSessionLoader";
+    loader.className="customer-session-loader";
+    loader.innerHTML='<div class="customer-session-loader-card" role="status" aria-live="polite"><span class="customer-loader-mark">S</span><span class="customer-loader-eyebrow">SECURE CHECKOUT</span><strong>Preparing your payment</strong><p>Connecting to the merchant and checking payment details.</p><span class="customer-loader-spinner" aria-hidden="true"></span></div>';
+    document.body.appendChild(loader);
+    requestAnimationFrame(()=>loader.classList.add("is-visible"));
+}
+async function finishCustomerSessionLoader(startedAt){
+    const remaining=2000-(performance.now()-startedAt);
+    if(remaining>0)await new Promise(resolve=>setTimeout(resolve,remaining));
+    const loader=document.getElementById("customerSessionLoader");
+    if(!loader)return;
+    loader.classList.add("is-leaving");
+    setTimeout(()=>loader.remove(),280);
+}
+
+
 /* ============================================================
    TOAST
 ============================================================ */
@@ -394,6 +414,8 @@ function showWelcome(
 
 async function loadSession() {
 
+    const sessionLoaderStartedAt=performance.now();
+
     const token =
         getToken();
 
@@ -405,6 +427,7 @@ async function loadSession() {
         return;
     }
 
+    showCustomerSessionLoader();
 
     state.token =
         token;
@@ -438,6 +461,7 @@ async function loadSession() {
             );
 
 
+            await finishCustomerSessionLoader(sessionLoaderStartedAt);
             showWelcome(
                 "This payment page has expired. Please return to the app and start a new payment."
             );
@@ -463,6 +487,7 @@ async function loadSession() {
             );
 
 
+            await finishCustomerSessionLoader(sessionLoaderStartedAt);
             showWelcome(
                 "This payment has been cancelled."
             );
@@ -493,6 +518,7 @@ async function loadSession() {
                 : null;
 
 
+        await finishCustomerSessionLoader(sessionLoaderStartedAt);
         renderPayment();
 
     } catch (error) {
@@ -502,6 +528,7 @@ async function loadSession() {
         );
 
 
+        await finishCustomerSessionLoader(sessionLoaderStartedAt);
         showWelcome(
             error.message ||
             "Could not load payment session."
@@ -645,6 +672,10 @@ function getPaymentDescription() {
 ============================================================ */
 
 function renderMethods() {
+
+    if(!methodsElement){
+        return;
+    }
 
     methodsElement.innerHTML =
         "";
