@@ -32,7 +32,8 @@ const state = {
 
     notificationTimer: null,
 
-    returning: false
+    returning: false,
+    selectedMethod: null
 };
 
 
@@ -1000,7 +1001,7 @@ function ensurePaymentContactAction(){
 }
 
 function showBusinessContact(){
-    const phone=String(state.service?.phone||"").trim();
+    const phone=String(state.service?.phone||state.selectedMethod?.phone_number||"").trim();
     const name=String(state.service?.business_name||state.service?.name||"the business").trim();
     let modal=document.getElementById("businessContactModal");
     if(modal)modal.remove();
