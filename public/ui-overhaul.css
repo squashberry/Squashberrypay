@@ -44,8 +44,9 @@ body::before{
   width:min(1320px,calc(100% - 32px));
   min-height:72px;
   border-bottom:1px solid rgba(0,0,0,.09);
-  background:rgba(250,250,249,.84);
-  backdrop-filter:blur(22px) saturate(1.1);
+  background:#fff;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
   box-shadow:0 8px 28px rgba(0,0,0,.035);
 }
 .brand{color:#111}
