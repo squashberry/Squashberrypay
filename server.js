@@ -8774,6 +8774,27 @@ async function sendDonationSuccessEmail({email,name,amount,currency,reference,cu
   });
 }
 
+async function sendDonationRejectedEmail({email,name,amount,currency,reference,customerReference,reason}){
+  if(!email)return;
+  const safeReason=reason||"The receipt could not be verified.";
+  const html='<!doctype html><html><body style="margin:0;padding:0;background:#f3f3f0;font-family:Arial,Helvetica,sans-serif;color:#111;">'+
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f0;"><tr><td align="center" style="padding:32px 14px;">'+
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#fff;border:1px solid #deded8;border-radius:24px;overflow:hidden;">'+
+    '<tr><td style="padding:28px 30px;border-bottom:1px solid #ecece6;"><table role="presentation" width="100%"><tr><td><div style="width:40px;height:40px;line-height:40px;text-align:center;border-radius:12px;background:#111;color:#fff;font-weight:900;">S</div></td><td style="padding-left:12px;"><div style="font-size:17px;font-weight:900;">SquashberryPay</div><div style="font-size:11px;color:#888;margin-top:2px;letter-spacing:1.4px;">DONATION REVIEW</div></td></tr></table></td></tr>'+
+    '<tr><td style="padding:34px 30px 16px;"><div style="font-size:11px;font-weight:800;letter-spacing:2px;color:#777;">UPDATE</div><h1 style="margin:10px 0 12px;font-size:30px;line-height:1.1;">Donation could not be confirmed.</h1><p style="margin:0;color:#666;font-size:15px;line-height:1.7;">The business could not verify the donation receipt you submitted.</p></td></tr>'+
+    '<tr><td style="padding:18px 30px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e4e4de;border-radius:16px;background:#fafaf7;"><tr><td style="padding:16px;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.2px;">Amount</div><div style="font-size:18px;font-weight:900;margin-top:5px;">'+escapeHtml(currency)+' '+Number(amount).toFixed(2)+'</div></td><td style="padding:16px;text-align:right;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.2px;">Reference</div><div style="font-size:14px;font-weight:800;margin-top:5px;">'+escapeHtml(reference)+'</div></td></tr></table></td></tr>'+
+    (customerReference?'<tr><td style="padding:0 30px 18px;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.2px;">Your reference</div><div style="font-size:14px;font-weight:800;margin-top:5px;">'+escapeHtml(customerReference)+'</div></td></tr>':"")+
+    '<tr><td style="padding:0 30px 18px;"><div style="padding:16px 18px;border-radius:14px;background:#fff5f5;border:1px solid #ead0d0;color:#5b3434;font-size:14px;line-height:1.65;"><strong>Reason</strong><br>'+escapeHtml(safeReason)+'</div></td></tr>'+
+    '<tr><td style="padding:0 30px 30px;"><div style="padding:16px 18px;border-radius:14px;background:#f5f5f1;border:1px solid #e6e6e0;color:#555;font-size:14px;line-height:1.65;">If you believe this was a mistake, contact the business and provide your payment reference. Do not make another payment unless the business instructs you to.</div></td></tr>'+
+    '</table></td></tr></table></body></html>';
+  await sendResendEmail({
+    to:email,
+    subject:"Donation could not be confirmed — "+reference,
+    text:"Your donation to "+(name||"this campaign")+" could not be confirmed.\n\nAmount: "+currency+" "+amount+"\nReference: "+reference+"\nReason: "+safeReason+(customerReference?"\nYour reference: "+customerReference:""),
+    html
+  });
+}
+
 async function approveMerchantPayment(paymentId,merchantId){
   const {data:p,error}=await supabase
     .from("payments")
@@ -9066,14 +9087,30 @@ async function approveMerchantPayment(paymentId,merchantId){
 app.get("/api/merchant/payment-requests",authenticateMerchant,async(req,res)=>{try{const {data:services}=await merchantServices(req);const ids=(services||[]).map(s=>s.id);const {data:campaigns}=await supabase.from("donation_campaigns").select("id").eq("merchant_id",req.merchant.id);const cids=(campaigns||[]).map(c=>c.id);const qs=[];if(ids.length)qs.push(supabase.from("payments").select("*,service_users(email,external_user_id),services(name,slug),products(name,product_code,subscription_interval),payment_methods(name,type)").in("service_id",ids).eq("status","awaiting_verification"));if(cids.length)qs.push(supabase.from("payments").select("*,service_users(email,external_user_id),donation_campaigns(name,slug)").in("donation_campaign_id",cids).eq("status","awaiting_verification"));const rs=await Promise.all(qs);res.json({payments:rs.flatMap(x=>x.data||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))});}catch(e){console.error(e);res.status(500).json({error:"Could not load payment requests."})}});
 app.get("/api/merchant/payments/:paymentId/receipt",authenticateMerchant,async(req,res)=>{try{const {data:p}=await supabase.from("payments").select("id,service_id,donation_campaign_id,receipt_path").eq("id",req.params.paymentId).maybeSingle();if(!p?.receipt_path)return res.status(404).json({error:"Receipt not found."});let allowed=false;if(p.service_id){const {data:x}=await supabase.from("services").select("id").eq("id",p.service_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(p.donation_campaign_id){const {data:x}=await supabase.from("donation_campaigns").select("id").eq("id",p.donation_campaign_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(!allowed)return res.status(404).json({error:"Receipt not found."});const {data,error}=await supabase.storage.from("payment-receipts").createSignedUrl(p.receipt_path,300);if(error)throw error;res.json({url:data?.signedUrl||data?.signedURL});}catch(e){console.error(e);res.status(500).json({error:"Could not open receipt."})}});
 app.post("/api/merchant/payments/:paymentId/approve",authenticateMerchant,async(req,res)=>{try{const r=await approveMerchantPayment(req.params.paymentId,req.merchant.id);res.status(r.status).json(r.body)}catch(e){console.error(e);res.status(500).json({error:"Could not approve payment."})}});
-app.post("/api/merchant/payments/:paymentId/reject",authenticateMerchant,async(req,res)=>{try{const reason=String(req.body?.reason||"Payment could not be verified.").trim().slice(0,500);const {data:p}=await supabase.from("payments").select("id,service_id,donation_campaign_id,status").eq("id",req.params.paymentId).maybeSingle();if(!p)return res.status(404).json({error:"Payment not found."});let allowed=false;if(p.service_id){const {data:x}=await supabase.from("services").select("id").eq("id",p.service_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(p.donation_campaign_id){const {data:x}=await supabase.from("donation_campaigns").select("id").eq("id",p.donation_campaign_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(!allowed)return res.status(404).json({error:"Payment not found."});if(p.status!=="awaiting_verification")return res.status(409).json({error:"Only payments awaiting verification can be rejected."});const {error}=await supabase.from("payments").update({status:"rejected",payment_state:"rejected",rejection_reason:reason}).eq("id",p.id).eq("status","awaiting_verification");if(error)throw error;try{
-  const {data:ep}=await supabase.from("payments").select("id,service_id,payment_reference,customer_email").eq("id",req.params.paymentId).maybeSingle();
-  if(ep){
-    await persistPaymentEvent(ep,"payment.rejected","awaiting_verification","rejected",{reason});
-    await enqueueWebhookEvent("payment.rejected",{...ep,status:"rejected",payment_state:"rejected"},{reason});
+app.post("/api/merchant/payments/:paymentId/reject",authenticateMerchant,async(req,res)=>{try{
+  const reason=String(req.body?.reason||"Payment could not be verified.").trim().slice(0,500);
+  const {data:p}=await supabase.from("payments").select("id,service_id,donation_campaign_id,status,payment_type,amount,currency,payment_reference,customer_reference,customer_email,service_users(email),services(name),donation_campaigns(name,merchant_id)").eq("id",req.params.paymentId).maybeSingle();
+  if(!p)return res.status(404).json({error:"Payment not found."});
+  let allowed=false;
+  if(p.service_id){const {data:x}=await supabase.from("services").select("id").eq("id",p.service_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}
+  if(p.donation_campaign_id){const {data:x}=await supabase.from("donation_campaigns").select("id").eq("id",p.donation_campaign_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}
+  if(!allowed)return res.status(404).json({error:"Payment not found."});
+  if(p.status!=="awaiting_verification")return res.status(409).json({error:"Only payments awaiting verification can be rejected."});
+  const {data:updated,error}=await supabase.from("payments").update({status:"rejected",payment_state:"rejected",rejection_reason:reason}).eq("id",p.id).eq("status","awaiting_verification").select("id,status,payment_state").maybeSingle();
+  if(error)throw error;
+  if(!updated)return res.status(409).json({error:"This payment has already been processed."});
+  const eventPayment={...p,status:"rejected",payment_state:"rejected"};
+  try{
+    await persistPaymentEvent(p,"payment.rejected","awaiting_verification","rejected",{reason});
+    await enqueueWebhookEvent("payment.rejected",eventPayment,{reason});
+  }catch(eventError){console.error("Reject event error:",eventError);}
+  const donation=Boolean(p.donation_campaign_id)||String(p.payment_type||"").toLowerCase()==="donate";
+  if(donation){
+    try{await sendDonationRejectedEmail({email:p.customer_email||p.service_users?.email,name:p.donation_campaigns?.name||"this campaign",amount:p.amount,currency:p.currency,reference:p.payment_reference,customerReference:p.customer_reference,reason});}
+    catch(emailError){console.error("Donation rejection email error:",emailError);}
   }
-}catch(eventError){console.error("Reject event error:",eventError);}
-res.json({success:true});}catch(e){console.error(e);res.status(500).json({error:"Could not reject payment."})}});
+  res.json({success:true,type:donation?"donation":"payment"});
+}catch(e){console.error(e);res.status(500).json({error:"Could not reject payment."})}});
 
 /* ============================================================
    ADMIN LOGIN
