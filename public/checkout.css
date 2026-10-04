@@ -1217,3 +1217,31 @@ body.checkout-error-mode .checkout-card.checkout-error-failed .error-liquid{
     background:#edede8;
   }
 }
+
+
+/* Checkout sheet interaction fix: the sheet owns scrolling and touch gestures. */
+.mobile-sheet-locked{
+  overflow:hidden!important;
+  touch-action:auto!important;
+}
+@media(max-width:760px){
+  #checkoutDetails.mobile-bottom-sheet-open{
+    z-index:2147481000!important;
+    pointer-events:auto!important;
+    touch-action:pan-y!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open button,
+  #checkoutDetails.mobile-bottom-sheet-open input,
+  #checkoutDetails.mobile-bottom-sheet-open textarea,
+  #checkoutDetails.mobile-bottom-sheet-open label{
+    pointer-events:auto!important;
+    touch-action:manipulation!important;
+  }
+  .mobile-bottom-sheet-scrim{
+    z-index:2147480000!important;
+  }
+}
