@@ -1143,40 +1143,42 @@ function showExistingAttempt() {
 
 function bindCheckoutActionButtons(){
     const paid=document.getElementById("ivePaidButton");
-    if(paid && paid.dataset.bound!=="true"){
-        paid.dataset.bound="true";
-        const open=event=>{
-            event.preventDefault();
-            event.stopPropagation();
-            if(paid.disabled)return;
-            openReceiptUploadModal();
-        };
-        paid.addEventListener("click",open);
-        paid.addEventListener("pointerup",event=>{
-            if(event.pointerType==="touch")open(event);
-        });
-    }
-
     const topCancel=document.getElementById("cancelPaymentTop");
     const mainCancel=document.getElementById("cancelPayment");
-    if(topCancel && topCancel.dataset.bound!=="true"){
-        topCancel.dataset.bound="true";
-        const trigger=event=>{
-            event.preventDefault();
-            event.stopPropagation();
-            if(mainCancel && !mainCancel.disabled)mainCancel.click();
-        };
-        topCancel.addEventListener("click",trigger);
-        topCancel.addEventListener("pointerup",event=>{
-            if(event.pointerType==="touch")trigger(event);
-        });
+
+    if(paid)paid.dataset.bound="delegated";
+    if(topCancel)topCancel.dataset.bound="delegated";
+    if(mainCancel)mainCancel.dataset.bound="delegated";
+}
+
+document.addEventListener("click",event=>{
+    const paid=event.target.closest("#ivePaidButton");
+    if(paid){
+        event.preventDefault();
+        if(!paid.disabled){
+            openReceiptUploadModal();
+        }
+        return;
     }
 
-    if(mainCancel && mainCancel.dataset.bound!=="true"){
-        mainCancel.dataset.bound="true";
-        mainCancel.addEventListener("click",handleCancelPayment);
+    const topCancel=event.target.closest("#cancelPaymentTop");
+    if(topCancel){
+        event.preventDefault();
+        const mainCancel=document.getElementById("cancelPayment");
+        if(mainCancel && !mainCancel.disabled){
+            handleCancelPayment(event);
+        }
+        return;
     }
-}
+
+    const mainCancel=event.target.closest("#cancelPayment");
+    if(mainCancel){
+        event.preventDefault();
+        if(!mainCancel.disabled){
+            handleCancelPayment(event);
+        }
+    }
+});
 
 /* ============================================================
    RECEIPT INPUT
