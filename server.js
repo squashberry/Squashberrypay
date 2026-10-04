@@ -7090,7 +7090,8 @@ app.get(
                         services (
                             name,
                             slug,
-                            status
+                            status,
+                            merchant_id
                         ),
                         donation_campaigns (
                             name,
@@ -7808,7 +7809,7 @@ app.get(
                 methods = result.data || [];
                 methodsError = result.error;
             } else {
-                const result = await supabase.from("payment_methods").select("id,name,type,icon_path").eq("service_id",payment.service_id).eq("enabled",true).order("name");
+                const result = await supabase.from("payment_methods").select("id,name,type,icon_path,instructions,account_name,account_number,bank_name,phone_number").eq("service_id",payment.service_id).eq("enabled",true).order("name");
                 methods = result.data || [];
                 methodsError = result.error;
             }
@@ -8164,6 +8165,10 @@ app.post(
                     id,
                     processing_page_id,
                     service_id,
+                    customer_email,
+                    payment_reference,
+                    amount,
+                    currency,
                     status,
                     payment_deadline_at
                     `
