@@ -45,6 +45,7 @@
 </script>
 <link rel="icon" href="/Squashberrypay/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/Squashberrypay/favicon.svg">
+    <link rel="stylesheet" href="./layout-v3.css?v=20261004-22">
 </head>
 
 <body>
@@ -115,6 +116,40 @@
 
     </div>
 
+
+    <button
+        id="openHomeNav"
+        class="home-menu-button"
+        type="button"
+        aria-label="Open navigation"
+        aria-expanded="false"
+        aria-controls="homeMobileNav"
+    >
+        <span></span><span></span><span></span>
+    </button>
+
+    <div
+        id="homeMobileNav"
+        class="home-mobile-nav"
+        hidden
+    >
+        <button class="home-mobile-nav-backdrop" type="button" aria-label="Close navigation"></button>
+        <nav class="home-mobile-nav-sheet" aria-label="Mobile navigation">
+            <div class="home-mobile-nav-head">
+                <div>
+                    <small>MENU</small>
+                    <strong>SquashberryPay</strong>
+                </div>
+                <button id="closeHomeNav" type="button" aria-label="Close navigation">×</button>
+            </div>
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How it works</a>
+            <a href="#business">For businesses</a>
+            <a href="#faq">FAQ</a>
+            <a href="./signin.html" class="home-mobile-nav-login">Sign in</a>
+            <a href="./signup.html" class="button primary full">Get started</a>
+        </nav>
+    </div>
 </header>
 
 

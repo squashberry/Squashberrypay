@@ -1,0 +1,976 @@
+/* ============================================================
+   SQUASHBERRYPAY — RESPONSIVE SYSTEM V3
+   Final layout layer: solid surfaces, mobile-first hierarchy,
+   one consistent responsive language across public/auth/dashboard.
+============================================================ */
+
+:root{
+  --sb-ink:#111111;
+  --sb-muted:#70706b;
+  --sb-soft:#f5f5f2;
+  --sb-card:#ffffff;
+  --sb-line:#dfdfda;
+  --sb-line-strong:#cfcfc9;
+  --sb-radius:18px;
+  --sb-shadow:0 12px 34px rgba(0,0,0,.055);
+}
+
+html{
+  overflow-x:hidden;
+  scroll-behavior:smooth;
+}
+
+body{
+  overflow-x:hidden;
+}
+
+/* ---------- Shared header ---------- */
+
+.site-header,
+.merchant-header{
+  position:relative;
+  z-index:100;
+  width:min(1320px,calc(100% - 36px));
+  min-height:72px;
+  margin:0 auto;
+  border-bottom:1px solid var(--sb-line);
+  background:#fff !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  box-shadow:0 1px 0 rgba(0,0,0,.025);
+}
+
+.site-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+}
+
+.site-header .brand,
+.merchant-header .brand{
+  flex:0 0 auto;
+  min-width:0;
+}
+
+.site-header .header-actions,
+.merchant-header .merchant-header-right{
+  flex:0 0 auto;
+}
+
+/* ---------- Public homepage ---------- */
+
+body:has(#welcomeView){
+  background:#fff;
+  color:var(--sb-ink);
+}
+
+body:has(#welcomeView) .site-header{
+  position:sticky;
+  top:0;
+}
+
+body:has(#welcomeView) .desktop-nav{
+  display:flex;
+  align-items:center;
+  gap:28px;
+  margin-left:auto;
+  margin-right:8px;
+}
+
+body:has(#welcomeView) .desktop-nav a{
+  color:#666;
+  font-size:12px;
+  font-weight:750;
+  text-decoration:none;
+}
+
+body:has(#welcomeView) .desktop-nav a:hover{
+  color:#111;
+}
+
+body:has(#welcomeView) .hero{
+  min-height:calc(100svh - 72px);
+  padding:72px 0 96px;
+  align-items:center;
+}
+
+body:has(#welcomeView) .hero-copy{
+  max-width:720px;
+}
+
+body:has(#welcomeView) .hero-copy h1{
+  max-width:760px;
+  font-size:clamp(50px,6.8vw,88px);
+  line-height:.92;
+  letter-spacing:-.075em;
+}
+
+body:has(#welcomeView) .hero-copy p{
+  max-width:620px;
+  color:#64645f;
+  font-size:15px;
+  line-height:1.75;
+}
+
+body:has(#welcomeView) .hero-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:26px;
+}
+
+body:has(#welcomeView) .trust-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:28px;
+}
+
+body:has(#welcomeView) .payment-preview{
+  width:min(100%,480px);
+  margin-left:auto;
+  border-radius:24px;
+  box-shadow:0 22px 70px rgba(0,0,0,.12);
+}
+
+body:has(#welcomeView) .content-section{
+  padding-top:100px;
+  padding-bottom:100px;
+}
+
+body:has(#welcomeView) .feature-grid{
+  gap:12px;
+}
+
+body:has(#welcomeView) .feature-card{
+  min-height:210px;
+  border-radius:18px;
+}
+
+body:has(#welcomeView) .business-banner{
+  border-radius:24px;
+}
+
+.home-menu-button,
+.home-mobile-nav{
+  display:none;
+}
+
+/* Never let an accidental overlay blur the public homepage. */
+body:not(.home-nav-open):has(#welcomeView) .site-header,
+body:not(.home-nav-open):has(#welcomeView) .home-page,
+body:not(.home-nav-open):has(#welcomeView) .site-footer{
+  filter:none !important;
+  -webkit-filter:none !important;
+}
+
+/* ---------- Auth ---------- */
+
+body:has(.auth-page),
+body:has(.signup-page){
+  background:#f7f7f4;
+}
+
+body:has(.auth-page) .site-header,
+body:has(.signup-page) .site-header{
+  position:sticky;
+  top:0;
+}
+
+.auth-page,
+.signup-page{
+  width:min(1160px,calc(100% - 48px));
+  min-height:calc(100svh - 152px);
+  margin:0 auto;
+  padding:72px 0 80px;
+  align-items:center;
+}
+
+.auth-page{
+  display:grid;
+  grid-template-columns:minmax(0,.88fr) minmax(390px,520px);
+  gap:82px;
+}
+
+.signup-page{
+  display:grid;
+  grid-template-columns:minmax(0,.82fr) minmax(390px,520px);
+  gap:82px;
+}
+
+.auth-intro{
+  max-width:520px;
+}
+
+.auth-intro h1{
+  margin:16px 0 18px;
+  font-size:clamp(50px,5.4vw,76px);
+  line-height:.94;
+  letter-spacing:-.07em;
+}
+
+.auth-intro p{
+  max-width:520px;
+  color:#676762;
+  font-size:14px;
+  line-height:1.75;
+}
+
+.auth-card{
+  width:100%;
+  border:1px solid #deded8;
+  border-radius:24px;
+  background:#fff;
+  box-shadow:0 20px 60px rgba(0,0,0,.08);
+}
+
+.site-header .header-actions > span{
+  color:#74746f;
+}
+
+.site-header .header-actions .nav-login{
+  color:#111 !important;
+  display:inline-flex !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  align-items:center;
+  min-height:40px;
+  font-weight:850;
+}
+
+/* ---------- Merchant dashboard ---------- */
+
+body.merchant-page{
+  background:#f4f4f1 !important;
+  color:#111;
+  --dash-bg:#f4f4f1;
+  --dash-card:#fff;
+  --dash-text:#111;
+  --dash-muted:#777;
+  --dash-line:#dfdfda;
+}
+
+body.merchant-page .merchant-header{
+  width:100%;
+  padding:0 28px;
+  position:sticky;
+  top:0;
+  background:#fff !important;
+  box-shadow:0 1px 0 rgba(0,0,0,.05);
+}
+
+body.merchant-page .merchant-layout{
+  width:100%;
+  max-width:1480px;
+  margin:0 auto;
+  min-height:calc(100svh - 72px);
+  display:grid;
+  grid-template-columns:250px minmax(0,1fr);
+}
+
+body.merchant-page .merchant-sidebar{
+  position:sticky;
+  top:72px;
+  height:calc(100svh - 72px);
+  padding:18px 14px;
+  border-right:1px solid #deded9;
+  background:#f7f7f4 !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  overflow:auto;
+}
+
+body.merchant-page .merchant-main{
+  min-width:0;
+  padding:36px 38px 80px;
+}
+
+body.merchant-page .dashboard-welcome{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:24px;
+  margin-bottom:22px;
+}
+
+body.merchant-page .dashboard-welcome h1{
+  font-size:clamp(38px,4.1vw,60px);
+  line-height:.97;
+  letter-spacing:-.065em;
+}
+
+body.merchant-page .overview-actions{
+  display:flex;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+body.merchant-page .density-toggle{
+  min-height:40px;
+  padding:0 12px;
+  border:1px solid #d9d9d3;
+  border-radius:12px;
+  background:#fff;
+  color:#555;
+  font-size:11px;
+  font-weight:850;
+}
+
+body.merchant-page .money-grid{
+  display:grid;
+  grid-template-columns:1.35fr repeat(3,1fr);
+  gap:12px;
+  margin-top:16px;
+}
+
+body.merchant-page .money-card{
+  min-height:144px;
+  padding:22px;
+  border:1px solid #deded9;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:var(--sb-shadow);
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+
+body.merchant-page .money-card.featured{
+  background:#111;
+  border-color:#111;
+  color:#fff;
+  box-shadow:0 18px 46px rgba(0,0,0,.15);
+}
+
+body.merchant-page .money-card.featured small{
+  color:#aaa;
+}
+
+body.merchant-page .money-card:hover{
+  transform:translateY(-2px);
+  border-color:#cfcfc9;
+  box-shadow:0 18px 44px rgba(0,0,0,.08);
+}
+
+body.merchant-page .dashboard-two-col{
+  grid-template-columns:minmax(0,1.45fr) minmax(320px,.9fr);
+  gap:12px;
+  margin-top:12px;
+}
+
+body.merchant-page .dashboard-two-col.lower{
+  align-items:stretch;
+}
+
+body.merchant-page .panel{
+  border:1px solid #deded9;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 10px 30px rgba(0,0,0,.045);
+}
+
+body.merchant-page .panel-heading,
+body.merchant-page .section-title-row{
+  gap:14px;
+}
+
+body.merchant-page .table-card{
+  border-radius:18px;
+}
+
+body.merchant-page .side-link{
+  min-height:42px;
+  border-radius:12px;
+  font-weight:760;
+}
+
+body.merchant-page .side-link.active{
+  background:#111;
+  box-shadow:0 12px 28px rgba(0,0,0,.14);
+}
+
+body.merchant-page .workspace-tabs{
+  overflow:auto;
+  scrollbar-width:none;
+}
+
+body.merchant-page .workspace-tabs::-webkit-scrollbar{
+  display:none;
+}
+
+body.merchant-page .dashboard-skeleton{
+  border-radius:18px;
+}
+
+/* The old class was shared by a button and an overlay. Keep only the
+   button behavior here so it can never become a full-screen layer. */
+body.merchant-page .merchant-menu-button{
+  display:none;
+  position:relative;
+  inset:auto;
+}
+
+/* Existing sidebar becomes a true mobile drawer. */
+body.merchant-page .mobile-nav-scrim{
+  position:fixed;
+  inset:0;
+  z-index:5050;
+  background:rgba(0,0,0,.32);
+}
+
+body.merchant-page .merchant-sidebar.mobile-open{
+  display:block;
+  position:fixed;
+  z-index:5100;
+  left:0;
+  top:0;
+  bottom:0;
+  width:min(320px,86vw);
+  height:100dvh;
+  padding:84px 14px 24px;
+  background:#fff !important;
+  border-right:1px solid #deded9;
+  box-shadow:24px 0 60px rgba(0,0,0,.16);
+  transform:translateX(0);
+}
+
+body.merchant-page .merchant-mobile-bar{
+  display:none;
+}
+
+body.dashboard-compact .money-card{
+  min-height:116px;
+  padding:16px;
+}
+
+body.dashboard-compact .merchant-main{
+  padding-top:28px;
+}
+
+body.dashboard-compact .dashboard-two-col{
+  gap:9px;
+}
+
+body.dashboard-compact .panel{
+  padding:15px;
+}
+
+@media(max-width:1100px){
+  body:has(#welcomeView) .hero{
+    grid-template-columns:1fr 1fr;
+    gap:36px;
+  }
+
+  body.merchant-page .merchant-layout{
+    grid-template-columns:220px minmax(0,1fr);
+  }
+
+  body.merchant-page .merchant-main{
+    padding-left:24px;
+    padding-right:24px;
+  }
+
+  body.merchant-page .money-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  body.merchant-page .money-card.featured{
+    grid-column:1/-1;
+  }
+}
+
+@media(max-width:850px){
+  body:has(#welcomeView) .hero{
+    grid-template-columns:1fr;
+    min-height:auto;
+    padding-top:54px;
+  }
+
+  body:has(#welcomeView) .hero-visual{
+    justify-content:center;
+  }
+
+  body:has(.auth-page) .auth-page,
+  body:has(.signup-page) .signup-page{
+    grid-template-columns:1fr;
+    gap:24px;
+    max-width:620px;
+  }
+
+  body:has(.auth-page) .auth-intro,
+  body:has(.signup-page) .auth-intro{
+    text-align:center;
+    max-width:620px;
+  }
+
+  body:has(.auth-page) .auth-intro p,
+  body:has(.signup-page) .auth-intro p{
+    margin-left:auto;
+    margin-right:auto;
+  }
+
+  body.merchant-page .merchant-layout{
+    grid-template-columns:1fr;
+  }
+
+  body.merchant-page .merchant-sidebar{
+    display:none;
+  }
+
+  body.merchant-page .merchant-header .merchant-header-right{
+    gap:8px;
+  }
+
+  body.merchant-page .merchant-menu-button{
+    display:inline-grid !important;
+    place-items:center;
+    width:42px;
+    height:42px;
+  }
+
+  body.merchant-page .merchant-main{
+    padding-bottom:110px;
+  }
+
+  body.merchant-page .merchant-mobile-bar{
+    position:fixed;
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    left:10px;
+    right:10px;
+    bottom:10px;
+    z-index:5000;
+    height:68px;
+    padding:7px;
+    border:1px solid #dcdcd7;
+    border-radius:18px;
+    background:rgba(255,255,255,.98);
+    box-shadow:0 16px 40px rgba(0,0,0,.14);
+  }
+
+  body.merchant-page .merchant-mobile-bar button{
+    position:relative;
+    border:0;
+    border-radius:13px;
+    background:transparent;
+    color:#8a8a84;
+    display:grid;
+    place-items:center;
+    align-content:center;
+    gap:3px;
+    font:inherit;
+    cursor:pointer;
+  }
+
+  body.merchant-page .merchant-mobile-bar button span{
+    font-size:15px;
+    line-height:1;
+  }
+
+  body.merchant-page .merchant-mobile-bar button small{
+    font-size:9px;
+    font-weight:820;
+  }
+
+  body.merchant-page .merchant-mobile-bar button.active,
+  body.merchant-page .merchant-mobile-bar button:active{
+    color:#111;
+    background:#f0f0ec;
+  }
+
+  body.merchant-page .merchant-mobile-bar button em{
+    position:absolute;
+    right:14px;
+    top:7px;
+    min-width:14px;
+    height:14px;
+    padding:0 4px;
+    display:grid;
+    place-items:center;
+    border-radius:99px;
+    background:#111;
+    color:#fff;
+    font-size:8px;
+    font-style:normal;
+  }
+
+  body.merchant-page .dashboard-welcome{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  body.merchant-page .overview-actions{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+
+  body.merchant-page .overview-actions .density-toggle{
+    grid-column:1/-1;
+    width:100%;
+    justify-content:center;
+  }
+
+  body.merchant-page .dashboard-two-col{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:720px){
+  .site-header,
+  body.merchant-page .merchant-header{
+    width:100%;
+    min-height:64px;
+    padding-left:14px;
+    padding-right:14px;
+  }
+
+  body:has(#welcomeView) .site-header .header-actions .button.primary.small{
+    display:none;
+  }
+
+  body:has(#welcomeView) .desktop-nav{
+    display:none;
+  }
+
+  .home-menu-button{
+    display:inline-flex;
+    order:3;
+    width:42px;
+    height:42px;
+    margin-left:2px;
+    flex:0 0 42px;
+    border:1px solid #deded8;
+    border-radius:12px;
+    background:#fff;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:4px;
+    cursor:pointer;
+  }
+
+  .home-menu-button span{
+    width:16px;
+    height:2px;
+    border-radius:2px;
+    background:#111;
+  }
+
+  body:has(#welcomeView) .site-header .header-actions{
+    margin-left:auto;
+  }
+
+  body:has(#welcomeView) .site-header .header-actions .nav-login{
+    min-height:40px;
+    font-size:12px;
+  }
+
+  body:has(#welcomeView) .hero{
+    padding:44px 0 72px;
+  }
+
+  body:has(#welcomeView) .hero-copy h1{
+    font-size:clamp(44px,13vw,66px);
+    max-width:100%;
+  }
+
+  body:has(#welcomeView) .hero-copy p{
+    font-size:14px;
+    line-height:1.65;
+  }
+
+  body:has(#welcomeView) .hero-actions{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  body:has(#welcomeView) .hero-actions .button{
+    width:100%;
+  }
+
+  body:has(#welcomeView) .trust-row{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    padding-bottom:3px;
+    scrollbar-width:none;
+  }
+
+  body:has(#welcomeView) .trust-row::-webkit-scrollbar{
+    display:none;
+  }
+
+  body:has(#welcomeView) .payment-preview{
+    width:100%;
+    border-radius:20px;
+  }
+
+  body:has(#welcomeView) .content-section{
+    padding-top:68px;
+    padding-bottom:68px;
+  }
+
+  body:has(#welcomeView) .feature-grid{
+    grid-template-columns:1fr;
+  }
+
+  body:has(#welcomeView) .business-banner{
+    display:grid;
+    gap:22px;
+  }
+
+  body:has(#welcomeView) .link-columns{
+    grid-template-columns:1fr 1fr;
+    gap:28px;
+  }
+
+  .home-mobile-nav[hidden]{
+    display:none !important;
+  }
+
+  .home-mobile-nav{
+    position:fixed;
+    inset:0;
+    z-index:10000;
+    display:block;
+  }
+
+  .home-mobile-nav-backdrop{
+    position:absolute;
+    inset:0;
+    border:0;
+    background:rgba(0,0,0,.35);
+    cursor:pointer;
+  }
+
+  .home-mobile-nav-sheet{
+    position:absolute;
+    right:10px;
+    left:10px;
+    bottom:10px;
+    padding:10px 12px 14px;
+    border:1px solid #dcdcd7;
+    border-radius:22px;
+    background:#fff;
+    box-shadow:0 24px 70px rgba(0,0,0,.2);
+    display:grid;
+    gap:3px;
+  }
+
+  .home-mobile-nav-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 4px 14px;
+  }
+
+  .home-mobile-nav-head small{
+    display:block;
+    color:#9a9a95;
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.16em;
+  }
+
+  .home-mobile-nav-head strong{
+    display:block;
+    margin-top:3px;
+    font-size:13px;
+  }
+
+  .home-mobile-nav-head button{
+    width:36px;
+    height:36px;
+    border:0;
+    border-radius:50%;
+    background:#f0f0ec;
+    font-size:22px;
+    cursor:pointer;
+  }
+
+  .home-mobile-nav-sheet > a:not(.button){
+    display:flex;
+    align-items:center;
+    min-height:48px;
+    padding:0 12px;
+    border-radius:11px;
+    color:#222;
+    text-decoration:none;
+    font-size:13px;
+    font-weight:780;
+  }
+
+  .home-mobile-nav-sheet > a:not(.button):hover{
+    background:#f3f3f0;
+  }
+
+  .home-mobile-nav-login{
+    margin-top:5px;
+    color:#111 !important;
+    background:#f3f3f0;
+    justify-content:center;
+  }
+
+  .home-mobile-nav-sheet .button{
+    margin-top:5px;
+  }
+
+  /* Auth pages: no giant desktop story above the form on phones. */
+  body:has(.auth-page) .auth-intro,
+  body:has(.signup-page) .auth-intro{
+    display:none;
+  }
+
+  body:has(.auth-page) .auth-page,
+  body:has(.signup-page) .signup-page{
+    width:min(100%,560px);
+    min-height:auto;
+    padding:30px 14px 54px;
+    display:block;
+  }
+
+  body:has(.auth-page) .auth-card,
+  body:has(.signup-page) .auth-card{
+    max-width:none;
+    border-radius:20px;
+    box-shadow:0 14px 40px rgba(0,0,0,.07);
+  }
+
+  body:has(.auth-page) .site-header .header-actions,
+  body:has(.signup-page) .site-header .header-actions{
+    display:flex !important;
+    flex:0 0 auto !important;
+    align-items:center;
+    gap:7px;
+    min-width:max-content !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    position:relative !important;
+    z-index:5;
+  }
+
+  body:has(.auth-page) .site-header .header-actions > span,
+  body:has(.signup-page) .site-header .header-actions > span{
+    display:none;
+  }
+
+  body:has(.auth-page) .site-header .header-actions .nav-login,
+  body:has(.signup-page) .site-header .header-actions .nav-login{
+    display:inline-flex !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    color:#111 !important;
+    min-height:40px;
+    padding:0 10px;
+    border:1px solid #dcdcd7;
+    border-radius:10px;
+    background:#fff;
+  }
+
+  body:has(.auth-page) .site-header .brand,
+  body:has(.signup-page) .site-header .brand{
+    min-width:0;
+    flex:1 1 auto;
+  }
+
+  body:has(.auth-page) .site-header .brand > span:last-child,
+  body:has(.signup-page) .site-header .brand > span:last-child{
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .auth-card{
+    overflow:hidden;
+  }
+
+  body.merchant-page .merchant-header{
+    min-height:64px;
+  }
+
+  body.merchant-page .merchant-header-right{
+    min-width:0;
+  }
+
+  body.merchant-page .merchant-header-right #merchantName,
+  body.merchant-page .merchant-header-right #signOut{
+    display:none;
+  }
+
+  body.merchant-page .merchant-main{
+    padding:22px 14px 108px;
+  }
+
+  body.merchant-page .money-grid{
+    grid-template-columns:1fr 1fr;
+    gap:9px;
+  }
+
+  body.merchant-page .money-card{
+    min-height:122px;
+    padding:16px;
+    border-radius:15px;
+  }
+
+  body.merchant-page .money-card.featured{
+    grid-column:1/-1;
+  }
+
+  body.merchant-page .dashboard-welcome h1{
+    font-size:clamp(34px,11vw,46px);
+  }
+
+  body.merchant-page .overview-actions{
+    grid-template-columns:1fr;
+  }
+
+  body.merchant-page .overview-actions .density-toggle{
+    grid-column:auto;
+  }
+
+  body.merchant-page .panel{
+    border-radius:16px;
+  }
+
+  body.merchant-page .section-title-row{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  body.merchant-page .section-title-row .button{
+    width:100%;
+  }
+
+  body.merchant-page .toolbar{
+    flex-wrap:wrap;
+  }
+}
+
+@media(max-width:430px){
+  body:has(.auth-page) .auth-card,
+  body:has(.signup-page) .auth-card{
+    border-radius:16px;
+  }
+
+  body.merchant-page .money-grid{
+    grid-template-columns:1fr;
+  }
+
+  body.merchant-page .money-card.featured{
+    grid-column:auto;
+  }
+
+  body:has(#welcomeView) .link-columns{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .home-mobile-nav-sheet,
+  .merchant-mobile-bar,
+  .money-card,
+  .panel{
+    animation:none !important;
+    transition:none !important;
+  }
+}

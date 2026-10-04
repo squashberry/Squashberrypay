@@ -7,6 +7,7 @@
 <meta name="description" content="Manage SquashberryPay applications, products, payment links, donations and payment methods.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="stylesheet" href="./styles.css?v=20261004-21">
+<link rel="stylesheet" href="./layout-v3.css?v=20261004-22">
 <link rel="stylesheet" href="./merchant.css?v=20261004-21">
 <link rel="stylesheet" href="./ui-overhaul.css?v=20261004-21">
 <link rel="stylesheet" href="./state-flow.css?v=20261004-21">
@@ -35,7 +36,7 @@
 <header class="merchant-header">
   <a href="./" class="brand"><span class="brand-mark">S</span><span>SquashberryPay</span></a>
   <div class="merchant-header-right">
-    <button class="icon-button mobile-menu" id="openMobileNav" aria-label="Open dashboard navigation">☰</button>
+    <button class="icon-button merchant-menu-button" id="openMobileNav" aria-label="Open dashboard navigation">☰</button>
     <button class="notification-button" id="openNotifications" aria-label="Notifications"><span>♢</span><i id="notificationDot" hidden></i></button>
     <span id="merchantName">Loading account…</span>
     <button id="signOut" class="text-button">Sign out</button>
@@ -102,7 +103,7 @@
       </div>
       <div class="dashboard-welcome">
         <div><span class="eyebrow">OVERVIEW</span><h1>Good morning, <span id="overviewName">Loading account…</span></h1><p>Here's what’s happening across your SquashberryPay business.</p></div>
-        <div class="overview-actions"><button class="button secondary small" data-section-jump="payments">View payments</button><button class="button primary small magnetic" data-section-jump="payment-links">Create payment link</button><button id="toggleDashboardDensity" class="density-toggle" type="button" aria-pressed="false"><span class="density-icon">◒</span><span>Compact</span></button></div>
+        <div class="overview-actions"><button class="button secondary small" data-section-jump="payments">View payments</button><button class="button primary small magnetic" data-section-jump="payment-links">Create payment link</button><button id="toggleDashboardDensity" class="density-toggle" type="button" aria-pressed="false"><span class="density-icon">◒</span><span>Density · Comfortable</span></button></div>
       </div>
       <div class="range-bar"><div><button class="range active" data-range="7">7 days</button><button class="range" data-range="30">30 days</button><button class="range" data-range="90">90 days</button></div><span class="dashboard-live-status"><i></i><span id="lastUpdated">Updating…</span></span></div>
       <div class="money-grid">
@@ -323,6 +324,14 @@
   </main>
 </div>
 
+
+  <nav class="merchant-mobile-bar" aria-label="Dashboard shortcuts">
+    <button type="button" data-mobile-section="overview" data-section="overview"><span>⌂</span><small>Home</small></button>
+    <button type="button" data-mobile-section="payment-requests" data-section="payment-requests"><span>✓</span><small>Verify</small><em id="mobileVerificationCount">0</em></button>
+    <button type="button" data-mobile-section="payments" data-section="payments"><span>↗</span><small>Payments</small></button>
+    <button type="button" data-mobile-section="payment-links" data-section="payment-links"><span>▣</span><small>Links</small></button>
+    <button type="button" id="mobileMoreNav"><span>☰</span><small>More</small></button>
+  </nav>
 <div class="mobile-nav-scrim" id="mobileNavScrim" hidden></div>
 <div class="notification-drawer" id="notificationDrawer" hidden><div class="drawer-head"><strong>Notifications</strong><button id="closeNotifications">&times;</button></div><div class="drawer-empty"><span>♢</span><h3>You’re all caught up</h3><p>Important account activity will appear here.</p></div></div>
 <div class="payment-drawer" id="paymentDrawer" hidden><div class="drawer-head"><strong>Payment details</strong><button id="closePaymentDrawer">&times;</button></div><div id="paymentDrawerBody"></div></div>
