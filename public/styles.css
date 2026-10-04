@@ -3163,3 +3163,8 @@ html.customer-payment-page .site-header .brand{
 #backToMethods{display:inline-flex!important;align-items:center;gap:7px;margin:0 0 18px;padding:8px 12px;border:1px solid #deded9;border-radius:10px;background:#fafaf7;color:#555;font-size:11px;font-weight:800;cursor:pointer;text-decoration:none;transition:.16s ease}
 #backToMethods:hover{background:#f0f0ec;color:#111;border-color:#cfcfc9;transform:translateX(-1px)}
 #backToMethods:active{transform:scale(.98)}
+
+
+/* Customer payment support + receipt state */
+.payment-contact-action{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;margin:14px 0;padding:13px 15px;border:1px solid #e3e3de;border-radius:14px;background:#fafaf7;color:#111;cursor:pointer;text-align:left}.payment-contact-action span{color:#777;font-size:11px}.payment-contact-action strong{font-size:12px}
+.payment-contact-modal{position:fixed;inset:0;z-index:10080;display:grid;place-items:center;padding:18px}.payment-contact-backdrop{position:absolute;inset:0;background:rgba(10,10,10,.46);backdrop-filter:blur(8px)}.payment-contact-card{position:relative;z-index:1;width:min(440px,100%);padding:26px;border:1px solid #e1e1dc;border-radius:22px;background:#fff;box-shadow:0 30px 90px rgba(0,0,0,.2)}.payment-contact-card h2{margin:8px 0 10px}.payment-contact-card p{color:#666;line-height:1.6;font-size:12px}.payment-contact-empty{padding:14px;border:1px solid #e5e5df;border-radius:12px;color:#777;font-size:12px}.payment-contact-card .button{display:flex;margin-top:10px;text-decoration:none;align-items:center;justify-content:center}.receipt-stage-heading{margin:16px 0 8px;color:#666;font-size:12px;line-height:1.5}.payment-paid-button{margin-top:16px!important}
