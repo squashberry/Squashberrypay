@@ -3150,3 +3150,10 @@ html.customer-payment-page .site-header .brand{
 @media(prefers-reduced-motion:reduce){
   .payment-support-banner{animation:none!important}
 }
+
+
+/* Payment method brand sizing: never crop provider logos */
+.method-brand-wrap{width:76px!important;height:76px!important;display:grid!important;place-items:center!important;border-radius:20px!important;background:#fff!important;border:1px solid #e5e5df!important;overflow:hidden!important}
+.method-brand-image{display:block!important;width:68px!important;height:56px!important;max-width:68px!important;max-height:56px!important;object-fit:contain!important;object-position:center!important;padding:5px!important}
+.method-brand-fallback{width:56px!important;height:56px!important;display:grid!important;place-items:center!important;font-size:22px!important;font-weight:900!important}
+.method-brand-dalasi{width:56px!important;height:56px!important;display:grid!important;place-items:center!important;border-radius:50%!important;background:#111!important;color:#fff!important;font-size:24px!important;font-weight:900!important}
