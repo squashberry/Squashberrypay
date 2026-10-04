@@ -270,3 +270,48 @@ body{background:var(--dash-bg);color:var(--dash-text)}
 @media(max-width:1050px){.dashboard-skeleton-metrics{grid-template-columns:repeat(2,1fr)}.dashboard-skeleton-panels{grid-template-columns:1fr}}
 @media(max-width:720px){.dashboard-skeleton-welcome{display:grid;gap:18px}.dashboard-skeleton-copy{min-width:0}.dashboard-skeleton-actions{display:grid;grid-template-columns:1fr 1fr}.skeleton-box{width:auto}.skeleton-title{width:88%;height:38px}.skeleton-subtitle{width:78%}.dashboard-skeleton-metrics{grid-template-columns:1fr 1fr}.skeleton-card{height:112px}.dashboard-skeleton-panels{grid-template-columns:1fr}.skeleton-panel{height:250px}}
 @media(max-width:420px){.dashboard-skeleton-metrics{grid-template-columns:1fr}.dashboard-skeleton-range{align-items:flex-start;gap:10px;flex-direction:column}}
+
+
+/* Product architecture polish */
+.section-title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;margin-bottom:22px}
+.section-title-row>div{min-width:0}
+.section-title-row>.button{flex:0 0 auto;white-space:nowrap}
+.section-title-row h2{margin:7px 0 7px}
+.section-title-row p{margin:0;color:#777;line-height:1.55;font-size:12px}
+.form-grid{display:grid;gap:14px}.form-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.form-grid.two>label{min-width:0}
+.form-grid.two+.form-actions{margin-top:2px}
+.checkbox-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding-top:2px}
+.checkbox-line{display:flex!important;align-items:center;grid-template-columns:none!important;gap:8px!important;padding:11px 12px;border:1px solid #e1e1dc;border-radius:11px;background:#fafaf8;font-weight:700!important}
+.checkbox-line input{width:auto!important;height:auto!important;accent-color:#111}
+.link-card,.product-card,.method-card,.app-card,.donation-card,.subscription-card,.customer-card{transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+.link-card:hover,.product-card:hover,.method-card:hover,.app-card:hover,.donation-card:hover,.subscription-card:hover,.customer-card:hover{transform:translateY(-2px);border-color:#c8c8c3!important;box-shadow:0 18px 42px rgba(0,0,0,.075)!important}
+.link-card,.product-card,.method-card,.app-card,.donation-card,.subscription-card{animation:merchantItemIn .34s cubic-bezier(.2,.8,.2,1) both}
+.link-card:nth-child(2),.product-card:nth-child(2),.method-card:nth-child(2),.app-card:nth-child(2),.donation-card:nth-child(2),.subscription-card:nth-child(2){animation-delay:.04s}
+.link-card:nth-child(3),.product-card:nth-child(3),.method-card:nth-child(3),.app-card:nth-child(3),.donation-card:nth-child(3),.subscription-card:nth-child(3){animation-delay:.08s}
+.link-card:nth-child(4),.product-card:nth-child(4),.method-card:nth-child(4),.app-card:nth-child(4),.donation-card:nth-child(4),.subscription-card:nth-child(4){animation-delay:.12s}
+@keyframes merchantItemIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.merchant-section:not([hidden]){animation:merchantSectionIn .24s ease both}
+@keyframes merchantSectionIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.card-actions{align-items:center;flex-wrap:wrap;gap:7px;margin-top:14px}
+.small-action{transition:transform .16s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease}
+.small-action:hover{background:#f4f4f1;border-color:#c8c8c3;transform:translateY(-1px)}
+.small-action:active{transform:scale(.98)}
+.small-action.danger{color:#a32c25;background:#fffafa}.small-action.danger:hover{background:#fff2f1;border-color:#d9aaa5}
+.link-card .link-url{margin-top:12px}
+.link-card,.product-card,.method-card,.donation-card{display:flex;flex-direction:column}
+.link-card .card-actions,.product-card .card-actions,.method-card .card-actions,.donation-card .card-actions{margin-top:auto;padding-top:14px}
+.merchant-dialog-card{width:min(500px,100%)!important}
+.merchant-dialog-card .merchant-modal-icon.danger{background:#fff0ee;color:#a32c25}
+.merchant-dialog-card .merchant-modal-actions .danger-action{background:#111;color:#fff;border-color:#111}
+.dialog-input-label{display:grid;gap:7px;margin-top:18px;color:#555;font-size:11px;font-weight:800}
+.dialog-input-label textarea{width:100%;min-height:100px;border:1px solid #d4d4cf;border-radius:13px;padding:12px 13px;background:#fafaf8;color:#111;font:inherit;resize:vertical;outline:none;transition:border-color .18s,box-shadow .18s,background .18s}
+.dialog-input-label textarea:focus{border-color:#111;background:#fff;box-shadow:0 0 0 4px rgba(0,0,0,.055)}
+.merchant-dialog .merchant-modal-backdrop{animation:dialogBackdropIn .2s ease both}
+@keyframes dialogBackdropIn{from{opacity:0}to{opacity:1}}
+.merchant-form{transition:border-color .18s,box-shadow .18s}
+.merchant-form.workspace-form-active{box-shadow:0 18px 48px rgba(0,0,0,.06)}
+.workspace-form-head .text-button{padding:8px 10px;border:1px solid #ddd;border-radius:9px;background:#fff;color:#555;font-weight:800;transition:.16s}
+.workspace-form-head .text-button:hover{background:#f2f2ef;color:#111;border-color:#c9c9c4}
+@media(max-width:760px){.section-title-row{align-items:stretch;flex-direction:column;gap:14px}.section-title-row>.button{width:100%}.form-grid.two,.checkbox-grid{grid-template-columns:1fr}.card-actions{width:100%}.small-action{flex:1 1 auto;min-width:92px}}
+@media(prefers-reduced-motion:reduce){.link-card,.product-card,.method-card,.app-card,.donation-card,.subscription-card,.merchant-section{animation:none!important}.link-card:hover,.product-card:hover,.method-card:hover,.app-card:hover,.donation-card:hover,.subscription-card:hover{transform:none!important}}
