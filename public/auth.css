@@ -2122,3 +2122,43 @@
         font-size: 16px;
     }
 }
+
+
+/* ============================================================
+   MOBILE AUTH HEADER — KEEP SIGN IN VISIBLE
+============================================================ */
+@media (max-width:620px) {
+  .site-header .header-actions {
+    flex:0 0 auto;
+    gap:8px;
+    white-space:nowrap;
+  }
+
+  .site-header .header-actions > span {
+    font-size:10px;
+    color:#777;
+  }
+
+  .site-header .header-actions .nav-login {
+    display:inline-flex !important;
+    align-items:center;
+    min-height:38px;
+    padding:0 2px;
+    font-size:12px;
+    font-weight:800;
+  }
+}
+
+@media (max-width:390px) {
+  .site-header .header-actions > span {
+    display:none;
+  }
+
+  .site-header .header-actions {
+    gap:6px;
+  }
+
+  .site-header .header-actions .nav-login {
+    min-height:36px;
+  }
+}
