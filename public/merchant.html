@@ -6,11 +6,11 @@
 <title>SquashberryPay Dashboard</title>
 <meta name="description" content="Manage SquashberryPay applications, products, payment links, donations and payment methods.">
 <meta name="robots" content="noindex,nofollow">
-<link rel="stylesheet" href="./styles.css?v=20261004-21">
-<link rel="stylesheet" href="./merchant.css?v=20261004-21">
-<link rel="stylesheet" href="./layout-v3.css?v=20261004-23">
-<link rel="stylesheet" href="./ui-overhaul.css?v=20261004-21">
-<link rel="stylesheet" href="./state-flow.css?v=20261004-21">
+<link rel="stylesheet" href="./styles.css?v=20261004-27">
+<link rel="stylesheet" href="./merchant.css?v=20261004-27">
+<link rel="stylesheet" href="./layout-v3.css?v=20261004-27">
+<link rel="stylesheet" href="./ui-overhaul.css?v=20261004-27">
+<link rel="stylesheet" href="./state-flow.css?v=20261004-27">
 <meta name="site-base" content="/Squashberrypay/">
 <link rel="icon" href="/Squashberrypay/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/Squashberrypay/favicon.svg">
@@ -325,18 +325,14 @@
 </div>
 
 
-  <nav class="merchant-mobile-bar" aria-label="Dashboard shortcuts">
-    <button type="button" data-mobile-section="overview" data-section="overview"><span>⌂</span><small>Home</small></button>
-    <button type="button" data-mobile-section="payment-requests" data-section="payment-requests"><span>✓</span><small>Verify</small><em id="mobileVerificationCount">0</em></button>
-    <button type="button" data-mobile-section="payments" data-section="payments"><span>↗</span><small>Payments</small></button>
-    <button type="button" data-mobile-section="payment-links" data-section="payment-links"><span>▣</span><small>Links</small></button>
-    <button type="button" id="mobileMoreNav"><span>☰</span><small>More</small></button>
+  <nav class="merchant-mobile-bar" aria-label="Dashboard actions">
+    <button type="button" id="mobileMoreNav" aria-label="Open dashboard actions"><span>☰</span></button>
   </nav>
 <div class="mobile-nav-scrim" id="mobileNavScrim" hidden></div>
 <div class="notification-drawer" id="notificationDrawer" hidden><div class="drawer-head"><strong>Notifications</strong><button id="closeNotifications">&times;</button></div><div class="drawer-empty"><span>♢</span><h3>You’re all caught up</h3><p>Important account activity will appear here.</p></div></div>
 <div class="payment-drawer" id="paymentDrawer" hidden><div class="drawer-head"><strong>Payment details</strong><button id="closePaymentDrawer">&times;</button></div><div id="paymentDrawerBody"></div></div>
 
-<script src="./merchant.js?v=20261004-10"></script>
+<script src="./merchant.js?v=20261004-27"></script>
 <script src="/Squashberrypay/offline.js" defer></script>
 </body>
 </html>
