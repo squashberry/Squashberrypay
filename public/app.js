@@ -752,34 +752,34 @@ function renderMethods() {
                 `${index * 45}ms`;
 
 
-            const type = String(method.type || "").toLowerCase();
+            const rawMethodType = String(method.type || "").toLowerCase();
+            const rawMethodName = String(method.name || "").toLowerCase();
+            const methodKey = rawMethodType === "bank" || rawMethodName.includes("bank")
+                ? "bank"
+                : rawMethodType === "wave" || rawMethodName.includes("wave")
+                    ? "wave"
+                    : rawMethodType === "afrimoney" || rawMethodName.includes("afrimoney")
+                        ? "afrimoney"
+                        : rawMethodType;
 
-            const description =
-                type === "wave"
-                    ? "Mobile payment"
-                    : type === "aps"
-                        ? "Mobile payment"
-                        : type === "nada"
-                            ? "Mobile payment"
-                            : type === "afrimoney"
-                                ? "Mobile payment"
-                                : "Bank transfer";
+            const isMobileMoney = ["wave","afrimoney","aps","nada"].includes(methodKey);
+            const description = isMobileMoney ? "Mobile payment" : "Bank transfer";
 
             const logoUrls = {
                 wave: "https://infas.ciconcours.com/images/wave-mobile-money.jpg",
                 afrimoney: "https://pbs.twimg.com/profile_images/1834585432111136768/KdqVOYmu_400x400.jpg"
             };
 
-            const logoUrl = logoUrls[type] || "";
+            const logoUrl = logoUrls[methodKey] || "";
 
             const fallbackLetter =
-                type === "wave" ? "W" :
-                type === "aps" ? "A" :
-                type === "nada" ? "N" :
-                type === "afrimoney" ? "A" :
+                methodKey === "wave" ? "W" :
+                methodKey === "aps" ? "A" :
+                methodKey === "nada" ? "N" :
+                methodKey === "afrimoney" ? "A" :
                 "D";
 
-            const fallbackMarkup = type === "bank"
+            const fallbackMarkup = methodKey === "bank"
                 ? '<span class="method-brand-dalasi" aria-hidden="true">D</span>'
                 : escapeHtml(fallbackLetter);
 
@@ -789,7 +789,7 @@ function renderMethods() {
                         <span class="method-brand-wrap">
                             ${logoUrl
                                 ? `<img class="method-brand-image" data-method-logo src="${logoUrl}" alt="" loading="lazy" referrerpolicy="no-referrer">`
-                                : `<span class="method-brand-fallback" data-type="${escapeHtml(type)}" aria-hidden="true">${fallbackMarkup}</span>`}
+                                : `<span class="method-brand-fallback" data-type="${escapeHtml(methodKey)}" aria-hidden="true">${fallbackMarkup}</span>`}
                         </span>
 
                         <span>
@@ -812,7 +812,7 @@ function renderMethods() {
             methodLogo?.addEventListener("error",()=>{
                 const wrap=methodLogo.parentElement;
                 if(!wrap)return;
-                wrap.innerHTML='<span class="method-brand-fallback" data-type="'+escapeHtml(type)+'" aria-hidden="true">'+fallbackMarkup+"</span>";
+                wrap.innerHTML='<span class="method-brand-fallback" data-type="'+escapeHtml(methodKey)+'" aria-hidden="true">'+fallbackMarkup+"</span>";
             });
 
             button.addEventListener(
