@@ -10931,7 +10931,7 @@ async function sendPaymentCodeEmail({
       escapeHtml(code) +
       "</div></div>" +
       "<p style=\"color:#666;line-height:1.6\">Enter this code in the application where you started the payment.</p>" +
-      "<p style=\"color:#999;font-size:12px\">This code is tied to this payment, expires shortly, and can only be used once.</p>" +
+      "<p style=\"color:#999;font-size:12px\">This code is tied to this payment, expires in 6 months, and can only be used once.</p>" +
       "</div></div>"
   });
 }
