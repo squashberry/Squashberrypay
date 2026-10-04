@@ -1026,7 +1026,7 @@
                         class="attempt-box"
                     >
 
-                        <div class="attempt-timer-row"><div class="attempt-timer-copy"><span>PAYMENT TIME REMAINING</span><strong id="paymentAttemptTimer">20:00</strong></div><button id="cancelPaymentTop" class="payment-top-cancel" type="button">Cancel</button></div>
+                        <div class="attempt-timer-row"><div class="attempt-timer-copy"><span>PAYMENT TIME REMAINING</span><strong id="paymentAttemptTimer">20:00</strong></div><button id="cancelPaymentTop" class="payment-top-cancel" type="button" onclick="handleCancelPayment(event); return false;">Cancel</button></div>
 
 
                         <p>
@@ -1044,8 +1044,8 @@
 
 
                     <div class="payment-actions payment-fixed-actions">
-                        <button id="ivePaidButton" class="button primary full payment-paid-button" type="button">I’ve paid — upload receipt</button>
-                        <button id="cancelPayment" class="button secondary full" type="button">Cancel and return</button>
+                        <button id="ivePaidButton" class="button primary full payment-paid-button" type="button" onclick="openReceiptUploadModal(); return false;">I’ve paid — upload receipt</button>
+                        <button id="cancelPayment" class="button secondary full" type="button" onclick="handleCancelPayment(event); return false;">Cancel and return</button>
                     </div>                </div>
 
 
@@ -1154,7 +1154,7 @@
 
 
 <script
-    src="./app.js?v=20261004-32"
+    src="./app.js?v=20261004-33"
 ></script>
 
 <script src="/Squashberrypay/offline.js" defer></script>
