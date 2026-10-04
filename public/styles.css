@@ -3656,3 +3656,39 @@ html.customer-payment-page .checkout-summary{
     scroll-behavior:auto!important;
   }
 }
+
+
+/* Receipt upload modal */
+.receipt-upload-modal{position:fixed;inset:0;z-index:10090;display:grid;place-items:center;padding:18px}
+.receipt-upload-backdrop{position:absolute;inset:0;background:rgba(10,10,10,.48)}
+.receipt-upload-card{position:relative;width:min(560px,100%);max-height:min(88dvh,760px);overflow:auto;padding:24px;border:1px solid #deded8;border-radius:24px;background:#fff;box-shadow:0 32px 100px rgba(0,0,0,.25);animation:receiptModalIn .24s cubic-bezier(.16,1,.3,1)}
+.receipt-upload-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding-bottom:18px;border-bottom:1px solid #ecece7}
+.receipt-upload-head h2{margin:7px 0 7px;font-size:25px;letter-spacing:-.04em}
+.receipt-upload-head p{margin:0;color:#777;font-size:12px;line-height:1.55}
+.receipt-upload-close{width:36px;height:36px;flex:0 0 36px;border:1px solid #deded8;border-radius:11px;background:#f7f7f4;color:#111;font-size:22px;line-height:1;cursor:pointer}
+.receipt-upload-body{padding:18px 0 4px}
+.receipt-upload-body .receipt-box{display:grid!important;margin:0!important;min-height:150px}
+.receipt-upload-body .selected-file{margin:12px 0 0}
+.receipt-upload-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px;padding-top:15px;border-top:1px solid #ecece7}
+.receipt-upload-actions .button{margin:0;min-height:48px}
+.receipt-upload-submit{width:100%!important}
+.receipt-preview{display:grid;grid-template-columns:92px minmax(0,1fr);align-items:center;gap:12px;padding:10px;border:1px solid #deded8;border-radius:14px;background:#fafaf7}
+.receipt-preview img{width:92px;height:72px;object-fit:cover;border-radius:10px;border:1px solid #e2e2dc}
+.receipt-preview-meta{display:grid;gap:4px;min-width:0}
+.receipt-preview-meta strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.receipt-preview-meta span{color:#777;font-size:10px}
+.receipt-upload-success{text-align:center;padding:10px 0 4px}
+.receipt-success-check{width:58px;height:58px;margin:0 auto 14px;border-radius:18px;display:grid;place-items:center;background:#111;color:#fff;font-size:27px;font-weight:900;animation:receiptCheckIn .5s cubic-bezier(.16,1,.3,1)}
+.receipt-upload-success h3{margin:8px 0 7px;font-size:24px;letter-spacing:-.04em}
+.receipt-upload-success p{margin:0 auto 16px;max-width:390px;color:#777;font-size:12px;line-height:1.6}
+.receipt-upload-preview{padding:8px;border:1px solid #deded8;border-radius:17px;background:#fafaf7}
+.receipt-upload-preview img{display:block;width:100%;max-height:360px;object-fit:contain;border-radius:11px;background:#f1f1ed}
+@keyframes receiptModalIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes receiptCheckIn{from{opacity:0;transform:scale(.6) rotate(-8deg)}to{opacity:1;transform:none}}
+@media(max-width:600px){
+ .receipt-upload-modal{align-items:end;padding:0}
+ .receipt-upload-card{width:100%;max-height:92dvh;border-radius:25px 25px 0 0;padding:20px 16px calc(16px + env(safe-area-inset-bottom))}
+ .receipt-upload-actions{grid-template-columns:1fr}
+ .receipt-upload-head h2{font-size:22px}
+}
+@media(prefers-reduced-motion:reduce){.receipt-upload-card,.receipt-success-check{animation:none!important}}
