@@ -626,8 +626,10 @@ function renderCheckout() {
         otherAmountButton.hidden=!state.isDonation || !product.allow_custom_amount || donationEnded.hidden===false;
     }
     if(overviewContinue){
-        overviewContinue.hidden=!isMobileSheet() && state.isDonation;
-        overviewContinue.textContent=product.payment_type==="donate"?(link.button_label||"Continue"):(link.button_label||"Continue to payment");
+        // Donation checkout has its own amount-selection CTA.
+        // Do not render a second "Donate" action beneath the campaign.
+        overviewContinue.hidden=state.isDonation || !isMobileSheet();
+        overviewContinue.textContent=product.payment_type==="donate"?"":(link.button_label||"Continue to payment");
     }
     const donation=link.donation||{enabled:false};
 
