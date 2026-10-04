@@ -1903,6 +1903,7 @@ function startPolling() {
                 if (
                     [
                         "completed",
+                        "rejected",
                         "cancelled",
                         "expired"
                     ].includes(
@@ -1976,7 +1977,8 @@ function startPolling() {
                                 [
                                     "awaiting_verification",
                                     "approved",
-                                    "completed"
+                                    "completed",
+                                    "rejected"
                                 ].includes(
                                     data.payment.status
                                 )
@@ -1985,11 +1987,12 @@ function startPolling() {
                                 showVerification();
 
                                 notify(
-                                    data.payment.status ===
-                                        "approved"
-                                        ? "Payment approved."
-                                        : "Payment status updated.",
-                                    "success"
+                                    data.payment.status === "rejected"
+                                        ? (String(data.payment.payment_type||"").toLowerCase()==="donate" ? "Donation rejected." : "Payment rejected.")
+                                        : data.payment.status === "approved"
+                                            ? "Payment approved."
+                                            : "Payment status updated.",
+                                    data.payment.status === "rejected" ? "error" : "success"
                                 );
 
                             } else if (
