@@ -7,7 +7,7 @@ const normalizePublicUrl=u=>{try{const x=new URL(String(u||""),SITE_ORIGIN);if(x
 const authUrl=(p="")=>SITE_ORIGIN+SITE_BASE+"/signin/index.html"+(String(p||"").startsWith("?")?String(p):String(p||""));
 const token=sessionStorage.getItem("sbp_access_token");
 if(!token)location.replace(authUrl("?reason=session_expired"));
-const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));let merchant=(()=>{try{return JSON.parse(sessionStorage.getItem("sbp_merchant")||"null")}catch{return null}})(),dashboard=null,apps=[],range=7;
+const $=s=>document.querySelector(s),$=s=>Array.from(document.querySelectorAll(s));let merchant=(()=>{try{return JSON.parse(sessionStorage.getItem("sbp_merchant")||"null")}catch{return null}})(),dashboard=null,apps=[],range=7;let linkAnalytics={totals:{clicks:0,unique_visitors:0,payment_starts:0,completed_payments:0,revenue:0,conversion_rate:0},links:[]};
 const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/\x27/g,"&#039;");
 function setDashboardLoading(loading){
     const section=$("#section-overview");
@@ -46,7 +46,7 @@ async function askReason(title,message,placeholder="Reason for rejection"){retur
 function loadBtn(b,t){if(!b)return;if(!b.dataset.old)b.dataset.old=b.innerHTML;b.disabled=true;b.innerHTML="<span class=\"spinner dark\"></span>"+esc(t)}function resetBtn(b){if(!b)return;b.disabled=false;if(b.dataset.old)b.innerHTML=b.dataset.old}
 async function api(u,o){const r=await fetch(apiBase+u,Object.assign({},o||{},{headers:Object.assign({},o?.headers||{},{Authorization:"Bearer "+token,"Content-Type":"application/json"})}));let d={};try{d=await r.json()}catch{}if(!r.ok){if(r.status===401){sessionStorage.removeItem("sbp_access_token");sessionStorage.removeItem("sbp_refresh_token");sessionStorage.removeItem("sbp_expires_at");location.replace(authUrl("?reason=session_expired"));return}throw Error(d.error||"Request failed.")}return d}
 const sections=["overview","applications","payment-requests","payments","customers","balances","payment-links","products","methods","subscriptions","donations","analytics","apps","developers","settings","integration"];
-function show(n){if(!sections.includes(n))n="overview";sections.forEach(s=>{const e=$("#section-"+s);if(e)e.hidden=s!==n});$$(".side-link").forEach(b=>b.classList.toggle("active",b.dataset.section===n));history.replaceState(null,"","#"+n);if(n==="applications")renderApplicationsPrimary();if(n==="payment-requests")renderPaymentRequests();if(n==="payments")renderPayments();if(n==="customers")renderCustomers();if(n==="payment-links")renderLinks();if(n==="products")renderProducts();if(n==="methods")renderMethods();if(n==="subscriptions")renderSubscriptions();if(n==="donations")renderDonations();if(n==="analytics")renderAnalytics();if(n==="apps")renderApps();closeNav()}
+function show(n){if(!sections.includes(n))n="overview";sections.forEach(s=>{const e=$("#section-"+s);if(e)e.hidden=s!==n});$$(".side-link").forEach(b=>b.classList.toggle("active",b.dataset.section===n));history.replaceState(null,"","#"+n);if(n==="applications")renderApplicationsPrimary();if(n==="payment-requests")renderPaymentRequests();if(n==="payments")renderPayments();if(n==="customers")renderCustomers();if(n==="payment-links"){renderLinks();loadLinkAnalytics()}if(n==="products")renderProducts();if(n==="methods")renderMethods();if(n==="subscriptions")renderSubscriptions();if(n==="donations")renderDonations();if(n==="analytics")renderAnalytics();if(n==="apps")renderApps();closeNav()}
 $$(".side-link").forEach(b=>b.onclick=()=>show(b.dataset.section));document.addEventListener("click",e=>{const b=e.target.closest("[data-section-jump]");if(b){show(b.dataset.sectionJump);if(b.dataset.sectionJump==="payment-links"&&/create/i.test(b.textContent||""))openPaymentLinkCreator()}});
 function openNav(){$("#merchantSidebar").classList.add("mobile-open");$("#mobileNavScrim").hidden=false}function closeNav(){$("#merchantSidebar").classList.remove("mobile-open");if($("#mobileNavScrim"))$("#mobileNavScrim").hidden=true}$("#openMobileNav")?.addEventListener("click",openNav);$("#mobileNavScrim")?.addEventListener("click",closeNav);
 $("#openNotifications")?.addEventListener("click",()=>$("#notificationDrawer").hidden=false);$("#closeNotifications")?.addEventListener("click",()=>$("#notificationDrawer").hidden=true);$("#closePaymentDrawer")?.addEventListener("click",()=>$("#paymentDrawer").hidden=true);
@@ -86,6 +86,7 @@ $("#createPaymentLink")?.addEventListener("click",async()=>{
         const d=await api("/api/merchant/apps/"+encodeURIComponent(appId)+"/payment-links",{method:"POST",body:JSON.stringify({product_id:productId})});
         await refresh();
         setCreatePanel("paymentLinkCreateWrap",false);
+        loadLinkAnalytics();
         if(d.payment_url){
             const publicUrl=normalizePublicUrl(d.payment_url);
             await navigator.clipboard.writeText(publicUrl).catch(()=>{});
@@ -95,9 +96,55 @@ $("#createPaymentLink")?.addEventListener("click",async()=>{
 });
 function renderLinks(){
  const e=$("#paymentLinksGrid"),ls=dashboard.payment_links||[];
- e.innerHTML=ls.length?ls.map(l=>{const a=apps.find(x=>x.id===l.service_id),p=(dashboard.products||[]).find(x=>x.id===l.product_id),u=normalizePublicUrl(siteUrl("/checkout.html?checkout="+encodeURIComponent(l.slug)));return "<article class=\"link-card\"><div class=\"link-card-top\"><span class=\"link-symbol\">↗</span><span class=\"status-badge "+(l.status==="active"?"success":"neutral")+"\">"+esc(l.status||"inactive")+"</span></div><h3>"+esc(l.title||p?.name||"Payment link")+"</h3><p>"+esc(l.description||p?.description||"Hosted checkout")+"</p><small>"+esc(a?.name||"Application")+" · "+esc(p?.payment_type||"payment")+"</small><div class=\"link-url\">"+esc(u)+"</div><div class=\"card-actions\"><button class=\"small-action\" data-copy-link=\""+esc(u)+"\">Copy link</button><a class=\"small-action\" href=\""+esc(u)+"\" target=\"_blank\" rel=\"noopener\">Preview</a><button class=\"small-action\" data-edit-link=\""+esc(l.id)+"\">Edit</button><button class=\"small-action danger\" data-delete-link=\""+esc(l.id)+"\">Disable</button></div></article>"}).join(""):empty("No payment links yet","Create a product, then generate a hosted link.");
+ e.innerHTML=ls.length?ls.map(l=>{
+   const a=apps.find(x=>x.id===l.service_id),p=(dashboard.products||[]).find(x=>x.id===l.product_id),u=normalizePublicUrl(siteUrl("/checkout/"+encodeURIComponent(l.slug)));
+   return "<article class=\"link-card\"><div class=\"link-card-top\"><span class=\"link-symbol\">↗</span><span class=\"status-badge "+(l.status==="active"?"success":"neutral")+"\">"+esc(l.status||"inactive")+"</span></div><h3>"+esc(l.title||p?.name||"Payment link")+"</h3><p>"+esc(l.description||p?.description||"Hosted checkout")+"</p><small>"+esc(a?.name||"Application")+" · "+esc(p?.payment_type||"payment")+"</small><div class=\"link-url\">"+esc(u)+"</div><div class=\"link-stats\" data-link-stats=\""+esc(l.id)+"\">Loading link performance…</div><div class=\"card-actions\"><button class=\"small-action\" data-copy-link=\""+esc(u)+"\">Copy link</button><a class=\"small-action\" href=\""+esc(u)+"\" target=\"_blank\" rel=\"noopener\">Preview</a><button class=\"small-action\" data-edit-link=\""+esc(l.id)+"\">Edit</button><button class=\"small-action danger\" data-delete-link=\""+esc(l.id)+"\">Disable</button></div></article>"
+ }).join(""):empty("No payment links yet","Create a product, then generate a hosted link.");
+ updateLinkCardStats();
+}
+function dateInputValue(d){return new Date(d).toISOString().slice(0,10)}
+function setLinkAnalyticsPreset(days){
+ const end=new Date();
+ const start=new Date(end.getTime()-days*86400000);
+ $("#linkAnalyticsStart").value=dateInputValue(start);
+ $("#linkAnalyticsEnd").value=dateInputValue(end);
+ $$(".analytics-range").forEach(b=>b.classList.toggle("active",Number(b.dataset.linkRange)===Number(days)));
+ loadLinkAnalytics(start.toISOString(),new Date(end.getTime()+86400000).toISOString());
+}
+async function loadLinkAnalytics(customStart,customEnd){
+ if(!$("#linkAnalyticsTable"))return;
+ let start=customStart,end=customEnd;
+ if(!start||!end){
+   const endDate=new Date();
+   start=new Date(endDate.getTime()-30*86400000).toISOString();
+   end=new Date(endDate.getTime()+86400000).toISOString();
+ }
+ try{
+   const d=await api("/api/merchant/payment-link-analytics?start="+encodeURIComponent(start)+"&end="+encodeURIComponent(end));
+   linkAnalytics=d;
+   $("#linkAnalyticsClicks").textContent=Number(d.totals?.clicks||0).toLocaleString();
+   $("#linkAnalyticsVisitors").textContent=Number(d.totals?.unique_visitors||0).toLocaleString();
+   $("#linkAnalyticsStarts").textContent=Number(d.totals?.payment_starts||0).toLocaleString();
+   $("#linkAnalyticsCompleted").textContent=Number(d.totals?.completed_payments||0).toLocaleString();
+   $("#linkAnalyticsConversion").textContent=Number(d.totals?.conversion_rate||0).toLocaleString(undefined,{maximumFractionDigits:2})+"%";
+   const rows=d.links||[];
+   $("#linkAnalyticsTable").innerHTML=rows.length?'<div class="link-analytics-table-head"><span>Payment link</span><span>Clicks</span><span>Visitors</span><span>Payments</span><span>Conversion</span><span>Revenue</span></div>'+rows.map(x=>'<div class="link-analytics-row"><span><strong>'+esc(x.title||"Payment link")+'</strong><small>'+esc(x.service_name||"Application")+' · '+esc(x.product_name||"Product")+'</small></span><strong>'+Number(x.clicks||0).toLocaleString()+'</strong><span>'+Number(x.unique_visitors||0).toLocaleString()+'</span><span>'+Number(x.completed_payments||0).toLocaleString()+'</span><span>'+Number(x.conversion_rate||0).toLocaleString(undefined,{maximumFractionDigits:2})+'%</span><strong>'+money(x.revenue||0)+'</strong></div>').join(""):'<div class="link-analytics-empty">No link activity in this date range yet.</div>';
+   updateLinkCardStats();
+ }catch(error){
+   $("#linkAnalyticsTable").innerHTML='<div class="link-analytics-empty error">Could not load link analytics right now.</div>';
+ }
+}
+function updateLinkCardStats(){
+ const byId=new Map((linkAnalytics.links||[]).map(x=>[String(x.payment_link_id),x]));
+ $$("[data-link-stats]").forEach(el=>{
+   const x=byId.get(String(el.dataset.linkStats));
+   el.textContent=x
+      ? Number(x.clicks||0).toLocaleString()+" clicks · "+Number(x.unique_visitors||0).toLocaleString()+" unique visitors · "+Number(x.completed_payments||0).toLocaleString()+" completed"
+      : "No tracked activity in this range";
+ });
 }
 document.addEventListener("click",async e=>{const b=e.target.closest("[data-copy-link]");if(!b)return;try{await navigator.clipboard.writeText(b.dataset.copyLink);notify("Payment link copied.","success")}catch{notify("Could not copy the link.","error")}});
+
 function renderProducts(){const e=$("#productsList"),ps=dashboard.products||[];e.innerHTML=ps.length?ps.map(p=>"<article class=\"product-card\"><div class=\"product-card-top\"><span class=\"product-type\">"+esc(p.payment_type||"payment")+"</span><span class=\"status-badge "+(p.status==="active"?"success":"neutral")+"\">"+esc(p.status||"—")+"</span></div><h3>"+esc(p.name)+"</h3><p>"+esc(p.description||"No description")+"</p><strong>"+(p.allow_custom_amount?"Customer chooses amount":money(p.amount,p.currency))+(p.payment_type==="subscribe"?" / "+esc(p.subscription_interval||"period"):"")+"</strong><small>"+esc(apps.find(a=>a.id===p.service_id)?.name||"Application")+" · "+esc(p.product_code||"")+"</small><div class=\"card-actions\"><button class=\"small-action\" data-edit-product=\""+esc(p.id)+"\">Edit</button><button class=\"small-action danger\" data-delete-product=\""+esc(p.id)+"\">Disable</button></div></article>").join(""):empty("No products yet","Create your first product.")}function renderSubscriptions(){const e=$("#subscriptionProducts"),contracts=dashboard.subscription_contracts||[],ps=(dashboard.products||[]).filter(p=>p.payment_type==="subscribe");if(contracts.length){e.innerHTML=contracts.map(c=>"<article class=\"subscription-card\"><span class=\"eyebrow\">SUBSCRIPTION</span><h3>"+esc(c.products?.name||"Subscription")+"</h3><strong>"+esc(c.service_users?.email||"Customer")+"</strong><p>Next payment due: "+esc(fmt(c.next_due_at))+"</p><span class=\"status-pill\">"+esc(c.status)+"</span></article>").join("");return}e.innerHTML=ps.length?ps.map(p=>"<article class=\"subscription-card\"><span class=\"eyebrow\">RECURRING PRODUCT</span><h3>"+esc(p.name)+"</h3><strong>"+money(p.amount,p.currency)+" / "+esc(p.subscription_interval||"period")+"</strong><p>"+esc(p.description||"No description")+"</p><span class=\"status-pill\">"+esc(p.status||"active")+"</span></article>").join(""):empty("No subscription products","Create a recurring product in Products.")}
 function renderDonations(){
  const e=$("#donationGrid"),campaigns=dashboard.donation_campaigns||[],fallback=(dashboard.products||[]).filter(p=>p.payment_type==="donate");
@@ -161,6 +208,17 @@ function renderReadiness(){
 
 async function refresh(){const r=await Promise.all([api("/api/merchant/dashboard"),api("/api/merchant/payment-requests"),loadDonationPaymentMethods()]);dashboard=r[0];dashboard.payment_requests=r[1].payments||[];apps=dashboard.apps||dashboard.services||[];all();renderReadiness()}
 $("#productType")?.addEventListener("change",()=>{const t=$("#productType").value;$("#subscriptionIntervalGroup").hidden=t!=="subscribe";$("#donationSettings").hidden=t!=="donate"});
+$(".analytics-range").forEach(b=>b.addEventListener("click",()=>setLinkAnalyticsPreset(Number(b.dataset.linkRange))));
+$("#applyLinkAnalyticsRange")?.addEventListener("click",()=>{
+  const s=$("#linkAnalyticsStart")?.value,e=$("#linkAnalyticsEnd")?.value;
+  if(!s||!e){notify("Choose both analytics dates.","error");return}
+  const start=new Date(s+"T00:00:00.000Z"),end=new Date(e+"T00:00:00.000Z");
+  if(end<start){notify("Analytics end date must be after the start date.","error");return}
+  const endExclusive=new Date(end.getTime()+86400000);
+  $(".analytics-range").forEach(b=>b.classList.remove("active"));
+  loadLinkAnalytics(start.toISOString(),endExclusive.toISOString());
+});
+
 $("#openPaymentLinkCreate")?.addEventListener("click",openPaymentLinkCreator);
 $("#cancelPaymentLinkCreate")?.addEventListener("click",()=>setCreatePanel("paymentLinkCreateWrap",false));
 $("#openProductCreate")?.addEventListener("click",()=>{resetProductForm();openProductCreator()});
