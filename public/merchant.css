@@ -1160,3 +1160,30 @@ body.dashboard-compact .merchant-main{
   body.merchant-page #section-overview .range-bar>span{font-size:9px}
   body.merchant-page .merchant-mobile-bar{right:12px}
 }
+
+
+/* Final mobile dashboard composition */
+@media(max-width:760px){
+  body.merchant-page .merchant-header{width:100%;min-height:64px!important;height:64px!important;padding:0 14px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;position:sticky!important;top:0!important;z-index:5000!important;background:#fff!important;border-bottom:1px solid #e1e1dc!important;box-shadow:0 1px 0 rgba(0,0,0,.03)!important}
+  body.merchant-page .merchant-header .brand{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;flex:1 1 auto!important}
+  body.merchant-page .merchant-header .brand-mark{width:34px!important;height:34px!important;flex:0 0 34px!important}
+  body.merchant-page .merchant-header .brand>span:last-child{font-size:13px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+  body.merchant-page .merchant-header-right{display:flex!important;align-items:center!important;gap:6px!important;margin-left:auto!important}
+  body.merchant-page .merchant-header-right #merchantName,body.merchant-page .merchant-header-right #signOut,body.merchant-page .merchant-header-right .merchant-menu-button{display:none!important}
+  body.merchant-page .notification-button{width:40px!important;height:40px!important;min-width:40px!important}
+  body.merchant-page .merchant-main{padding:24px 14px calc(96px + env(safe-area-inset-bottom))!important}
+  body.merchant-page #section-overview .dashboard-welcome{display:block!important;margin:0 0 20px!important}
+  body.merchant-page #section-overview .dashboard-welcome h1{font-size:clamp(32px,9.4vw,43px)!important;line-height:1.02!important;margin:7px 0 9px!important;max-width:100%!important}
+  body.merchant-page #section-overview .dashboard-welcome p{font-size:13px!important;line-height:1.55!important;max-width:34rem!important}
+  body.merchant-page #section-overview .overview-actions{display:none!important}
+  body.merchant-page #section-overview .range-bar{margin:0 0 14px!important;padding:0 0 11px!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;gap:8px!important}
+  body.merchant-page #section-overview .range-bar>div{display:flex!important;overflow-x:auto!important;min-width:0!important;scrollbar-width:none!important}
+  body.merchant-page #section-overview .range-bar>div::-webkit-scrollbar{display:none!important}
+  body.merchant-page #section-overview .dashboard-live-status{flex:0 0 auto!important}
+  body.merchant-page .merchant-mobile-bar{position:fixed!important;right:14px!important;left:auto!important;bottom:calc(18px + env(safe-area-inset-bottom))!important;width:54px!important;height:54px!important;z-index:5200!important;display:block!important;pointer-events:none!important;padding:0!important;background:transparent!important;border:0!important}
+  body.merchant-page .merchant-mobile-bar>#mobileMoreNav{display:grid!important;place-items:center!important;width:54px!important;height:54px!important;border:1px solid #2b2b2b!important;border-radius:17px!important;background:#111!important;color:#fff!important;box-shadow:0 16px 34px rgba(0,0,0,.22)!important;pointer-events:auto!important;font-size:19px!important}
+  body.merchant-page .merchant-mobile-bar>#mobileMoreNav span{font-size:19px!important}
+  body.merchant-page .merchant-mobile-bar>#mobileMoreNav small,body.merchant-page .merchant-mobile-bar>#mobileMoreNav em{display:none!important}
+  body.merchant-page .mobile-nav-scrim{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+}
+@media(max-width:420px){body.merchant-page .merchant-main{padding-left:12px!important;padding-right:12px!important}body.merchant-page .merchant-mobile-bar{right:12px!important}}
