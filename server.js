@@ -8662,17 +8662,51 @@ async function ensureSubscriptionContract(payment){
   const due=new Date();product.subscription_interval==="yearly"?due.setFullYear(due.getFullYear()+1):due.setMonth(due.getMonth()+1);
   const {data:contract,error}=await supabase.from("subscription_contracts").insert({merchant_id:service.merchant_id,service_id:payment.service_id,product_id:payment.product_id,service_user_id:payment.service_user_id,initial_payment_id:payment.id,current_payment_id:payment.id,status:"active",interval:product.subscription_interval,next_due_at:due.toISOString()}).select("*").single();if(error)throw error;return contract;
 }
-async function sendPaymentSubmittedEmail({email,serviceName,amount,currency,reference}){
+async function sendPaymentSubmittedEmail({email,serviceName,amount,currency,reference,isDonation=false}){
   if(!email)return;
+  const kind=isDonation?"donation":"payment";
+  const title=isDonation?"Your donation has been sent.":"Your payment has been sent.";
+  const intro=isDonation
+    ? "We received your donation receipt and it is now waiting for the business to verify it."
+    : "We received your payment receipt and it is now waiting for the business to verify it.";
+  const approval=isDonation
+    ? "You will receive another email when your donation is confirmed."
+    : "You will receive another email when your payment is approved. That email will contain your one-time payment code.";
+  const html='<!doctype html><html><body style="margin:0;padding:0;background:#f3f3f0;font-family:Arial,Helvetica,sans-serif;color:#111;">'+
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f0;"><tr><td align="center" style="padding:32px 14px;">'+
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#fff;border:1px solid #deded8;border-radius:24px;overflow:hidden;">'+
+    '<tr><td style="padding:28px 30px;border-bottom:1px solid #ecece6;"><table role="presentation" width="100%"><tr><td><div style="width:40px;height:40px;line-height:40px;text-align:center;border-radius:12px;background:#111;color:#fff;font-weight:900;">S</div></td><td style="padding-left:12px;"><div style="font-size:17px;font-weight:900;">SquashberryPay</div><div style="font-size:11px;color:#888;margin-top:2px;letter-spacing:1.4px;">SECURE PAYMENT</div></td></tr></table></td></tr>'+
+    '<tr><td style="padding:34px 30px 16px;"><div style="font-size:11px;font-weight:800;letter-spacing:2px;color:#777;">PAYMENT RECEIVED</div><h1 style="margin:10px 0 12px;font-size:30px;line-height:1.1;">'+escapeHtml(title)+'</h1><p style="margin:0;color:#666;font-size:15px;line-height:1.7;">'+escapeHtml(intro)+'</p></td></tr>'+
+    '<tr><td style="padding:18px 30px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e4e4de;border-radius:16px;background:#fafaf7;"><tr><td style="padding:16px;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.2px;">Business</div><div style="font-size:15px;font-weight:800;margin-top:5px;">'+escapeHtml(serviceName||"the business")+'</div></td><td style="padding:16px;text-align:right;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.2px;">Amount</div><div style="font-size:15px;font-weight:800;margin-top:5px;">'+escapeHtml(currency)+' '+Number(amount).toFixed(2)+'</div></td></tr><tr><td colspan="2" style="padding:0 16px 16px;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.2px;">Reference</div><div style="font-size:14px;font-weight:800;margin-top:5px;">'+escapeHtml(reference)+'</div></td></tr></table></td></tr>'+
+    '<tr><td style="padding:8px 30px 26px;"><div style="padding:16px 18px;border-radius:14px;background:#f5f5f1;border:1px solid #e6e6e0;"><div style="font-size:11px;font-weight:800;letter-spacing:1.4px;color:#777;">WHAT HAPPENS NEXT</div><p style="margin:8px 0 0;color:#555;font-size:14px;line-height:1.65;">'+escapeHtml(approval)+'</p></div></td></tr>'+
+    '<tr><td style="padding:0 30px 30px;color:#999;font-size:11px;line-height:1.6;">Please keep this email for your records. Do not make another payment unless the business instructs you to.</td></tr>'+
+    '</table></td></tr></table></body></html>';
   await sendResendEmail({
     to:email,
-    subject:"Payment received — "+reference,
-    text:"We have received your payment submission for "+(serviceName||"the business")+".\\n\\nAmount: "+currency+" "+amount+"\\nReference: "+reference+"\\n\\nYour receipt is now waiting for merchant verification. Please hold on while the business reviews it. You will receive another email when the payment is approved. If approved, that email will contain your one-time payment code.",
-    html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;background:#f5f5f2\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><div style=\"margin-top:22px;font-size:11px;font-weight:800;letter-spacing:2px;color:#777\">PAYMENT RECEIVED</div><h1 style=\"margin:8px 0 12px\">Your payment has been sent.</h1><p style=\"color:#666;line-height:1.7\">We received your payment receipt for <strong>"+escapeHtml(serviceName||"the business")+"</strong>.</p><div style=\"padding:16px;border:1px solid #e5e5df;border-radius:14px;background:#fafaf7\"><b>Amount:</b> "+escapeHtml(currency)+" "+Number(amount).toFixed(2)+"<br><b>Reference:</b> "+escapeHtml(reference)+"</div><p style=\"color:#666;line-height:1.7\">Please hold on while the business verifies your payment. You will receive another email if it is approved. For regular payments, that approval email will contain your one-time payment code.</p><p style=\"color:#999;font-size:12px\">Do not make another payment unless the business tells you to.</p></div></div>"
+    subject:(isDonation?"Donation received — ":"Payment received — ")+reference,
+    text:(isDonation?"Your donation has been received.":"Your payment has been received.")+"\n\nBusiness: "+(serviceName||"the business")+"\nAmount: "+currency+" "+amount+"\nReference: "+reference+"\n\n"+approval,
+    html
   });
 }
 
-async function sendDonationSuccessEmail({email,name,amount,currency,reference,customerReference}){if(!email)return;await sendResendEmail({to:email,subject:"Donation confirmed — "+reference,text:"Your donation to "+(name||"this campaign")+" has been successfully confirmed.\n\nAmount: "+currency+" "+amount+"\nReference: "+reference+(customerReference?"\nYour reference: "+customerReference:"")+"\n\nProcessing receipt: "+PUBLIC_SITE_URL+"/receipt/"+encodeURIComponent(reference)+"\n\nThank you for your support.",html:"<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\"><div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\"><b>SquashberryPay</b><h1>Donation confirmed</h1><p>Your donation to "+escapeHtml(name||"this campaign")+" has been successfully confirmed.</p><p><b>Amount:</b> "+escapeHtml(currency)+" "+Number(amount).toFixed(2)+"<br><b>Reference:</b> "+escapeHtml(reference)+"</p><p>Keep this email as your receipt.</p></div></div>"});}
+async function sendDonationSuccessEmail({email,name,amount,currency,reference,customerReference}){
+  if(!email)return;
+  const html='<!doctype html><html><body style="margin:0;padding:0;background:#f3f3f0;font-family:Arial,Helvetica,sans-serif;color:#111;">'+
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f0;"><tr><td align="center" style="padding:32px 14px;">'+
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#fff;border:1px solid #deded8;border-radius:24px;overflow:hidden;">'+
+    '<tr><td style="padding:28px 30px;border-bottom:1px solid #ecece6;"><table role="presentation" width="100%"><tr><td><div style="width:40px;height:40px;line-height:40px;text-align:center;border-radius:12px;background:#111;color:#fff;font-weight:900;">S</div></td><td style="padding-left:12px;"><div style="font-size:17px;font-weight:900;">SquashberryPay</div><div style="font-size:11px;color:#888;margin-top:2px;letter-spacing:1.4px;">DONATION CONFIRMATION</div></td></tr></table></td></tr>'+
+    '<tr><td style="padding:34px 30px 16px;"><div style="font-size:11px;font-weight:800;letter-spacing:2px;color:#777;">THANK YOU</div><h1 style="margin:10px 0 12px;font-size:30px;line-height:1.1;">Donation confirmed.</h1><p style="margin:0;color:#666;font-size:15px;line-height:1.7;">Your donation to <strong>'+escapeHtml(name||"this campaign")+'</strong> has been successfully verified.</p></td></tr>'+
+    '<tr><td style="padding:18px 30px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e4e4de;border-radius:16px;background:#fafaf7;"><tr><td style="padding:16px;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.2px;">Amount</div><div style="font-size:18px;font-weight:900;margin-top:5px;">'+escapeHtml(currency)+' '+Number(amount).toFixed(2)+'</div></td><td style="padding:16px;text-align:right;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.2px;">Reference</div><div style="font-size:14px;font-weight:800;margin-top:5px;">'+escapeHtml(reference)+'</div></td></tr></table></td></tr>'+
+    (customerReference?'<tr><td style="padding:0 30px 18px;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.2px;">Your reference</div><div style="font-size:14px;font-weight:800;margin-top:5px;">'+escapeHtml(customerReference)+'</div></td></tr>':"")+
+    '<tr><td style="padding:0 30px 30px;"><div style="padding:16px 18px;border-radius:14px;background:#f5f5f1;border:1px solid #e6e6e0;color:#555;font-size:14px;line-height:1.65;">Your donation is complete. Keep this email as your confirmation receipt.</div></td></tr>'+
+    '</table></td></tr></table></body></html>';
+  await sendResendEmail({
+    to:email,
+    subject:"Donation confirmed — "+reference,
+    text:"Your donation to "+(name||"this campaign")+" has been successfully confirmed.\n\nAmount: "+currency+" "+amount+"\nReference: "+reference+(customerReference?"\nYour reference: "+customerReference:""),
+    html
+  });
+}
 
 async function approveMerchantPayment(paymentId,merchantId){
   const {data:p,error}=await supabase
@@ -8705,7 +8739,7 @@ async function approveMerchantPayment(paymentId,merchantId){
 
   const now=new Date().toISOString();
 
-  if(p.donation_campaign_id){
+  if((p.donation_campaign_id || p.payment_type==="donate")){
     const {
       error:e
     } = await supabase
@@ -10861,81 +10895,24 @@ async function sendPaymentLinkApprovedEmail({
 ============================================================ */
 
 
-async function sendPaymentCodeEmail({
-  email,
-  code,
-  serviceName,
-  amount,
-  currency,
-  reference
-}) {
-  if(!email){
-    throw publicError(
-      "No customer email is available for this payment."
-    );
-  }
-
+async function sendPaymentCodeEmail({email,code,serviceName,amount,currency,reference}){
+  if(!email)throw publicError("No customer email is available for this payment.");
+  const html='<!doctype html><html><body style="margin:0;padding:0;background:#f3f3f0;font-family:Arial,Helvetica,sans-serif;color:#111;">'+
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f0;"><tr><td align="center" style="padding:32px 14px;">'+
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#fff;border:1px solid #deded8;border-radius:24px;overflow:hidden;">'+
+    '<tr><td style="padding:28px 30px;border-bottom:1px solid #ecece6;"><table role="presentation" width="100%"><tr><td><div style="width:40px;height:40px;line-height:40px;text-align:center;border-radius:12px;background:#111;color:#fff;font-weight:900;">S</div></td><td style="padding-left:12px;"><div style="font-size:17px;font-weight:900;">SquashberryPay</div><div style="font-size:11px;color:#888;margin-top:2px;letter-spacing:1.4px;">PAYMENT APPROVED</div></td></tr></table></td></tr>'+
+    '<tr><td style="padding:34px 30px 16px;"><div style="font-size:11px;font-weight:800;letter-spacing:2px;color:#777;">ONE-TIME VERIFICATION</div><h1 style="margin:10px 0 12px;font-size:30px;line-height:1.1;">Your payment is approved.</h1><p style="margin:0;color:#666;font-size:15px;line-height:1.7;">Your payment to <strong>'+escapeHtml(serviceName||"the business")+'</strong> has been verified.</p></td></tr>'+
+    '<tr><td style="padding:18px 30px;"><div style="padding:20px;border:1px solid #deded8;border-radius:18px;background:#fafaf7;text-align:center;"><div style="font-size:11px;font-weight:800;letter-spacing:2px;color:#777;">PAYMENT CODE</div><div style="margin-top:10px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:28px;font-weight:900;letter-spacing:2px;">'+escapeHtml(code)+'</div><div style="margin-top:9px;color:#777;font-size:12px;">Valid for 6 months if unused · one use only</div></div></td></tr>'+
+    '<tr><td style="padding:0 30px 18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e4e4de;border-radius:16px;background:#fafaf7;"><tr><td style="padding:14px;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.1px;">Reference</div><div style="font-size:14px;font-weight:800;margin-top:4px;">'+escapeHtml(reference)+'</div></td><td style="padding:14px;text-align:right;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.1px;">Amount</div><div style="font-size:14px;font-weight:800;margin-top:4px;">'+escapeHtml(currency)+' '+Number(amount).toFixed(2)+'</div></td></tr></table></td></tr>'+
+    '<tr><td style="padding:0 30px 30px;"><div style="padding:16px 18px;border-radius:14px;background:#f5f5f1;border:1px solid #e6e6e0;color:#555;font-size:14px;line-height:1.65;">Return to the app or website where you started the payment and enter this code. The code is bound to this specific transaction and application and becomes invalid immediately after successful redemption.</div></td></tr>'+
+    '</table></td></tr></table></body></html>';
   await sendResendEmail({
-    to:
-      email,
-
-    subject:
-      String(
-        serviceName ||
-        "SquashberryPay"
-      ) +
-      " payment approved — verification code",
-
-    text:
-      "Your payment for " +
-      String(
-        serviceName ||
-        "the merchant"
-      ) +
-      " has been approved.\\n\\n" +
-      "Reference: " +
-      String(reference) +
-      "\\nAmount: " +
-      String(currency) +
-      " " +
-      String(amount) +
-      "\\n\\nYour one-time payment code is: " +
-      String(code) +
-      "\\n\\nProcessing receipt: " +
-      PUBLIC_SITE_URL +
-      "/receipt/" +
-      encodeURIComponent(reference) +
-      "\\n\\nEnter this code in the application or website where you started the payment. Do not share this code.",
-
-    html:
-      "<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px\">" +
-      "<div style=\"background:#fff;border:1px solid #e5e5df;border-radius:20px;padding:28px\">" +
-      "<b>SquashberryPay</b>" +
-      "<h1>Payment approved</h1>" +
-      "<p>Your payment for <strong>" +
-      escapeHtml(
-        serviceName ||
-        "the merchant"
-      ) +
-      "</strong> has been verified.</p>" +
-      "<p><b>Reference:</b> " +
-      escapeHtml(reference) +
-      "<br><b>Amount:</b> " +
-      escapeHtml(currency) +
-      " " +
-      Number(amount).toFixed(2) +
-      "</p>" +
-      "<div style=\"border:1px solid #deded9;border-radius:16px;padding:22px;text-align:center\">" +
-      "<div style=\"font-size:11px;font-weight:800;letter-spacing:2px;color:#777\">ONE-TIME PAYMENT CODE</div>" +
-      "<div style=\"margin-top:10px;font:800 28px monospace;letter-spacing:2px\">" +
-      escapeHtml(code) +
-      "</div></div>" +
-      "<p style=\"color:#666;line-height:1.6\">Enter this code in the application where you started the payment.</p>" +
-      "<p style=\"color:#999;font-size:12px\">This code is tied to this payment, expires in 6 months, and can only be used once.</p>" +
-      "</div></div>"
+    to:email,
+    subject:(serviceName||"SquashberryPay")+" payment approved — verification code",
+    text:"Your payment for "+(serviceName||"the business")+" has been approved.\n\nReference: "+reference+"\nAmount: "+currency+" "+amount+"\n\nYour one-time payment code is: "+code+"\n\nThe code is valid for 6 months if unused and can only be redeemed once for this payment and application.",
+    html
   });
 }
-
 
 /* ============================================================
    FRONTEND ROUTES
