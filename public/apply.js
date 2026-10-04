@@ -28,11 +28,11 @@ form.addEventListener(
         event.preventDefault();
 
 
-        submitButton.disabled =
-            true;
-
-        submitButton.textContent =
-            "Submitting…";
+        const originalSubmitHtml = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.classList.add("is-loading");
+        submitButton.innerHTML =
+            '<span class="spinner" aria-hidden="true"></span><span>Submitting…</span>';
 
 
         formMessage.textContent =
@@ -138,11 +138,9 @@ form.addEventListener(
 
         } finally {
 
-            submitButton.disabled =
-                false;
-
-            submitButton.textContent =
-                "Submit application";
+            submitButton.disabled = false;
+            submitButton.classList.remove("is-loading");
+            submitButton.innerHTML = originalSubmitHtml;
         }
 
     }
