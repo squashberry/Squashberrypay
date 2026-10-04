@@ -651,7 +651,8 @@ function renderPayment() {
         [
             "awaiting_verification",
             "approved",
-            "completed"
+            "completed",
+            "rejected"
         ].includes(
             state.payment.status
         )
@@ -1532,9 +1533,27 @@ function showVerification(justSubmitted=false){
     const subtext=$("#verificationSubtext");
     const eyebrow=verificationContainer.querySelector(".verification-state .eyebrow");
     const donation=isDonationPayment();
-    const terminal=["approved","completed"].includes(String(state.payment?.status||""));
+    const status=String(state.payment?.status||"");
+    const rejected=status==="rejected";
+    const terminal=["approved","completed"].includes(status);
 
     renderProcessingReceiptActions();
+
+    if(rejected){
+        verificationContainer.classList.add("verification-rejected");
+        if(eyebrow)eyebrow.textContent=donation?"DONATION REJECTED":"PAYMENT REJECTED";
+        heading.textContent=donation?"Donation could not be confirmed.":"Payment could not be verified.";
+        subtext.textContent=donation
+            ? "The business could not verify this donation from the receipt you submitted."
+            : "The business could not verify this payment from the receipt you submitted.";
+        waitingApprovalBox.hidden=true;
+        approvedMessage.hidden=false;
+        approvedMessage.innerHTML='<strong>'+(donation?'Your donation was rejected.':'Your payment was rejected.')+'</strong><p>'+escapeHtml(state.payment?.rejection_reason||"The receipt could not be verified.")+'</p><p>No money was confirmed through SquashberryPay. If you believe this was a mistake, contact the business and provide your payment reference.</p>';
+        verificationContainer.classList.remove("success-morph-donation","success-morph-payment");
+        animateState(verificationContainer);
+        animateState(approvedMessage);
+        return;
+    }
 
     if(!terminal){
         verificationContainer.classList.add("verification-waiting");
