@@ -104,6 +104,14 @@ if ($("#year")) {
         new Date().getFullYear();
 }
 
+(function setupPaymentSheetAnchor(){
+    if(!detailsContainer || document.getElementById("detailsContainerAnchor"))return;
+    const anchor=document.createElement("span");
+    anchor.id="detailsContainerAnchor";
+    anchor.hidden=true;
+    detailsContainer.parentElement?.insertBefore(anchor,detailsContainer);
+})();
+
 
 function showCustomerSessionLoader(){
     let loader=document.getElementById("customerSessionLoader");
@@ -128,6 +136,27 @@ async function finishCustomerSessionLoader(startedAt){
 function isMobilePaymentSheet(){
     return window.matchMedia("(max-width: 760px)").matches;
 }
+function ensurePaymentSheetHost(){
+    let host=document.getElementById("paymentSheetHost");
+    if(host)return host;
+    host=document.createElement("div");
+    host.id="paymentSheetHost";
+    host.className="payment-sheet-host";
+    document.body.appendChild(host);
+    return host;
+}
+function moveDetailsIntoSheet(){
+    if(!detailsContainer)return;
+    const host=ensurePaymentSheetHost();
+    if(detailsContainer.parentElement!==host)host.appendChild(detailsContainer);
+}
+function restoreDetailsFromSheet(){
+    if(!detailsContainer)return;
+    const original=document.getElementById("detailsContainerAnchor");
+    if(original?.parentElement && detailsContainer.parentElement!==original.parentElement){
+        original.parentElement.insertBefore(detailsContainer,original.nextSibling);
+    }
+}
 function getPaymentSheetScrim(){
     let scrim=document.getElementById("paymentSheetScrim");
     if(!scrim){
@@ -140,7 +169,7 @@ function getPaymentSheetScrim(){
     return scrim;
 }
 function closePaymentMobileSheet(){
-    detailsContainer?.classList.remove("mobile-bottom-sheet-open");
+    detailsContainer?.classList.remove("payment-sheet-open","mobile-bottom-sheet-open");
     document.body.classList.remove("mobile-sheet-locked");
     const scrim=getPaymentSheetScrim();
     scrim.classList.remove("is-visible");
@@ -149,9 +178,10 @@ function closePaymentMobileSheet(){
     },260);
 }
 function openPaymentMobileSheet(){
-    if(!detailsContainer||!isMobilePaymentSheet())return false;
+    if(!detailsContainer)return false;
+    moveDetailsIntoSheet();
     detailsContainer.hidden=false;
-    detailsContainer.classList.add("mobile-bottom-sheet-open");
+    detailsContainer.classList.add("payment-sheet-open","mobile-bottom-sheet-open");
     document.body.classList.add("mobile-sheet-locked");
     const scrim=getPaymentSheetScrim();
     scrim.hidden=false;
@@ -986,15 +1016,16 @@ function renderDetails(
     paymentDetails.innerHTML=rows.join("");
     ensurePaymentContactAction();
     setReceiptStage(false);
-    if(isMobilePaymentSheet()){
-        methodContainer.hidden=false;
-        detailsContainer.hidden=false;
-        verificationContainer.hidden=true;
-        openPaymentMobileSheet();
+    methodContainer.hidden=true;
+    detailsContainer.hidden=false;
+    verificationContainer.hidden=true;
+    openPaymentMobileSheet();
+    if(!isMobilePaymentSheet()){
+        detailsContainer.classList.add("payment-sheet-desktop");
     }else{
-        methodContainer.hidden=true;
-        detailsContainer.hidden=false;
-        verificationContainer.hidden=true;
+        detailsContainer.classList.remove("payment-sheet-desktop");
+    }
+    if(false){
         animateState(detailsContainer);
     }
 }
@@ -1068,11 +1099,9 @@ function setReceiptStage(show){
 
 function showExistingAttempt() {
 
-    methodContainer.hidden =
-        isMobilePaymentSheet() ? false : true;
+    methodContainer.hidden = true;
 
-    detailsContainer.hidden =
-        false;
+    detailsContainer.hidden = false;
 
     verificationContainer.hidden =
         true;
