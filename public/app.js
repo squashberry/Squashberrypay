@@ -1034,6 +1034,27 @@ function renderDetails(
    PAYMENT CONTACT + RECEIPT STAGES
 ============================================================ */
 
+function ensurePaymentTopCancel(){
+    const box=document.getElementById("paymentAttemptBox");
+    const original=document.getElementById("cancelPayment");
+    if(!box||!original||document.getElementById("cancelPaymentTop"))return;
+    const button=document.createElement("button");
+    button.id="cancelPaymentTop";
+    button.type="button";
+    button.className="payment-top-cancel";
+    button.textContent="Cancel";
+    button.addEventListener("click",()=>original.click());
+    const timerWrap=box.querySelector(":scope > div");
+    if(timerWrap){
+        timerWrap.style.display="flex";
+        timerWrap.style.alignItems="center";
+        timerWrap.style.justifyContent="space-between";
+        timerWrap.style.gap="12px";
+        timerWrap.appendChild(button);
+    }else{
+        box.appendChild(button);
+    }
+}
 function ensurePaymentContactAction(){
     if(!detailsContainer)return;
     let contact=document.getElementById("contactBusinessAction");
