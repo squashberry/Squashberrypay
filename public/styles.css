@@ -3838,3 +3838,14 @@ html.customer-payment-page .payment-expired-card{padding:25px 20px;border-radius
     font-size:10px!important;
   }
 }
+
+/* Critical checkout actions must remain real, top-layer hit targets. */
+html.customer-payment-page #ivePaidButton,
+html.customer-payment-page #cancelPayment,
+html.customer-payment-page #cancelPaymentTop{
+  position:relative!important;
+  z-index:50!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  touch-action:manipulation!important;
+}
