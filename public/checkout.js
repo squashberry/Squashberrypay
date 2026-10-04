@@ -29,6 +29,8 @@ const state = {
         null,
     mobileSheetOpen:
         false,
+    mobileSheetPlaceholder:
+        null,
     retrying:
         false
 };
@@ -147,9 +149,20 @@ function getMobileSheetScrim(id){
     return scrim;
 }
 function closeCheckoutMobileSheet(){
-    if(!state.mobileSheetOpen)return;
+    if(!state.mobileSheetOpen && checkoutDetails?.parentElement!==document.body)return;
     state.mobileSheetOpen=false;
+
     checkoutDetails?.classList.remove("mobile-bottom-sheet-open");
+    checkoutDetails?.style.removeProperty("--sheet-drag-y");
+
+    // The sheet is temporarily moved to <body> so it cannot be trapped
+    // underneath the checkout card's stacking/overflow context.
+    if(checkoutDetails && state.mobileSheetPlaceholder?.parentNode){
+        state.mobileSheetPlaceholder.parentNode.insertBefore(checkoutDetails,state.mobileSheetPlaceholder);
+        state.mobileSheetPlaceholder.remove();
+        state.mobileSheetPlaceholder=null;
+    }
+
     document.body.classList.remove("mobile-sheet-locked");
     const scrim=getMobileSheetScrim("checkoutSheetScrim");
     scrim.classList.remove("is-visible");
@@ -157,13 +170,22 @@ function closeCheckoutMobileSheet(){
 }
 function openCheckoutMobileSheet(focusSelector){
     if(!checkoutDetails||!isMobileSheet())return false;
+
+    if(checkoutDetails.parentElement!==document.body){
+        state.mobileSheetPlaceholder=document.createComment("checkout-details-slot");
+        checkoutDetails.parentNode.insertBefore(state.mobileSheetPlaceholder,checkoutDetails);
+        document.body.appendChild(checkoutDetails);
+    }
+
     state.mobileSheetOpen=true;
     checkoutDetails.hidden=false;
     checkoutDetails.classList.add("mobile-bottom-sheet-open");
     document.body.classList.add("mobile-sheet-locked");
+
     const scrim=getMobileSheetScrim("checkoutSheetScrim");
     scrim.hidden=false;
     requestAnimationFrame(()=>scrim.classList.add("is-visible"));
+
     if(focusSelector)setTimeout(()=>checkoutDetails.querySelector(focusSelector)?.focus(),360);
     return true;
 }
@@ -611,7 +633,7 @@ function renderCheckout() {
 
     $("#buttonText").textContent =
         product.payment_type === "donate"
-            ? (link.button_label || "Donate")
+            ? "Continue to payment"
             : (link.button_label || "Continue to payment");
 
     updateCheckoutSeo();
