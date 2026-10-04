@@ -284,6 +284,7 @@ body.merchant-page .merchant-sidebar{
 body.merchant-page .merchant-main{
   min-width:0;
   padding:36px 38px 80px;
+  overflow-x:clip;
 }
 
 body.merchant-page .dashboard-welcome{
@@ -532,20 +533,49 @@ body.dashboard-compact .panel{
     padding-bottom:110px;
   }
 
+  /* Mobile navigation is intentionally reduced to a single floating control.
+     The old five-item dock consumed valuable viewport space and made the
+     overview feel vertically scattered on phones. */
   body.merchant-page .merchant-mobile-bar{
     position:fixed;
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    left:10px;
-    right:10px;
-    bottom:10px;
+    display:flex;
+    left:auto;
+    right:14px;
+    bottom:18px;
     z-index:5000;
-    height:68px;
-    padding:7px;
+    width:54px;
+    height:54px;
+    padding:4px;
     border:1px solid #dcdcd7;
-    border-radius:18px;
+    border-radius:17px;
     background:rgba(255,255,255,.98);
-    box-shadow:0 16px 40px rgba(0,0,0,.14);
+    box-shadow:0 14px 34px rgba(0,0,0,.16);
+  }
+
+  body.merchant-page .merchant-mobile-bar button{
+    display:none;
+  }
+
+  body.merchant-page .merchant-mobile-bar button#mobileMoreNav{
+    display:grid;
+    width:100%;
+    height:100%;
+    place-items:center;
+    border:0;
+    border-radius:13px;
+    background:#111;
+    color:#fff;
+    font:inherit;
+    cursor:pointer;
+  }
+
+  body.merchant-page .merchant-mobile-bar button#mobileMoreNav span{
+    font-size:20px;
+    line-height:1;
+  }
+
+  body.merchant-page .merchant-mobile-bar button#mobileMoreNav small{
+    display:none;
   }
 
   body.merchant-page .merchant-mobile-bar button{
@@ -595,20 +625,53 @@ body.dashboard-compact .panel{
   }
 
   body.merchant-page .dashboard-welcome{
-    align-items:flex-start;
+    align-items:stretch;
     flex-direction:column;
+    gap:14px;
+    margin-bottom:18px;
+  }
+
+  body.merchant-page .dashboard-welcome > div:first-child{
+    min-width:0;
+  }
+
+  body.merchant-page .dashboard-welcome .eyebrow{
+    display:block;
+    margin-bottom:7px;
+  }
+
+  body.merchant-page .dashboard-welcome h1{
+    max-width:100%;
+    margin:0;
+    font-size:clamp(32px,10vw,44px);
+    line-height:.98;
+  }
+
+  body.merchant-page .dashboard-welcome p{
+    max-width:520px;
+    margin:9px 0 0;
+    font-size:13px;
+    line-height:1.55;
   }
 
   body.merchant-page .overview-actions{
     width:100%;
-    display:grid;
-    grid-template-columns:1fr 1fr;
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:flex-start;
+    gap:7px;
+  }
+
+  body.merchant-page .overview-actions .button{
+    width:auto;
+    min-height:40px;
+    flex:0 0 auto;
   }
 
   body.merchant-page .overview-actions .density-toggle{
-    grid-column:1/-1;
-    width:100%;
-    justify-content:center;
+    width:auto;
+    min-height:40px;
+    flex:0 0 auto;
   }
 
   body.merchant-page .dashboard-two-col{
@@ -898,7 +961,35 @@ body.dashboard-compact .panel{
   }
 
   body.merchant-page .merchant-main{
-    padding:22px 14px 108px;
+    padding:18px 14px 92px;
+  }
+
+  body.merchant-page .merchant-header{
+    padding-left:12px;
+    padding-right:12px;
+  }
+
+  body.merchant-page .merchant-header .brand{
+    gap:8px;
+    min-width:0;
+  }
+
+  body.merchant-page .merchant-header .brand > span:last-child{
+    font-size:13px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  body.merchant-page .merchant-header .merchant-header-right{
+    gap:6px;
+  }
+
+  body.merchant-page .notification-button,
+  body.merchant-page .merchant-menu-button{
+    width:40px;
+    height:40px;
+    flex:0 0 40px;
   }
 
   body.merchant-page .money-grid{
@@ -972,5 +1063,20 @@ body.dashboard-compact .panel{
   .panel{
     animation:none !important;
     transition:none !important;
+  }
+}
+
+
+/* Mobile dashboard: prevent browser history restoration from making the page
+   reopen halfway down, and keep the overview visually anchored at the top. */
+@media(max-width:720px){
+  body.merchant-page .merchant-layout,
+  body.merchant-page .merchant-main,
+  body.merchant-page #section-overview{
+    scroll-margin-top:0;
+  }
+
+  body.merchant-page .range-bar{
+    margin-top:4px;
   }
 }
