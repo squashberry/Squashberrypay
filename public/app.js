@@ -1443,7 +1443,7 @@ cancelPaymentBtn?.addEventListener(
 
             const response =
                 await fetch(
-                    `/api/public/session/${encodeURIComponent(
+                    apiBase + `/api/public/session/${encodeURIComponent(
                         state.token
                     )}/cancel`,
                     {
