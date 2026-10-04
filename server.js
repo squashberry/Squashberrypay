@@ -9322,6 +9322,40 @@ app.get("/api/merchant/donations", authenticateMerchant, async (req,res) => {
     }catch(e){console.error(e);res.status(500).json({error:"Could not load donations."});}
 });
 
+app.patch("/api/merchant/payment-methods/:id", authenticateMerchant, async (req,res) => {
+    try {
+        const id=String(req.params.id||"").trim();
+        const {data:method,error:methodError}=await supabase.from("payment_methods")
+            .select("id,service_id").eq("id",id).maybeSingle();
+        if(methodError)throw methodError;
+        if(!method)return res.status(404).json({error:"Payment method not found."});
+
+        const {data:service,error:serviceError}=await supabase.from("services")
+            .select("id").eq("id",method.service_id).eq("merchant_id",req.merchant.id).maybeSingle();
+        if(serviceError)throw serviceError;
+        if(!service)return res.status(404).json({error:"Payment method not found."});
+
+        const patch={updated_at:new Date().toISOString()};
+        for(const key of ["name","type","account_name","account_number","bank_name","phone_number","instructions"]){
+            if(req.body?.[key]!==undefined)patch[key]=String(req.body[key]||"").trim()||null;
+        }
+        if(req.body?.enabled!==undefined)patch.enabled=Boolean(req.body.enabled);
+        if(req.body?.type!==undefined){
+            const icons={wave:"/assets/payment-methods/wave.svg",aps:"/assets/payment-methods/aps.svg",nada:"/assets/payment-methods/nada.svg",bank:null,other:null};
+            patch.icon_path=icons[String(req.body.type)]||null;
+        }
+        if(!Object.keys(patch).some(k=>k!=="updated_at"))return res.status(400).json({error:"Nothing to update."});
+
+        const {data,error}=await supabase.from("payment_methods").update(patch)
+            .eq("id",id).eq("service_id",service.id).select("*").single();
+        if(error||!data)return res.status(404).json({error:"Payment method not found."});
+        res.json({success:true,payment_method:data});
+    }catch(error){
+        console.error("Update payment method error:",error);
+        res.status(500).json({error:"Could not update payment method."});
+    }
+});
+
 /* ============================================================
    MERCHANT DONATION PAYMENT METHODS
    ============================================================ */
@@ -9492,6 +9526,46 @@ app.patch("/api/merchant/payment-links/:id", authenticateMerchant, async (req,re
         res.json({payment_link:data,payment_url:PUBLIC_SITE_URL+"/checkout.html?checkout="+encodeURIComponent(data.slug)});
     }catch(e){console.error(e);res.status(500).json({error:"Could not update payment link."});}
 });
+app.patch("/api/merchant/apps/:id", authenticateMerchant, async (req,res) => {
+    try {
+        const id=String(req.params.id||"").trim();
+        const {data:service,error:lookupError}=await supabase.from("services")
+            .select("id,name,website_url,platform_type,environment,allowed_origins,allowed_package_ids,status")
+            .eq("id",id).eq("merchant_id",req.merchant.id).maybeSingle();
+        if(lookupError)throw lookupError;
+        if(!service)return res.status(404).json({error:"Application not found."});
+
+        const normalizeList=value =>
+            Array.isArray(value)
+                ? value.map(item=>String(item||"").trim()).filter(Boolean).slice(0,30)
+                : String(value??"").split(/[,
+]/).map(item=>item.trim()).filter(Boolean).slice(0,30);
+
+        const patch={updated_at:new Date().toISOString()};
+        if(req.body?.name!==undefined){
+            const name=String(req.body.name||"").trim().slice(0,160);
+            if(!name)return res.status(400).json({error:"Application name is required."});
+            patch.name=name;
+        }
+        if(req.body?.website_url!==undefined)patch.website_url=String(req.body.website_url||"").trim()||null;
+        if(req.body?.platform_type!==undefined)patch.platform_type=String(req.body.platform_type||"").trim()||null;
+        if(req.body?.environment!==undefined)patch.environment=req.body.environment==="test"?"test":"live";
+        if(req.body?.allowed_origins!==undefined)patch.allowed_origins=normalizeList(req.body.allowed_origins);
+        if(req.body?.allowed_package_ids!==undefined)patch.allowed_package_ids=normalizeList(req.body.allowed_package_ids);
+        if(req.body?.status!==undefined)patch.status=["pending","active","disabled"].includes(String(req.body.status))?String(req.body.status):service.status;
+
+        const {data:updated,error}=await supabase.from("services")
+            .update(patch).eq("id",id).eq("merchant_id",req.merchant.id)
+            .select("id,name,slug,website_url,platform_type,environment,allowed_origins,allowed_package_ids,webhook_url,last_api_used_at,client_id,status,created_at,updated_at")
+            .single();
+        if(error)throw error;
+        res.json({success:true,app:updated});
+    }catch(error){
+        console.error("Update application error:",error);
+        res.status(500).json({error:"Could not update application."});
+    }
+});
+
 app.patch("/api/merchant/apps/:id/webhook", authenticateMerchant, async (req,res) => {
     try {
         const id=String(req.params.id||"").trim();
