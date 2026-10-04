@@ -2162,3 +2162,15 @@
     min-height:36px;
   }
 }
+
+
+/* Auth loading splash — always visible during real sign-in/signup transitions */
+.auth-loading-splash{position:fixed!important;inset:0!important;z-index:2147483647!important;display:grid!important;place-items:center!important;background:#111!important;color:#fff!important;opacity:1!important}
+.auth-loading-splash[hidden]{display:none!important}
+.auth-loading-splash-inner{display:grid;justify-items:center;gap:12px;text-align:center;padding:28px}
+.auth-loading-splash-inner strong{font-size:15px;letter-spacing:-.02em}
+.auth-loading-splash-inner>span{font-size:10px;color:#888;letter-spacing:.14em;text-transform:uppercase}
+.auth-loading-splash-spinner{width:30px;height:30px;border:3px solid rgba(255,255,255,.18);border-top-color:#fff;border-radius:50%;animation:authSplashSpin .7s linear infinite}
+@keyframes authSplashSpin{to{transform:rotate(360deg)}}
+body.auth-loading{overflow:hidden!important}
+@media(prefers-reduced-motion:reduce){.auth-loading-splash-spinner{animation:none!important}}
