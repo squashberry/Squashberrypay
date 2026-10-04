@@ -3270,3 +3270,389 @@ body:not(.home-nav-open) .site-header,body:not(.home-nav-open) .home-page,body:n
     font-weight:700;
   }
 }
+
+
+/* ============================================================
+   SQUASHBERRYPAY — HOSTED CHECKOUT REDESIGN
+   Single visual system for desktop + mobile.
+============================================================ */
+html.customer-payment-page,
+html.customer-payment-page body{
+  background:#f5f5f2!important;
+  color:#111!important;
+}
+html.customer-payment-page body{
+  overflow-x:hidden;
+}
+html.customer-payment-page .site-header{
+  position:sticky!important;
+  top:0;
+  z-index:120;
+  min-height:68px;
+  padding:0 max(22px,calc((100vw - 1180px)/2))!important;
+  background:rgba(245,245,242,.92)!important;
+  border-bottom:1px solid rgba(17,17,17,.07);
+  backdrop-filter:blur(18px) saturate(1.05)!important;
+  -webkit-backdrop-filter:blur(18px) saturate(1.05)!important;
+}
+html.customer-payment-page .site-header .brand{
+  font-size:14px;
+  font-weight:850;
+}
+html.customer-payment-page .site-header .brand-mark{
+  width:34px;height:34px;border-radius:10px;
+}
+html.customer-payment-page .payment-view{
+  width:min(1120px,calc(100% - 40px));
+  padding:42px 0 86px;
+  margin:0 auto;
+  animation:none!important;
+}
+html.customer-payment-page .payment-support-banner{
+  display:none!important;
+}
+html.customer-payment-page .payment-head{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:end;
+  gap:30px;
+  margin:0 0 28px;
+  padding:0 4px;
+}
+html.customer-payment-page .payment-head h1{
+  max-width:720px;
+  margin:9px 0 9px;
+  font-size:clamp(42px,5.5vw,68px);
+  line-height:.94;
+  letter-spacing:-.065em;
+}
+html.customer-payment-page .payment-head p{
+  max-width:650px;
+  font-size:14px;
+  line-height:1.6;
+}
+html.customer-payment-page .page-expiry{
+  min-width:166px;
+  padding:14px 16px;
+  border-radius:16px;
+  background:#fff;
+  border:1px solid #dfdfda;
+  box-shadow:0 10px 30px rgba(17,17,17,.045);
+}
+html.customer-payment-page .page-expiry strong{
+  font-size:25px;
+}
+html.customer-payment-page .checkout-layout{
+  grid-template-columns:320px minmax(0,1fr);
+  gap:16px;
+  align-items:start;
+}
+html.customer-payment-page .checkout-summary{
+  position:sticky;
+  top:88px;
+  min-height:420px;
+  padding:25px;
+  border-radius:24px;
+  background:
+    radial-gradient(circle at 100% 0,rgba(255,255,255,.15),transparent 34%),
+    linear-gradient(150deg,#181818,#090909);
+  box-shadow:0 26px 70px rgba(17,17,17,.16);
+  overflow:hidden;
+}
+html.customer-payment-page .checkout-summary::after{
+  content:"";
+  position:absolute;
+  width:180px;height:180px;
+  right:-90px;bottom:-90px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.09);
+  pointer-events:none;
+}
+html.customer-payment-page .checkout-summary > strong{
+  margin-top:17px;
+  font-size:42px;
+}
+html.customer-payment-page .checkout-summary > p{
+  color:#bdbdb8;
+  font-size:13px;
+}
+html.customer-payment-page .checkout-reference{
+  margin-top:42px;
+}
+html.customer-payment-page .checkout-reference small{
+  color:#777;
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  font-weight:800;
+}
+html.customer-payment-page .checkout-reference strong{
+  color:#eee;
+  font-size:12px;
+  line-height:1.45;
+  word-break:break-all;
+}
+html.customer-payment-page .checkout-panel{
+  min-width:0;
+  padding:27px;
+  border-radius:24px;
+  background:#fff;
+  border:1px solid #deded9;
+  box-shadow:0 20px 60px rgba(17,17,17,.055);
+}
+html.customer-payment-page .checkout-heading{
+  align-items:flex-start;
+  gap:13px;
+  margin-bottom:21px;
+}
+html.customer-payment-page .checkout-heading > span{
+  width:28px;height:28px;
+  flex:0 0 28px;
+  display:grid;place-items:center;
+  border-radius:9px;
+  background:#111;color:#fff;
+  font-size:9px;
+}
+html.customer-payment-page .checkout-heading h2{
+  font-size:21px;
+  letter-spacing:-.035em;
+}
+html.customer-payment-page .checkout-heading p{
+  font-size:12px;
+  line-height:1.55;
+}
+html.customer-payment-page .checkout-methods{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+html.customer-payment-page .checkout-method{
+  min-height:154px;
+  padding:17px;
+  border-radius:18px;
+  background:#fafaf7;
+  border-color:#e2e2dc;
+}
+html.customer-payment-page .checkout-method:hover{
+  transform:translateY(-2px);
+  border-color:#111;
+  background:#fff;
+  box-shadow:0 14px 32px rgba(17,17,17,.08);
+}
+html.customer-payment-page .checkout-method h3{
+  margin:14px 0 4px;
+  font-size:15px;
+}
+html.customer-payment-page .checkout-method p{
+  font-size:11px;
+  line-height:1.5;
+}
+html.customer-payment-page .checkout-method .method-brand-wrap{
+  width:58px!important;height:58px!important;
+  border-radius:16px!important;
+}
+html.customer-payment-page .checkout-method .method-brand-image{
+  width:51px!important;height:47px!important;
+}
+html.customer-payment-page #detailsContainer.payment-sheet-open,
+html.customer-payment-page #detailsContainer.mobile-bottom-sheet-open{
+  width:min(720px,calc(100vw - 28px))!important;
+  max-height:min(88dvh,780px)!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:0!important;
+  top:auto!important;
+  transform:translateX(-50%)!important;
+  border-radius:26px 26px 0 0!important;
+}
+html.customer-payment-page .details-card{
+  border-radius:18px;
+  background:#f8f8f5;
+}
+html.customer-payment-page .attempt-box{
+  border-radius:16px;
+}
+html.customer-payment-page .receipt-box{
+  min-height:135px;
+  border-radius:17px;
+}
+html.customer-payment-page .payment-actions{
+  gap:9px;
+}
+html.customer-payment-page .verification-state{
+  padding:32px 10px 24px;
+}
+html.customer-payment-page .verification-state h2{
+  font-size:30px;
+  letter-spacing:-.045em;
+}
+html.customer-payment-page .approved-message,
+html.customer-payment-page .waiting-box{
+  border-radius:18px;
+}
+
+/* No automatic cinematic motion on first paint. Content motion is reserved
+   for state changes/interaction so the payment page feels calm and fast. */
+html.customer-payment-page .payment-view,
+html.customer-payment-page .checkout-panel,
+html.customer-payment-page .checkout-summary{
+  animation:none!important;
+}
+
+@media(max-width:760px){
+  html.customer-payment-page .site-header{
+    position:relative!important;
+    min-height:60px;
+    padding:0 14px!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    background:#f5f5f2!important;
+  }
+  html.customer-payment-page .site-header .brand{
+    font-size:13px;
+  }
+  html.customer-payment-page .site-header .brand-mark{
+    width:32px;height:32px;
+  }
+  html.customer-payment-page .payment-view{
+    width:calc(100% - 24px);
+    padding:22px 0 55px;
+  }
+  html.customer-payment-page .payment-head{
+    display:block;
+    margin-bottom:16px;
+    padding:0;
+  }
+  html.customer-payment-page .payment-head h1{
+    max-width:none;
+    margin:8px 0 7px;
+    font-size:clamp(38px,12vw,52px);
+    line-height:.94;
+  }
+  html.customer-payment-page .payment-head p{
+    max-width:330px;
+    font-size:12px;
+  }
+  html.customer-payment-page .page-expiry{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    min-width:0;
+    margin-top:16px;
+    padding:12px 14px;
+    border-radius:14px;
+    box-shadow:none;
+  }
+  html.customer-payment-page .page-expiry strong{
+    margin-top:0;
+    font-size:20px;
+  }
+  html.customer-payment-page .checkout-layout{
+    display:block;
+  }
+  html.customer-payment-page .checkout-summary{
+    position:relative;
+    top:auto;
+    min-height:0;
+    margin-bottom:10px;
+    padding:19px;
+    border-radius:20px;
+  }
+  html.customer-payment-page .checkout-summary > strong{
+    margin:9px 0 2px;
+    font-size:31px;
+  }
+  html.customer-payment-page .checkout-summary > p{
+    font-size:11px;
+  }
+  html.customer-payment-page .checkout-reference{
+    display:flex;
+    flex-direction:row;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-top:16px;
+    padding-top:13px;
+  }
+  html.customer-payment-page .checkout-reference strong{
+    max-width:58%;
+    text-align:right;
+  }
+  html.customer-payment-page .checkout-panel{
+    padding:19px 16px;
+    border-radius:20px;
+    box-shadow:0 10px 34px rgba(17,17,17,.045);
+  }
+  html.customer-payment-page .checkout-heading h2{
+    font-size:19px;
+  }
+  html.customer-payment-page .checkout-methods{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+  html.customer-payment-page .checkout-method{
+    min-height:92px;
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto;
+    align-items:center;
+    gap:13px;
+    padding:12px;
+    border-radius:16px;
+  }
+  html.customer-payment-page .checkout-method .method-brand-wrap{
+    width:52px!important;height:52px!important;
+    border-radius:14px!important;
+  }
+  html.customer-payment-page .checkout-method .method-brand-image{
+    width:47px!important;height:43px!important;
+  }
+  html.customer-payment-page .checkout-method h3{
+    margin:0 0 3px;
+    font-size:14px;
+  }
+  html.customer-payment-page .checkout-method p{
+    font-size:10px;
+    line-height:1.45;
+  }
+  html.customer-payment-page .checkout-method .method-top{
+    display:contents;
+  }
+  html.customer-payment-page .checkout-method .method-top > span:last-child{
+    grid-column:3;
+    grid-row:1;
+  }
+  html.customer-payment-page .checkout-method > h3,
+  html.customer-payment-page .checkout-method > p{
+    grid-column:2;
+  }
+  html.customer-payment-page #detailsContainer.payment-sheet-open,
+  html.customer-payment-page #detailsContainer.mobile-bottom-sheet-open{
+    width:100%!important;
+    max-height:92dvh!important;
+    border-radius:26px 26px 0 0!important;
+    padding:10px 16px calc(18px + env(safe-area-inset-bottom))!important;
+  }
+  html.customer-payment-page .payment-actions{
+    position:sticky;
+    bottom:0;
+  }
+}
+
+@media(max-width:390px){
+  html.customer-payment-page .payment-view{
+    width:calc(100% - 18px);
+  }
+  html.customer-payment-page .checkout-panel{
+    padding-inline:13px;
+  }
+  html.customer-payment-page .payment-head h1{
+    font-size:36px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  html.customer-payment-page *{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    scroll-behavior:auto!important;
+  }
+}
