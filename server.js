@@ -8302,9 +8302,13 @@ app.post(
                 "image/jpeg": "jpg",
                 "image/jpg": "jpg",
                 "image/png": "png",
-                "image/webp": "webp",
-                "application/pdf": "pdf"
+                "image/webp": "webp"
             };
+            if (!extensionMap[req.file.mimetype]) {
+                return res.status(400).json({
+                    error: "Only JPG, PNG or WEBP receipt images are supported."
+                });
+            }
 
             const extension =
                 extensionMap[req.file.mimetype] ||
@@ -8521,195 +8525,92 @@ app.post(
         req,
         res
     ) => {
-
         try {
-
-            const {
-                data: session
-            } = await supabase
-                .from(
-                    "payment_sessions"
-                )
-                .select(
-                    `
+            const {data:session,error:sessionError}=await supabase
+                .from("payment_sessions")
+                .select(`
                     payment_id,
                     expires_at,
-
                     payments (
                         id,
                         status,
                         return_url,
-                        cancel_url
+                        cancel_url,
+                        customer_email,
+                        payment_type,
+                        amount,
+                        currency,
+                        payment_reference,
+                        service_id,
+                        donation_campaign_id,
+                        services (name),
+                        donation_campaigns (name)
                     )
-                    `
-                )
-                .eq(
-                    "session_token_hash",
-                    hash(
-                        req.params.token
-                    )
-                )
+                `)
+                .eq("session_token_hash",hash(req.params.token))
                 .maybeSingle();
 
+            if(sessionError)throw sessionError;
+            if(!session)return res.status(404).json({error:"Payment session not found."});
+            if(new Date(session.expires_at)<=new Date())return res.status(410).json({expired:true});
 
-            if (
-                !session
-            ) {
+            const payment=session.payments;
+            if(!payment)return res.status(404).json({error:"Payment not found."});
 
-                return res.status(404).json({
-                    error:
-                        "Payment session not found."
-                });
+            if(["awaiting_verification","approved","completed"].includes(payment.status)){
+                return res.status(409).json({error:"This payment can no longer be cancelled."});
+            }
+            if(payment.status==="cancelled"){
+                return res.json({success:true,return_url:payment.return_url,cancel_url:payment.cancel_url||payment.return_url});
             }
 
-
-            if (
-                new Date(
-                    session.expires_at
-                ) <=
-                new Date()
-            ) {
-
-                return res.status(410).json({
-                    expired:
-                        true
-                });
-            }
-
-
-            const payment =
-                session.payments;
-
-
-            if (
-                !payment
-            ) {
-
-                return res.status(404).json({
-                    error:
-                        "Payment not found."
-                });
-            }
-
-
-            if (
-                [
-                    "awaiting_verification",
-                    "approved",
-                    "completed"
-                ].includes(
-                    payment.status
-                )
-            ) {
-
-                return res.status(409).json({
-                    error:
-                        "This payment can no longer be cancelled."
-                });
-            }
-
-
-            const {
-                error
-            } = await supabase
-                .from(
-                    "payments"
-                )
+            const now=new Date().toISOString();
+            const {error:updateError}=await supabase
+                .from("payments")
                 .update({
-
-                    status:
-                        "cancelled",
-
-                    payment_state:
-                        "cancelled",
-
-                    cancel_reason:
-                        "Customer cancelled payment.",
-
-                    cancelled_at:
-                        new Date()
-                            .toISOString()
-
+                    status:"cancelled",
+                    payment_state:"cancelled",
+                    cancel_reason:"Customer cancelled payment.",
+                    cancelled_at:now
                 })
-                .eq(
-                    "id",
-                    payment.id
-                );
+                .eq("id",payment.id)
+                .not("status","in","(awaiting_verification,approved,completed)");
 
+            if(updateError)throw updateError;
 
-            if (
-                error
-            ) {
+            await supabase.from("audit_logs").insert({
+                actor_type:"system",
+                action:"payment_cancelled",
+                payment_id:payment.id,
+                metadata:{reason:"customer_cancelled"}
+            });
 
-                console.error(
-                    "Cancel payment database error:",
-                    error
-                );
-
-
-                return res.status(500).json({
-                    error:
-                        "Could not cancel this payment."
+            try{
+                await sendPaymentCancelledEmail({
+                    email:payment.customer_email,
+                    businessName:payment.services?.name||payment.donation_campaigns?.name||"the business",
+                    amount:payment.amount,
+                    currency:payment.currency,
+                    reference:payment.payment_reference,
+                    paymentType:payment.payment_type
                 });
+            }catch(emailError){
+                console.error("Payment cancellation email error:",emailError);
             }
-
-
-            await supabase
-                .from(
-                    "audit_logs"
-                )
-                .insert({
-
-                    actor_type:
-                        "system",
-
-                    action:
-                        "payment_cancelled",
-
-                    payment_id:
-                        payment.id,
-
-                    metadata: {
-
-                        reason:
-                            "customer_cancelled"
-                    }
-                });
-
 
             res.json({
-
-                success:
-                    true,
-
-                return_url:
-                    payment.return_url,
-
-                cancel_url:
-                    payment.cancel_url ||
-                    payment.return_url
+                success:true,
+                return_url:payment.return_url,
+                cancel_url:payment.cancel_url||payment.return_url
             });
-
-        } catch (error) {
-
-            console.error(
-                "Cancel payment error:",
-                error
-            );
-
-
-            res.status(500).json({
-                error:
-                    "Could not cancel this payment."
-            });
+        }catch(error){
+            console.error("Cancel payment error:",error);
+            res.status(500).json({error:"Could not cancel this payment."});
         }
     }
 );
 
 
-/* ============================================================
-   CUSTOMER PROCESSING RECEIPT + MERCHANT VERIFICATION
-============================================================ */
 app.get("/api/public/receipts/:reference",async(req,res)=>{
   try{
     const key=String(req.params.reference||"").trim();
@@ -8727,6 +8628,28 @@ async function ensureSubscriptionContract(payment){
   const due=new Date();product.subscription_interval==="yearly"?due.setFullYear(due.getFullYear()+1):due.setMonth(due.getMonth()+1);
   const {data:contract,error}=await supabase.from("subscription_contracts").insert({merchant_id:service.merchant_id,service_id:payment.service_id,product_id:payment.product_id,service_user_id:payment.service_user_id,initial_payment_id:payment.id,current_payment_id:payment.id,status:"active",interval:product.subscription_interval,next_due_at:due.toISOString()}).select("*").single();if(error)throw error;return contract;
 }
+async function sendPaymentCancelledEmail({email,businessName,amount,currency,reference,paymentType}){
+  if(!email)return;
+  const type=paymentType==="donate"?"donation":paymentType==="subscribe"?"subscription":"payment";
+  const label=type.charAt(0).toUpperCase()+type.slice(1);
+  const safeBusiness=escapeHtml(businessName||"the business");
+  const safeReference=escapeHtml(reference||"—");
+  const html='<!doctype html><html><body style="margin:0;padding:0;background:#f3f3f0;font-family:Arial,Helvetica,sans-serif;color:#111;">'+
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f0;"><tr><td align="center" style="padding:32px 14px;">'+
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#fff;border:1px solid #deded8;border-radius:24px;overflow:hidden;">'+
+    '<tr><td style="padding:28px 30px;border-bottom:1px solid #ecece6;"><div style="font-size:17px;font-weight:900;">SquashberryPay</div><div style="font-size:11px;color:#888;margin-top:3px;letter-spacing:1.4px;">'+label.toUpperCase()+' CANCELLATION</div></td></tr>'+
+    '<tr><td style="padding:34px 30px 16px;"><div style="font-size:11px;font-weight:800;letter-spacing:2px;color:#777;">PAYMENT UPDATE</div><h1 style="margin:10px 0 12px;font-size:30px;line-height:1.1;">Your '+type+' was cancelled.</h1><p style="margin:0;color:#666;font-size:15px;line-height:1.7;">Your '+type+' with <strong>'+safeBusiness+'</strong> was cancelled before completion. No further action is required for this payment attempt.</p></td></tr>'+
+    '<tr><td style="padding:18px 30px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e4e4de;border-radius:16px;background:#fafaf7;"><tr><td style="padding:16px;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.2px;">Amount</div><div style="font-size:17px;font-weight:900;margin-top:5px;">'+escapeHtml(currency||"GMD")+' '+Number(amount||0).toFixed(2)+'</div></td><td style="padding:16px;text-align:right;"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1.2px;">Reference</div><div style="font-size:13px;font-weight:800;margin-top:5px;">'+safeReference+'</div></td></tr></table></td></tr>'+
+    '<tr><td style="padding:0 30px 30px;"><div style="padding:16px 18px;border-radius:14px;background:#f5f5f1;border:1px solid #e6e6e0;color:#555;font-size:14px;line-height:1.65;">If you cancelled by mistake or there is an issue, please contact <strong>'+safeBusiness+'</strong>. You can also contact the SquashberryPay help desk at <a href="mailto:squashberrypro@gmail.com" style="color:#111;font-weight:800;">squashberrypro@gmail.com</a>.</div></td></tr>'+
+    '</table></td></tr></table></body></html>';
+  await sendResendEmail({
+    to:email,
+    subject:label+" cancelled — "+String(reference||"SquashberryPay"),
+    text:"Your "+type+" with "+(businessName||"the business")+" was cancelled.\n\nAmount: "+(currency||"GMD")+" "+Number(amount||0).toFixed(2)+"\nReference: "+String(reference||"—")+"\n\nIf there is an issue, contact the business or SquashberryPay help desk at squashberrypro@gmail.com.",
+    html
+  });
+}
+
 async function sendPaymentSubmittedEmail({email,serviceName,amount,currency,reference,isDonation=false}){
   if(!email)return;
   const kind=isDonation?"donation":"payment";
