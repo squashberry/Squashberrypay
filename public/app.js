@@ -1163,46 +1163,38 @@ function showExistingAttempt() {
 receiptInput?.addEventListener(
     "change",
     () => {
-
-        const file =
-            receiptInput.files?.[0];
-
-
-        if (!file) {
-
-            selectedFile.hidden =
-                true;
-
+        const file=receiptInput.files?.[0];
+        if(!file){
+            if(selectedFile)selectedFile.hidden=true;
             return;
         }
-
-
-        selectedFile.textContent =
-            `${file.name} — ready to submit`;
-
-
-        selectedFile.hidden =
-            false;
-
-
-        selectedFile.classList.remove(
-            "item-enter"
-        );
-
-
-        void selectedFile.offsetWidth;
-
-
-        selectedFile.classList.add(
-            "item-enter"
-        );
-
-
-        notify(
-            "Receipt selected.",
-            "success",
-            2200
-        );
+        const allowed=["image/jpeg","image/jpg","image/png","image/webp"];
+        if(!allowed.includes(String(file.type||"").toLowerCase())){
+            receiptInput.value="";
+            if(selectedFile)selectedFile.hidden=true;
+            notify("Only JPG, PNG or WEBP receipt images are supported.","error");
+            return;
+        }
+        if(file.size>8*1024*1024){
+            receiptInput.value="";
+            if(selectedFile)selectedFile.hidden=true;
+            notify("Receipt images must be 8 MB or smaller.","error");
+            return;
+        }
+        selectedFile.innerHTML="";
+        const preview=document.createElement("div");
+        preview.className="receipt-preview";
+        const img=document.createElement("img");
+        img.src=URL.createObjectURL(file);
+        img.alt="Selected payment receipt preview";
+        img.onload=()=>URL.revokeObjectURL(img.src);
+        const meta=document.createElement("div");
+        meta.className="receipt-preview-meta";
+        meta.innerHTML="<strong>"+escapeHtml(file.name)+"</strong><span>"+(file.size/1024/1024).toFixed(2)+" MB · Image ready</span>";
+        preview.append(img,meta);
+        selectedFile.append(preview);
+        selectedFile.hidden=false;
+        notify("Receipt image selected.","success",2200);
     }
 );
 
