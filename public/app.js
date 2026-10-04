@@ -1082,64 +1082,26 @@ function showBusinessContact(){
     modal.addEventListener("click",e=>{if(e.target.closest("[data-close-business-contact]")||e.target.classList.contains("payment-contact-backdrop"))modal.remove()});
 }
 
-function closeReceiptUploadModal(){
-    const modal=document.getElementById("receiptUploadModal");
-    if(!modal)return;
-    const receipt=modal.querySelector(".receipt-box");
-    const selected=modal.querySelector("#selectedFile");
-    const submit=modal.querySelector("#submitReceipt");
-    const original=document.getElementById("detailsContainer");
-    const actions=original?.querySelector(".payment-actions");
-    if(receipt&&actions)actions.parentElement?.insertBefore(receipt,actions);
-    if(selected&&actions)actions.parentElement?.insertBefore(selected,actions);
-    if(submit&&actions)actions.prepend(submit);
-    modal.remove();
-}
+function closeReceiptUploadModal(){document.getElementById("receiptUploadModal")?.remove();}
 function openReceiptUploadModal(){
     if(document.getElementById("receiptUploadModal"))return;
-    const receipt=document.querySelector(".receipt-box");
-    const selected=document.getElementById("selectedFile");
-    const submit=document.getElementById("submitReceipt");
-    if(!receipt||!selected||!submit)return;
     const modal=document.createElement("div");
-    modal.id="receiptUploadModal";
-    modal.className="receipt-upload-modal";
-    modal.innerHTML='<div class="receipt-upload-backdrop"></div><div class="receipt-upload-card" role="dialog" aria-modal="true" aria-labelledby="receiptUploadTitle"><div class="receipt-upload-head"><div><span class="eyebrow">RECEIPT</span><h2 id="receiptUploadTitle">Upload your payment receipt</h2><p>Only upload the image after you have completed the transfer.</p></div><button type="button" class="receipt-upload-close" aria-label="Close">×</button></div><div class="receipt-upload-body"></div><div class="receipt-upload-actions"><button type="button" class="button secondary" data-receipt-close>Close</button></div></div>';
+    modal.id="receiptUploadModal";modal.className="receipt-upload-modal";
+    modal.innerHTML='<div class="receipt-upload-backdrop"></div><div class="receipt-upload-card" role="dialog" aria-modal="true" aria-labelledby="receiptUploadTitle"><div class="receipt-upload-head"><div><span class="eyebrow">RECEIPT</span><h2 id="receiptUploadTitle">Upload your payment receipt</h2><p>Only upload the image after you have completed the transfer.</p></div><button type="button" class="receipt-upload-close" aria-label="Close">×</button></div><div class="receipt-upload-body"><label class="receipt-upload-picker" for="receiptModalInput"><strong>Choose receipt image</strong><span>JPG, PNG or WEBP · Max 8 MB</span><input id="receiptModalInput" type="file" accept="image/jpeg,image/png,image/webp,image/jpg" hidden></label></div><div class="receipt-upload-actions"><button type="button" class="button secondary" data-receipt-close>Close</button></div></div>';
     document.body.appendChild(modal);
-    const body=modal.querySelector(".receipt-upload-body");
-    const actions=modal.querySelector(".receipt-upload-actions");
-    body.append(receipt,selected);
-    actions.append(submit);
-    receipt.hidden=false;
-    selected.hidden=true;
-    submit.hidden=false;
-    submit.classList.add("receipt-upload-submit");
     const close=()=>closeReceiptUploadModal();
     modal.querySelector(".receipt-upload-close")?.addEventListener("click",close);
     modal.querySelector("[data-receipt-close]")?.addEventListener("click",close);
     modal.querySelector(".receipt-upload-backdrop")?.addEventListener("click",close);
-    setTimeout(()=>receipt.querySelector("input")?.focus(),30);
+    modal.querySelector("#receiptModalInput")?.addEventListener("change",async e=>{
+        const file=e.target.files?.[0];if(!file)return;
+        const allowed=["image/jpeg","image/jpg","image/png","image/webp"];
+        if(!allowed.includes(String(file.type||"").toLowerCase())){e.target.value="";notify("Only JPG, PNG or WEBP receipt images are supported.","error");return;}
+        if(file.size>8*1024*1024){e.target.value="";notify("Receipt images must be 8 MB or smaller.","error");return;}
+        await uploadReceiptFile(file);
+    });
 }
-function setReceiptStage(show){
-    const receipt=document.querySelector(".receipt-box");
-    const selected=document.getElementById("selectedFile");
-    const submit=document.getElementById("submitReceipt");
-    if(!receipt)return;
-    let paid=document.getElementById("ivePaidButton");
-    if(!paid){
-        paid=document.createElement("button");
-        paid.id="ivePaidButton";
-        paid.type="button";
-        paid.className="button primary full payment-paid-button";
-        paid.textContent="I’ve paid — upload receipt";
-        receipt.parentElement.insertBefore(paid,receipt);
-        paid.addEventListener("click",openReceiptUploadModal);
-    }
-    paid.hidden=show;
-    receipt.hidden=true;
-    if(selected)selected.hidden=true;
-    if(submit)submit.hidden=true;
-}
+function setReceiptStage(show){const paid=document.getElementById("ivePaidButton");if(paid)paid.hidden=Boolean(show);}
 /* ============================================================
    EXISTING ATTEMPT
 ============================================================ */
@@ -1176,6 +1138,8 @@ function showExistingAttempt() {
     }
 }
 
+
+document.getElementById("ivePaidButton")?.addEventListener("click",openReceiptUploadModal);
 
 /* ============================================================
    RECEIPT INPUT
@@ -1745,51 +1709,22 @@ function startPaymentTimer() {
    EXPIRE ATTEMPT
 ============================================================ */
 
-function handleAttemptExpired() {
-
-    clearInterval(
-        state.paymentTimer
-    );
-
-
-    submitReceiptBtn.disabled =
-        true;
-
-    cancelPaymentBtn.disabled =
-        true;
-
-
-    notify(
-        "Your payment attempt has expired. Please return to the app and start a new payment.",
-        "error",
-        5000
-    );
-
-
-    setTimeout(
-        () => {
-
-            const expiryDestination =
-                state.payment?.cancel_url ||
-                state.payment?.return_url;
-
-            if (
-                expiryDestination
-            ) {
-
-                window.location.href =
-                    expiryDestination;
-
-            } else {
-
-                window.location.href=SITE_BASE+"/";
-            }
-
-        },
-        2300
-    );
+function handleAttemptExpired(){
+    clearInterval(state.paymentTimer);
+    if(submitReceiptBtn)submitReceiptBtn.disabled=true;
+    const paid=document.getElementById("ivePaidButton");if(paid)paid.disabled=true;
+    if(cancelPaymentBtn)cancelPaymentBtn.disabled=false;
+    closeReceiptUploadModal();closePaymentMobileSheet();
+    let overlay=document.getElementById("paymentExpiredOverlay");
+    if(!overlay){
+        overlay=document.createElement("div");overlay.id="paymentExpiredOverlay";overlay.className="payment-expired-overlay";
+        overlay.innerHTML='<div class="payment-expired-card" role="dialog" aria-modal="true"><div class="payment-expired-icon">!</div><span class="eyebrow">PAYMENT EXPIRED</span><h2>Your payment time has expired</h2><p>The payment attempt reached its time limit before a receipt was submitted. No payment was confirmed through SquashberryPay.</p><button class="button primary full" type="button" data-expired-return>Return to app</button><button class="button secondary full" style="margin-top:8px" type="button" data-expired-close>Stay here</button></div>';
+        document.body.appendChild(overlay);
+        overlay.querySelector("[data-expired-return]")?.addEventListener("click",()=>{window.location.href=state.payment?.cancel_url||state.payment?.return_url||SITE_BASE+"/";});
+        overlay.querySelector("[data-expired-close]")?.addEventListener("click",()=>overlay.remove());
+    }
+    notify("Payment time expired. Your payment was not confirmed.","error",6000);
 }
-
 
 /* ============================================================
    EXPIRE PAGE
