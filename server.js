@@ -8025,6 +8025,38 @@ app.get(
                 console.error("Payment method lookup error:", methodQuery.error);
                 return res.status(500).json({ error: "Could not load payment method." });
             }
+
+            /*
+             * Payment methods can be edited while a hosted checkout is open.
+             * Never let a stale method UUID turn into a broken payment attempt.
+             * When a donation campaign has exactly one enabled destination,
+             * safely use that current destination instead.
+             */
+            if (!methodQuery.data && payment.donation_campaign_id) {
+                const fallbackQuery = await supabase
+                    .from("donation_payment_methods")
+                    .select("id,name,type,icon_path,instructions,account_name,account_number,bank_name,phone_number")
+                    .eq("merchant_id", campaign?.merchant_id || "")
+                    .eq("enabled", true)
+                    .order("created_at", { ascending: false });
+
+                if (fallbackQuery.error) {
+                    console.error("Donation payment method fallback lookup error:", fallbackQuery.error);
+                    return res.status(500).json({ error: "Could not load payment method." });
+                }
+
+                if (fallbackQuery.data?.length === 1) {
+                    methodQuery = {
+                        data: fallbackQuery.data[0],
+                        error: null
+                    };
+                } else {
+                    return res.status(409).json({
+                        error: "Payment methods changed. Refresh the payment page and choose a current payment method."
+                    });
+                }
+            }
+
             if (!methodQuery.data) {
                 return res.status(404).json({ error: "Payment method not found or disabled." });
             }
@@ -8036,7 +8068,7 @@ app.get(
                 startedAt = new Date().toISOString();
                 deadlineAt = addMinutes(PAYMENT_ATTEMPT_MINUTES);
 
-                const { error: updateError } = await supabase
+                const updateResult = await supabase
                     .from("payments")
                     .update({
                         ...(payment.donation_campaign_id
@@ -8048,11 +8080,45 @@ app.get(
                         payment_state: "awaiting_payment"
                     })
                     .eq("id", payment.id)
-                    .eq("status", "pending");
+                    .eq("status", "pending")
+                    .select("id,status,payment_method_id,donation_payment_method_id,payment_started_at,payment_deadline_at")
+                    .maybeSingle();
 
-                if (updateError) {
-                    console.error("Start payment attempt error:", updateError);
-                    return res.status(500).json({ error: "Could not start payment." });
+                if (updateResult.error || !updateResult.data) {
+                    /*
+                     * Two taps / repeated browser requests can race here.
+                     * One request wins the pending -> awaiting_receipt transition;
+                     * the other must reuse that committed attempt instead of
+                     * returning a false 500.
+                     */
+                    const { data: currentPayment, error: rereadError } = await supabase
+                        .from("payments")
+                        .select("id,status,payment_method_id,donation_payment_method_id,payment_started_at,payment_deadline_at")
+                        .eq("id", payment.id)
+                        .maybeSingle();
+
+                    if (
+                        !rereadError &&
+                        currentPayment &&
+                        currentPayment.status === "awaiting_receipt" &&
+                        (
+                            payment.donation_campaign_id
+                                ? currentPayment.donation_payment_method_id === methodQuery.data.id
+                                : currentPayment.payment_method_id === methodQuery.data.id
+                        )
+                    ) {
+                        startedAt = currentPayment.payment_started_at;
+                        deadlineAt = currentPayment.payment_deadline_at;
+                    } else {
+                        console.error(
+                            "Start payment attempt error:",
+                            updateResult.error || rereadError || "Payment transition affected no rows."
+                        );
+                        return res.status(500).json({ error: "Could not start payment." });
+                    }
+                } else {
+                    startedAt = updateResult.data.payment_started_at;
+                    deadlineAt = updateResult.data.payment_deadline_at;
                 }
             }
 
