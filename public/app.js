@@ -1152,6 +1152,7 @@ function bindCheckoutActionButtons(){
 }
 
 document.addEventListener("click",event=>{
+    if(event.defaultPrevented)return;
     const paid=event.target.closest("#ivePaidButton");
     if(paid){
         event.preventDefault();
