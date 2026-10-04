@@ -60,17 +60,17 @@ body{
 
 /* ---------- Public homepage ---------- */
 
-body:has(#welcomeView){
+body:has(#welcomeView:not([hidden])){
   background:#fff;
   color:var(--sb-ink);
 }
 
-body:has(#welcomeView) .site-header{
+body:has(#welcomeView:not([hidden])) .site-header{
   position:sticky;
   top:0;
 }
 
-body:has(#welcomeView) .desktop-nav{
+body:has(#welcomeView:not([hidden])) .desktop-nav{
   display:flex;
   align-items:center;
   gap:28px;
@@ -78,77 +78,77 @@ body:has(#welcomeView) .desktop-nav{
   margin-right:8px;
 }
 
-body:has(#welcomeView) .desktop-nav a{
+body:has(#welcomeView:not([hidden])) .desktop-nav a{
   color:#666;
   font-size:12px;
   font-weight:750;
   text-decoration:none;
 }
 
-body:has(#welcomeView) .desktop-nav a:hover{
+body:has(#welcomeView:not([hidden])) .desktop-nav a:hover{
   color:#111;
 }
 
-body:has(#welcomeView) .hero{
+body:has(#welcomeView:not([hidden])) .hero{
   min-height:calc(100svh - 72px);
   padding:72px 0 96px;
   align-items:center;
 }
 
-body:has(#welcomeView) .hero-copy{
+body:has(#welcomeView:not([hidden])) .hero-copy{
   max-width:720px;
 }
 
-body:has(#welcomeView) .hero-copy h1{
+body:has(#welcomeView:not([hidden])) .hero-copy h1{
   max-width:760px;
   font-size:clamp(50px,6.8vw,88px);
   line-height:.92;
   letter-spacing:-.075em;
 }
 
-body:has(#welcomeView) .hero-copy p{
+body:has(#welcomeView:not([hidden])) .hero-copy p{
   max-width:620px;
   color:#64645f;
   font-size:15px;
   line-height:1.75;
 }
 
-body:has(#welcomeView) .hero-actions{
+body:has(#welcomeView:not([hidden])) .hero-actions{
   display:flex;
   flex-wrap:wrap;
   gap:10px;
   margin-top:26px;
 }
 
-body:has(#welcomeView) .trust-row{
+body:has(#welcomeView:not([hidden])) .trust-row{
   display:flex;
   flex-wrap:wrap;
   gap:8px;
   margin-top:28px;
 }
 
-body:has(#welcomeView) .payment-preview{
+body:has(#welcomeView:not([hidden])) .payment-preview{
   width:min(100%,480px);
   margin-left:auto;
   border-radius:24px;
   box-shadow:0 22px 70px rgba(0,0,0,.12);
 }
 
-body:has(#welcomeView) .content-section{
+body:has(#welcomeView:not([hidden])) .content-section{
   padding-top:100px;
   padding-bottom:100px;
 }
 
-body:has(#welcomeView) .feature-grid{
+body:has(#welcomeView:not([hidden])) .feature-grid{
   gap:12px;
 }
 
-body:has(#welcomeView) .feature-card{
+body:has(#welcomeView:not([hidden])) .feature-card{
   min-height:210px;
   border-radius:18px;
 }
 
-body:has(#welcomeView) .business-banner{
+body:has(#welcomeView:not([hidden])) .business-banner{
   border-radius:24px;
 }
 
@@ -456,7 +456,7 @@ body.dashboard-compact .panel{
 }
 
 @media(max-width:1100px){
-  body:has(#welcomeView) .hero{
+  body:has(#welcomeView:not([hidden])) .hero{
     grid-template-columns:1fr 1fr;
     gap:36px;
   }
@@ -480,13 +480,13 @@ body.dashboard-compact .panel{
 }
 
 @media(max-width:850px){
-  body:has(#welcomeView) .hero{
+  body:has(#welcomeView:not([hidden])) .hero{
     grid-template-columns:1fr;
     min-height:auto;
     padding-top:54px;
   }
 
-  body:has(#welcomeView) .hero-visual{
+  body:has(#welcomeView:not([hidden])) .hero-visual{
     justify-content:center;
   }
 
@@ -625,11 +625,11 @@ body.dashboard-compact .panel{
     padding-right:14px;
   }
 
-  body:has(#welcomeView) .site-header .header-actions .button.primary.small{
+  body:has(#welcomeView:not([hidden])) .site-header .header-actions .button.primary.small{
     display:none;
   }
 
-  body:has(#welcomeView) .desktop-nav{
+  body:has(#welcomeView:not([hidden])) .desktop-nav{
     display:none;
   }
 
@@ -657,69 +657,69 @@ body.dashboard-compact .panel{
     background:#111;
   }
 
-  body:has(#welcomeView) .site-header .header-actions{
+  body:has(#welcomeView:not([hidden])) .site-header .header-actions{
     margin-left:auto;
   }
 
-  body:has(#welcomeView) .site-header .header-actions .nav-login{
+  body:has(#welcomeView:not([hidden])) .site-header .header-actions .nav-login{
     min-height:40px;
     font-size:12px;
   }
 
-  body:has(#welcomeView) .hero{
+  body:has(#welcomeView:not([hidden])) .hero{
     padding:44px 0 72px;
   }
 
-  body:has(#welcomeView) .hero-copy h1{
+  body:has(#welcomeView:not([hidden])) .hero-copy h1{
     font-size:clamp(44px,13vw,66px);
     max-width:100%;
   }
 
-  body:has(#welcomeView) .hero-copy p{
+  body:has(#welcomeView:not([hidden])) .hero-copy p{
     font-size:14px;
     line-height:1.65;
   }
 
-  body:has(#welcomeView) .hero-actions{
+  body:has(#welcomeView:not([hidden])) .hero-actions{
     display:grid;
     grid-template-columns:1fr;
   }
 
-  body:has(#welcomeView) .hero-actions .button{
+  body:has(#welcomeView:not([hidden])) .hero-actions .button{
     width:100%;
   }
 
-  body:has(#welcomeView) .trust-row{
+  body:has(#welcomeView:not([hidden])) .trust-row{
     flex-wrap:nowrap;
     overflow-x:auto;
     padding-bottom:3px;
     scrollbar-width:none;
   }
 
-  body:has(#welcomeView) .trust-row::-webkit-scrollbar{
+  body:has(#welcomeView:not([hidden])) .trust-row::-webkit-scrollbar{
     display:none;
   }
 
-  body:has(#welcomeView) .payment-preview{
+  body:has(#welcomeView:not([hidden])) .payment-preview{
     width:100%;
     border-radius:20px;
   }
 
-  body:has(#welcomeView) .content-section{
+  body:has(#welcomeView:not([hidden])) .content-section{
     padding-top:68px;
     padding-bottom:68px;
   }
 
-  body:has(#welcomeView) .feature-grid{
+  body:has(#welcomeView:not([hidden])) .feature-grid{
     grid-template-columns:1fr;
   }
 
-  body:has(#welcomeView) .business-banner{
+  body:has(#welcomeView:not([hidden])) .business-banner{
     display:grid;
     gap:22px;
   }
 
-  body:has(#welcomeView) .link-columns{
+  body:has(#welcomeView:not([hidden])) .link-columns{
     grid-template-columns:1fr 1fr;
     gap:28px;
   }
@@ -960,7 +960,7 @@ body.dashboard-compact .panel{
     grid-column:auto;
   }
 
-  body:has(#welcomeView) .link-columns{
+  body:has(#welcomeView:not([hidden])) .link-columns{
     grid-template-columns:1fr;
   }
 }
