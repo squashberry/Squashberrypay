@@ -9817,8 +9817,7 @@ app.patch("/api/merchant/apps/:id", authenticateMerchant, async (req,res) => {
         const normalizeList=value =>
             Array.isArray(value)
                 ? value.map(item=>String(item||"").trim()).filter(Boolean).slice(0,30)
-                : String(value??"").split(/[,
-]/).map(item=>item.trim()).filter(Boolean).slice(0,30);
+                : String(value??"").split(/[,\n]/).map(item=>item.trim()).filter(Boolean).slice(0,30);
 
         const patch={updated_at:new Date().toISOString()};
         if(req.body?.name!==undefined){
