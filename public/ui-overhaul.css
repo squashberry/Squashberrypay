@@ -1013,8 +1013,13 @@ table th{background:#f0f0ed!important;color:#555!important}
     position:fixed!important;
     inset:0!important;
     z-index:5900!important;
-    background:rgba(0,0,0,.38)!important;
-    backdrop-filter:blur(5px)!important;
+    background:transparent!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    pointer-events:auto;
+  }
+  .mobile-nav-scrim[hidden]{
+    display:none!important;
   }
   .mobile-menu{
     display:inline-grid!important;
@@ -1146,5 +1151,34 @@ table th{background:#f0f0ed!important;color:#555!important}
   .merchant-section:not([hidden]),.workspace-panel,.method-card,.workspace-tab{
     animation:none!important;
     transition:none!important;
+  }
+}
+
+
+/* ---------- MOBILE AUTH HEADER VISIBILITY ---------- */
+@media (max-width:620px){
+  .site-header .brand{
+    min-width:0;
+    flex:1 1 auto;
+  }
+  .site-header .brand > span:last-child{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .site-header .header-actions{
+    flex:0 0 auto!important;
+    min-width:max-content;
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    position:relative;
+    z-index:2;
+  }
+  .site-header .header-actions .nav-login{
+    display:inline-flex!important;
+    visibility:visible!important;
+    opacity:1!important;
   }
 }
