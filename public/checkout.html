@@ -15,12 +15,12 @@
     <meta property="og:image" content="https://squashberry.github.io/Squashberrypay/og-image.svg">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="https://squashberry.github.io/Squashberrypay/og-image.svg">
-    <link rel="stylesheet" href="./checkout.css?v=20261004-02">
-<link rel="stylesheet" href="./state-flow.css?v=20261004-02">
+    <link rel="stylesheet" href="./checkout.css?v=20261004-03">
+<link rel="stylesheet" href="./state-flow.css?v=20261004-03">
 <link rel="icon" href="/Squashberrypay/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/Squashberrypay/favicon.svg">
 
-    <link rel="stylesheet" href="./ui-overhaul.css?v=20261004-02">
+    <link rel="stylesheet" href="./ui-overhaul.css?v=20261004-03">
 </head>
 <body>
     <main class="page-shell">
@@ -39,10 +39,31 @@
             </div>
 
             <div id="errorState" class="state error-state" hidden>
-                <div class="state-icon">!</div>
-                <h1>Checkout unavailable</h1>
-                <p id="errorMessage">This payment link is not available.</p>
-                <button id="retryButton" class="button secondary" type="button">Try again</button>
+                <div class="error-orbit error-orbit-one" aria-hidden="true"></div>
+                <div class="error-orbit error-orbit-two" aria-hidden="true"></div>
+
+                <div class="error-visual" aria-hidden="true">
+                    <div class="error-liquid">
+                        <span class="error-liquid-shine"></span>
+                        <span class="error-mark">!</span>
+                    </div>
+                </div>
+
+                <div class="error-copy">
+                    <span class="eyebrow error-eyebrow">CHECKOUT UNAVAILABLE</span>
+                    <h1>We couldn't open this checkout.</h1>
+                    <p id="errorMessage">This payment link is not available.</p>
+                    <p id="retryStatus" class="error-status">
+                        This can happen when a link has expired, been removed, or is temporarily unavailable.
+                    </p>
+                </div>
+
+                <button id="retryButton" class="button primary error-retry-button" type="button">
+                    <span class="retry-button-label" id="retryButtonText">Try again</span>
+                    <span class="retry-mini-spinner" aria-hidden="true"></span>
+                </button>
+
+                <p class="error-footnote">Your payment was not submitted.</p>
             </div>
 
             <div id="checkoutState" hidden>
@@ -174,7 +195,7 @@
         </section>
     </main>
 
-    <script src="./checkout.js?v=20261004-02"></script>
+    <script src="./checkout.js?v=20261004-03"></script>
 <script src="/Squashberrypay/offline.js" defer></script>
 
 </body>
