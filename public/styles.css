@@ -3205,3 +3205,26 @@ html.customer-payment-page .site-header .brand{
 .verification-rejected .verification-icon{background:#fff1f1!important;color:#9f2020!important;border:1px solid #e5c8c8;}
 .verification-rejected .verification-state{border-color:#e2c7c7!important;background:#fffafa!important;}
 .verification-rejected #approvedMessage{border-color:#e4caca!important;background:#fff8f8!important;}
+
+
+/* UNIFIED PAYMENT METHOD BOTTOM SHEET — viewport-owned on every device */
+.payment-sheet-host{position:static!important;display:contents!important;}
+#detailsContainer.payment-sheet-open{
+  position:fixed!important;left:50%!important;right:auto!important;bottom:0!important;top:auto!important;
+  width:min(760px,100vw)!important;max-height:min(86dvh,780px)!important;
+  transform:translateX(-50%) translateY(0)!important;z-index:9001!important;
+  margin:0!important;overflow:auto!important;overscroll-behavior:contain!important;
+  padding:12px 22px calc(22px + env(safe-area-inset-bottom))!important;
+  border:1px solid rgba(17,17,17,.09)!important;border-bottom:0!important;border-radius:28px 28px 0 0!important;
+  background:#fff!important;box-shadow:0 -28px 90px rgba(0,0,0,.16)!important;
+  -webkit-overflow-scrolling:touch!important;
+  animation:unifiedPaymentSheetIn .38s cubic-bezier(.16,1,.3,1) both!important;
+}
+#detailsContainer.payment-sheet-open::before{content:"";display:block;width:44px;height:5px;margin:0 auto 15px;border-radius:99px;background:#d4d4cf;}
+#detailsContainer.payment-sheet-open .payment-actions{position:sticky!important;bottom:0!important;z-index:5;background:linear-gradient(to bottom,rgba(255,255,255,.72),#fff 28%)!important;}
+@media(min-width:761px){
+ #detailsContainer.payment-sheet-open{max-height:min(78dvh,720px)!important;width:min(680px,calc(100vw - 48px))!important;border-radius:26px 26px 0 0!important;padding:14px 26px 24px!important;}
+ #detailsContainer.payment-sheet-open::before{width:52px;height:4px;margin-bottom:17px;}
+}
+@keyframes unifiedPaymentSheetIn{from{opacity:0;transform:translateX(-50%) translateY(105%)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@media(prefers-reduced-motion:reduce){#detailsContainer.payment-sheet-open{animation:none!important}}
