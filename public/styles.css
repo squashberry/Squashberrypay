@@ -2469,9 +2469,23 @@ a {
             );
     }
 
+    .header-actions{
+        display:flex!important;
+        align-items:center;
+        gap:8px;
+        flex:0 0 auto;
+        white-space:nowrap;
+    }
+
     .header-actions .nav-login {
         display:
-            none;
+            inline-flex !important;
+        align-items:center;
+        min-height:40px;
+        flex:0 0 auto;
+        color:#111 !important;
+        font-size:12px;
+        font-weight:850;
     }
 
     .hero-copy h1 {
