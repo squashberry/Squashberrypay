@@ -668,3 +668,93 @@ input:focus,textarea:focus{
     transition:none!important;
   }
 }
+
+
+/* ============================================================
+   MOBILE CHECKOUT — NATIVE-FEELING BOTTOM SHEET
+============================================================ */
+.mobile-bottom-sheet-scrim{
+  position:fixed;
+  inset:0;
+  z-index:9000;
+  background:rgba(8,8,8,.34);
+  backdrop-filter:blur(7px) saturate(.85);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .28s ease;
+}
+.mobile-bottom-sheet-scrim.is-visible{
+  opacity:1;
+  pointer-events:auto;
+}
+.mobile-sheet-locked{
+  overflow:hidden!important;
+  touch-action:none;
+}
+@media(max-width:760px){
+  body.mobile-sheet-locked .page-shell{
+    filter:none;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open{
+    position:fixed!important;
+    left:0;
+    right:0;
+    bottom:0;
+    z-index:9001;
+    width:100%!important;
+    max-height:min(88dvh,760px);
+    overflow:auto;
+    overscroll-behavior:contain;
+    margin:0!important;
+    padding:12px 18px calc(18px + env(safe-area-inset-bottom))!important;
+    border:1px solid rgba(17,17,17,.08);
+    border-bottom:0;
+    border-radius:28px 28px 0 0!important;
+    background:rgba(255,255,255,.985);
+    box-shadow:0 -25px 90px rgba(0,0,0,.18);
+    transform:translateY(var(--sheet-drag-y,0));
+    animation:checkoutSheetIn .42s cubic-bezier(.22,.8,.24,1) both;
+    -webkit-overflow-scrolling:touch;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open::before{
+    content:"";
+    display:block;
+    width:42px;
+    height:5px;
+    margin:2px auto 15px;
+    border-radius:99px;
+    background:#d5d5d0;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open .back-button{
+    display:flex;
+    align-items:center;
+    min-height:38px;
+    margin:-2px 0 13px;
+    padding:6px 9px;
+    border-radius:10px;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open .stage-title{
+    font-size:26px;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open .description{
+    margin-bottom:14px;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open form{
+    padding-bottom:5px;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open .security-note{
+    padding-bottom:2px;
+  }
+}
+@keyframes checkoutSheetIn{
+  from{opacity:0;transform:translateY(100%)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  .mobile-bottom-sheet-scrim{
+    transition:none!important;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open{
+    animation:none!important;
+  }
+}
