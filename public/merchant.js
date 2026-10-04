@@ -210,9 +210,9 @@ document.addEventListener("click",async e=>{
      apps=(apps||[]).map(a=>a.id===x.id?d.app:a);renderApplicationsPrimary();notify("Application updated.","success");
    }); return;
  }
- const em=e.target.closest("[data-edit-method]");
- if(em){
-   const x=(dashboard.payment_methods||[]).find(v=>v.id===em.dataset.editMethod); if(!x)return;
+ const emethod=e.target.closest("[data-edit-method]");
+ if(emethod){
+   const x=(dashboard.payment_methods||[]).find(v=>v.id===emethod.dataset.editMethod); if(!x)return;
    openCrudModal("Edit payment method",[
      {key:"name",label:"Method name",value:x.name},
      {key:"type",label:"Type",value:x.type||"wave"},
