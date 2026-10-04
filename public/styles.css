@@ -3699,3 +3699,44 @@ html.customer-payment-page .checkout-summary{
 @media(max-width:760px){
   #detailsContainer.mobile-bottom-sheet-open .payment-top-cancel{min-height:38px}
 }
+
+html.customer-payment-page .site-header .desktop-nav,html.customer-payment-page .site-header .header-actions{display:none!important}
+html.customer-payment-page .site-header{justify-content:center!important}.customer-payment-page .site-header .brand{margin-inline:auto}
+html.customer-payment-page .payment-view{width:min(1080px,calc(100% - 48px));padding-top:34px}
+html.customer-payment-page .payment-head{grid-template-columns:minmax(0,1fr) 190px;margin-bottom:22px}
+html.customer-payment-page .payment-head h1{font-size:clamp(40px,5vw,62px);max-width:760px}
+html.customer-payment-page .page-expiry{align-self:start;min-height:76px;display:flex;flex-direction:column;justify-content:center}
+html.customer-payment-page .checkout-layout{grid-template-columns:280px minmax(0,1fr);gap:18px}
+html.customer-payment-page .checkout-summary{min-height:330px;padding:23px}
+html.customer-payment-page .checkout-summary>strong{font-size:38px;overflow-wrap:anywhere}
+html.customer-payment-page .checkout-panel{padding:25px}.html.customer-payment-page .checkout-method{min-height:140px}
+html.customer-payment-page .payment-top-cancel{min-width:84px;min-height:42px;border-radius:12px;background:#fff;border:1px solid rgba(17,17,17,.18);font-size:12px;font-weight:850;cursor:pointer}
+html.customer-payment-page .payment-top-cancel:hover{background:#f1f1ed;border-color:#111}
+html.customer-payment-page .attempt-box{padding:15px 16px;background:#f7f7f3;border:1px solid #e4e4de}
+html.customer-payment-page .attempt-timer-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+html.customer-payment-page .attempt-timer-copy{min-width:0;display:grid;gap:4px}
+html.customer-payment-page .attempt-timer-copy span{color:#777;font-size:9px;font-weight:850;letter-spacing:.13em}
+html.customer-payment-page .attempt-timer-copy strong{font-size:23px;letter-spacing:-.035em}
+html.customer-payment-page .attempt-box>p{margin:9px 0 0;color:#777;font-size:11px;line-height:1.45}
+html.customer-payment-page .payment-contact-action{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 12px;padding:11px 13px;border:1px solid #e1e1db;border-radius:13px;background:#fafaf7;color:#111;text-align:left;cursor:pointer}
+html.customer-payment-page .payment-contact-action span{color:#777;font-size:10px}.html.customer-payment-page .payment-contact-action strong{font-size:11px}
+html.customer-payment-page .receipt-upload-loading{display:grid;place-items:center;text-align:center;padding:28px 12px}
+html.customer-payment-page .receipt-upload-spinner{width:42px;height:42px;margin:0 auto 16px;border:3px solid #deded8;border-top-color:#111;border-radius:50%;animation:receiptUploadSpin .72s linear infinite}
+html.customer-payment-page .receipt-upload-loading strong{display:block;font-size:17px}.html.customer-payment-page .receipt-upload-loading p{margin:7px auto 0;max-width:330px;color:#777;font-size:12px;line-height:1.55}
+@keyframes receiptUploadSpin{to{transform:rotate(360deg)}}
+@media(max-width:760px){
+html.customer-payment-page .site-header{min-height:56px}
+html.customer-payment-page .payment-view{width:calc(100% - 20px);padding:17px 0 42px}
+html.customer-payment-page .payment-head{margin-bottom:12px}.html.customer-payment-page .payment-head h1{font-size:clamp(35px,11.5vw,48px)}
+html.customer-payment-page .page-expiry{min-height:58px;margin-top:12px;padding:10px 13px}
+html.customer-payment-page .checkout-summary{min-height:0;margin-bottom:8px;padding:16px;border-radius:18px}
+html.customer-payment-page .checkout-summary>strong{font-size:28px}.html.customer-payment-page .checkout-panel{padding:15px 13px;border-radius:18px}
+html.customer-payment-page .checkout-method{min-height:82px;grid-template-columns:50px minmax(0,1fr) 30px;gap:11px;padding:10px}
+html.customer-payment-page .attempt-box{padding:13px;border-radius:14px}.html.customer-payment-page .attempt-timer-row{gap:9px}
+html.customer-payment-page .attempt-timer-copy strong{font-size:21px}.html.customer-payment-page .payment-top-cancel{min-width:76px;min-height:42px;padding:7px 10px}
+html.customer-payment-page #detailsContainer.payment-sheet-open,html.customer-payment-page #detailsContainer.mobile-bottom-sheet-open{padding:9px 13px calc(14px + env(safe-area-inset-bottom))!important}
+html.customer-payment-page .receipt-upload-card{padding:18px 14px calc(14px + env(safe-area-inset-bottom))}
+html.customer-payment-page .receipt-upload-actions{grid-template-columns:1fr}
+html.customer-payment-page .receipt-upload-actions .button{min-height:48px}
+}
+@media(prefers-reduced-motion:reduce){html.customer-payment-page .receipt-upload-spinner{animation:none}}
