@@ -882,6 +882,22 @@ async function openMethod(
 
 
         if (!response.ok) {
+            /*
+             * A hosted checkout can outlive a payment-method edit or a
+             * concurrent click. Refresh the authoritative session once so
+             * the customer is never trapped on a stale method UUID.
+             */
+            if (response.status !== 410) {
+                await loadSession();
+                if (
+                    state.payment?.status === "awaiting_receipt" &&
+                    state.paymentDeadlineAt &&
+                    state.payment.payment_method_id
+                ) {
+                    return;
+                }
+            }
+
             throw new Error(
                 data.error ||
                 "Could not open payment details."
