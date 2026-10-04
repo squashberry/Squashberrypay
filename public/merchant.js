@@ -197,7 +197,7 @@ function openCrudModal(title,fields,submitLabel,handler){
    if(f.type==="textarea"){
      return '<label>'+esc(f.label)+'<textarea data-field="'+esc(f.key)+'" rows="4">'+esc(f.value||"")+'</textarea></label>';
    }
-   return '<label>'+esc(f.label)+'<input data-field="'+esc(f.key)+'" type="'+esc(f.type||"text")+'" value="'+esc(f.value||"")'></label>';
+   return '<label>'+esc(f.label)+'<input data-field="'+esc(f.key)+'" type="'+esc(f.type||"text")+'" value="'+esc(f.value||"")+'"></label>';
  }).join("");
  modal.innerHTML='<div class="merchant-modal-backdrop" data-crud-cancel></div><div class="merchant-modal-card merchant-dialog-card" role="dialog" aria-modal="true" aria-labelledby="crudModalTitle"><span class="eyebrow">EDIT</span><h3 id="crudModalTitle">'+esc(title)+'</h3><div class="merchant-form">'+inputs+'</div><div class="merchant-modal-actions"><button class="button secondary" data-crud-cancel>Cancel</button><button class="button primary" id="crudSubmit">'+esc(submitLabel||"Save changes")+'</button></div></div>';document.body.appendChild(modal);
  modal.addEventListener("click",async e=>{if(e.target.closest("[data-crud-cancel]")){modal.remove();return}if(e.target.closest("#crudSubmit")){const values={};modal.querySelectorAll("[data-field]").forEach(x=>values[x.dataset.field]=x.value);const b=modal.querySelector("#crudSubmit");loadBtn(b,"Saving…");try{await handler(values);modal.remove()}catch(x){notify(x.message||"Could not save changes.","error");resetBtn(b)}}});
