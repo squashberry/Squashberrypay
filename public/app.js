@@ -766,11 +766,14 @@ function renderMethods() {
             const description = isMobileMoney ? "Mobile payment" : "Bank transfer";
 
             const logoUrls = {
-                wave: "https://infas.ciconcours.com/images/wave-mobile-money.jpg",
+                wave: "https://www.wave.com/img/nav-logo.png",
                 afrimoney: "https://pbs.twimg.com/profile_images/1834585432111136768/KdqVOYmu_400x400.jpg"
             };
 
-            const logoUrl = logoUrls[methodKey] || "";
+            const backendIcon = String(method.icon_path || "").trim();
+            const logoUrl = /^https?:\/\//i.test(backendIcon)
+                ? backendIcon
+                : (logoUrls[methodKey] || "");
 
             const fallbackLetter =
                 methodKey === "wave" ? "W" :
