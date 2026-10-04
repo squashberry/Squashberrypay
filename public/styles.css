@@ -3157,3 +3157,9 @@ html.customer-payment-page .site-header .brand{
 .method-brand-image{display:block!important;width:68px!important;height:56px!important;max-width:68px!important;max-height:56px!important;object-fit:contain!important;object-position:center!important;padding:5px!important}
 .method-brand-fallback{width:56px!important;height:56px!important;display:grid!important;place-items:center!important;font-size:22px!important;font-weight:900!important}
 .method-brand-dalasi{width:56px!important;height:56px!important;display:grid!important;place-items:center!important;border-radius:50%!important;background:#111!important;color:#fff!important;font-size:24px!important;font-weight:900!important}
+
+
+/* Customer payment controls */
+#backToMethods{display:inline-flex!important;align-items:center;gap:7px;margin:0 0 18px;padding:8px 12px;border:1px solid #deded9;border-radius:10px;background:#fafaf7;color:#555;font-size:11px;font-weight:800;cursor:pointer;text-decoration:none;transition:.16s ease}
+#backToMethods:hover{background:#f0f0ec;color:#111;border-color:#cfcfc9;transform:translateX(-1px)}
+#backToMethods:active{transform:scale(.98)}
