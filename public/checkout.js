@@ -26,7 +26,9 @@ const state = {
     selectedDonationAmount:
         null,
     clickId:
-        null
+        null,
+    mobileSheetOpen:
+        false
 };
 
 const $ = selector =>
@@ -122,6 +124,41 @@ const checkoutStepTwo =
 
 const donorFields =
     $("#donorFields");
+function isMobileSheet(){
+    return window.matchMedia("(max-width: 760px)").matches;
+}
+function getMobileSheetScrim(id){
+    let scrim=document.getElementById(id);
+    if(!scrim){
+        scrim=document.createElement("div");
+        scrim.id=id;
+        scrim.className="mobile-bottom-sheet-scrim";
+        scrim.hidden=true;
+        document.body.appendChild(scrim);
+    }
+    return scrim;
+}
+function closeCheckoutMobileSheet(){
+    if(!state.mobileSheetOpen)return;
+    state.mobileSheetOpen=false;
+    checkoutDetails?.classList.remove("mobile-bottom-sheet-open");
+    document.body.classList.remove("mobile-sheet-locked");
+    const scrim=getMobileSheetScrim("checkoutSheetScrim");
+    scrim.classList.remove("is-visible");
+    setTimeout(()=>{if(!state.mobileSheetOpen)scrim.hidden=true},260);
+}
+function openCheckoutMobileSheet(focusSelector){
+    if(!checkoutDetails||!isMobileSheet())return false;
+    state.mobileSheetOpen=true;
+    checkoutDetails.hidden=false;
+    checkoutDetails.classList.add("mobile-bottom-sheet-open");
+    document.body.classList.add("mobile-sheet-locked");
+    const scrim=getMobileSheetScrim("checkoutSheetScrim");
+    scrim.hidden=false;
+    requestAnimationFrame(()=>scrim.classList.add("is-visible"));
+    if(focusSelector)setTimeout(()=>checkoutDetails.querySelector(focusSelector)?.focus(),360);
+    return true;
+}
 function setCheckoutLoading(title,detail){
     if($("#checkoutLoadingTitle"))$("#checkoutLoadingTitle").textContent=title;
     if($("#checkoutLoadingDetail"))$("#checkoutLoadingDetail").textContent=detail;
@@ -135,6 +172,16 @@ function setCheckoutStage(step){
         if(el)el.classList.toggle("active",i+1===normalized);
         if(el)el.classList.toggle("complete",i+1<normalized);
     });
+    if(isMobileSheet()){
+        if(normalized===1){
+            closeCheckoutMobileSheet();
+            checkoutOverview.hidden=false;
+            checkoutDetails.hidden=true;
+        }else{
+            checkoutOverview.hidden=false;
+            checkoutDetails.hidden=false;
+        }
+    }
     const activeStage=normalized===1?checkoutOverview:checkoutDetails;
     [checkoutOverview,checkoutDetails].forEach(el=>el.classList.remove("state-enter"));
     if(activeStage&&!activeStage.hidden){
@@ -785,7 +832,7 @@ async function startPayment(
         window.location.replace(target);
 
     } catch (error) {
-        setCheckoutStage(2);
+        if(!isMobileSheet())setCheckoutStage(2);
         setFormError(error.name==="AbortError"?"The payment service took too long to respond. Please try again.":error.message);
         continueButton.disabled=false;
         $("#buttonText").textContent=originalText;
@@ -793,6 +840,11 @@ async function startPayment(
 }
 
 function goToDetails(){
+    if(isMobileSheet()){
+        const customNeedsFocus=state.isDonation && state.link?.product?.allow_custom_amount && !state.selectedDonationAmount;
+        openCheckoutMobileSheet(customNeedsFocus?"#customAmount":"#email");
+        return;
+    }
     setCheckoutStage(2);
     setTimeout(()=>{
         if(state.isDonation && state.link?.product?.allow_custom_amount && !state.selectedDonationAmount){
@@ -820,7 +872,26 @@ overviewContinue?.addEventListener("click",goToDetails);
 backToOverview?.addEventListener("click",()=>{
     setFormError("");
     continueButton.disabled=false;
+    closeCheckoutMobileSheet();
     setCheckoutStage(1);
+});
+getMobileSheetScrim("checkoutSheetScrim").addEventListener("click",closeCheckoutMobileSheet);
+let checkoutSheetStartY=null;
+checkoutDetails?.addEventListener("touchstart",event=>{
+    if(!isMobileSheet()||!state.mobileSheetOpen)return;
+    checkoutSheetStartY=event.touches[0].clientY;
+},{passive:true});
+checkoutDetails?.addEventListener("touchmove",event=>{
+    if(!isMobileSheet()||!state.mobileSheetOpen||checkoutSheetStartY===null)return;
+    const delta=event.touches[0].clientY-checkoutSheetStartY;
+    if(delta>0)checkoutDetails.style.setProperty("--sheet-drag-y",Math.min(delta,180)+"px");
+},{passive:true});
+checkoutDetails?.addEventListener("touchend",()=>{
+    if(!isMobileSheet()||checkoutSheetStartY===null)return;
+    const delta=parseFloat(checkoutDetails.style.getPropertyValue("--sheet-drag-y"))||0;
+    checkoutDetails.style.removeProperty("--sheet-drag-y");
+    checkoutSheetStartY=null;
+    if(delta>80)closeCheckoutMobileSheet();
 });
 
 retryButton?.addEventListener(
