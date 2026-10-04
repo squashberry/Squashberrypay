@@ -8,8 +8,15 @@ const authUrl=(p="")=>SITE_ORIGIN+SITE_BASE+"/signin/index.html"+(String(p||"").
 const token=sessionStorage.getItem("sbp_access_token");
 if(!token)location.replace(authUrl("?reason=session_expired"));
 try{history.scrollRestoration="manual"}catch(_){ }
-window.scrollTo(0,0);
-window.addEventListener("pageshow",()=>window.scrollTo(0,0),{once:true});
+try{if(location.hash)history.replaceState(null,"",location.pathname+location.search)}catch(_){}
+const forceDashboardTop=()=>{
+  window.scrollTo({top:0,left:0,behavior:"instant"});
+  document.documentElement.scrollTop=0;
+  document.body.scrollTop=0;
+};
+forceDashboardTop();
+window.addEventListener("pageshow",forceDashboardTop,{once:true});
+window.addEventListener("load",()=>setTimeout(forceDashboardTop,60),{once:true});
 const $=s=>document.querySelector(s),qsa=s=>Array.from(document.querySelectorAll(s));
 let dashboardDensity=localStorage.getItem("sbp_dashboard_density")==="compact"?"compact":"comfortable";
 let merchant=(()=>{try{return JSON.parse(sessionStorage.getItem("sbp_merchant")||"null")}catch{return null}})(),dashboard=null,apps=[],range=7;let linkAnalytics={totals:{clicks:0,unique_visitors:0,payment_starts:0,completed_payments:0,revenue:0,conversion_rate:0},links:[]};
@@ -80,7 +87,6 @@ function openNav(){$("#merchantSidebar").classList.add("mobile-open");$("#mobile
 $("#openNotifications")?.addEventListener("click",()=>$("#notificationDrawer").hidden=false);$("#closeNotifications")?.addEventListener("click",()=>$("#notificationDrawer").hidden=true);$("#closePaymentDrawer")?.addEventListener("click",()=>$("#paymentDrawer").hidden=true);
 
 initDashboardInteractions();
-window.addEventListener("load",()=>requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:"instant"})),{once:true});
 async function load(){setDashboardLoading(true);identity();try{const me=await api("/api/merchant/me");merchant=me.merchant;sessionStorage.setItem("sbp_merchant",JSON.stringify(merchant));identity();const r=await Promise.all([api("/api/merchant/dashboard"),api("/api/merchant/payment-requests"),loadDonationPaymentMethods()]);dashboard=r[0];dashboard.payment_requests=r[1].payments||[];apps=dashboard.apps||dashboard.services||[];all();renderReadiness();$("#lastUpdated").textContent="Updated "+fmt(dashboard.generated_at);setDashboardLoading(false)}catch(e){setDashboardLoading(false);notify(e.message,"error")}}
 function identity(){const n=merchant?.business_name||"Loading account…";["merchantName","overviewName","sidebarBusinessName"].forEach(id=>{const e=$("#"+id);if(e)e.textContent=n});const status=$("#sidebarBusinessStatus");if(status)status.textContent=merchant?.status||"Account";const mobileVerify=$("#mobileVerificationCount");if(mobileVerify){mobileVerify.textContent=$("#navVerificationCount")?.textContent||"0";mobileVerify.hidden=!Number($("#navVerificationCount")?.textContent||0);}const avatar=$("#businessAvatar");if(avatar)avatar.textContent=n.charAt(0).toUpperCase()}
 function all(){overview();renderApplicationsPrimary();renderPaymentRequests();populateApps();prepareLinkGenerator();renderApps();renderProducts();renderMethods();renderLinks();renderSubscriptions();renderDonations();renderCustomers();renderPayments();renderAnalytics();profile()}
