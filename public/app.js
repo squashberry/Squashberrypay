@@ -1056,18 +1056,58 @@ function openReceiptUploadModal(){
     if(document.getElementById("receiptUploadModal"))return;
     const modal=document.createElement("div");
     modal.id="receiptUploadModal";modal.className="receipt-upload-modal";
-    modal.innerHTML='<div class="receipt-upload-backdrop"></div><div class="receipt-upload-card" role="dialog" aria-modal="true" aria-labelledby="receiptUploadTitle"><div class="receipt-upload-head"><div><span class="eyebrow">RECEIPT</span><h2 id="receiptUploadTitle">Upload your payment receipt</h2><p>Only upload the image after you have completed the transfer.</p></div><button type="button" class="receipt-upload-close" aria-label="Close">×</button></div><div class="receipt-upload-body"><label class="receipt-upload-picker" for="receiptModalInput"><strong>Choose receipt image</strong><span>JPG, PNG or WEBP · Max 8 MB</span><input id="receiptModalInput" type="file" accept="image/jpeg,image/png,image/webp,image/jpg" hidden></label></div><div class="receipt-upload-actions"><button type="button" class="button secondary" data-receipt-close>Close</button></div></div>';
+    modal.innerHTML='<div class="receipt-upload-backdrop"></div><div class="receipt-upload-card" role="dialog" aria-modal="true" aria-labelledby="receiptUploadTitle"><div class="receipt-upload-head"><div><span class="eyebrow">RECEIPT</span><h2 id="receiptUploadTitle">Upload your payment receipt</h2><p>Select your receipt first. Nothing is submitted until you tap “Submit receipt”.</p></div><button type="button" class="receipt-upload-close" aria-label="Close">×</button></div><div class="receipt-upload-body"><label class="receipt-upload-picker" for="receiptModalInput"><strong>Choose receipt image</strong><span>JPG, PNG or WEBP · Max 8 MB</span><input id="receiptModalInput" type="file" accept="image/jpeg,image/png,image/webp,image/jpg" hidden></label></div><div class="receipt-upload-actions"><button type="button" class="button secondary" data-receipt-close>Close</button></div></div>';
     document.body.appendChild(modal);
+    const input=modal.querySelector("#receiptModalInput");
+    const body=modal.querySelector(".receipt-upload-body");
+    const actions=modal.querySelector(".receipt-upload-actions");
+    let selectedReceiptFile=null;
+    let previewUrl=null;
+
     const close=()=>closeReceiptUploadModal();
+    const revokePreview=()=>{if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}};
     modal.querySelector(".receipt-upload-close")?.addEventListener("click",close);
-    modal.querySelector("[data-receipt-close]")?.addEventListener("click",close);
     modal.querySelector(".receipt-upload-backdrop")?.addEventListener("click",close);
-    modal.querySelector("#receiptModalInput")?.addEventListener("change",async e=>{
-        const file=e.target.files?.[0];if(!file)return;
+
+    const renderPicker=()=>{
+        revokePreview();
+        selectedReceiptFile=null;
+        if(input)input.value="";
+        if(body)body.innerHTML='<label class="receipt-upload-picker" for="receiptModalInput"><strong>Choose receipt image</strong><span>JPG, PNG or WEBP · Max 8 MB</span></label>';
+        if(actions)actions.innerHTML='<button type="button" class="button secondary" data-receipt-close>Close</button>';
+        body?.querySelector(".receipt-upload-picker")?.appendChild(input);
+        actions?.querySelector("[data-receipt-close]")?.addEventListener("click",close);
+    };
+
+    input?.addEventListener("change",e=>{
+        const file=e.target.files?.[0];
+        if(!file)return;
         const allowed=["image/jpeg","image/jpg","image/png","image/webp"];
-        if(!allowed.includes(String(file.type||"").toLowerCase())){e.target.value="";notify("Only JPG, PNG or WEBP receipt images are supported.","error");return;}
-        if(file.size>8*1024*1024){e.target.value="";notify("Receipt images must be 8 MB or smaller.","error");return;}
-        await uploadReceiptFile(file);
+        if(!allowed.includes(String(file.type||"").toLowerCase())){
+            e.target.value="";
+            notify("Only JPG, PNG or WEBP receipt images are supported.","error");
+            return;
+        }
+        if(file.size>8*1024*1024){
+            e.target.value="";
+            notify("Receipt images must be 8 MB or smaller.","error");
+            return;
+        }
+
+        revokePreview();
+        selectedReceiptFile=file;
+        previewUrl=URL.createObjectURL(file);
+        body.innerHTML='<div class="receipt-preview receipt-modal-selected-preview"><img src="'+previewUrl+'" alt="Selected payment receipt preview"><div class="receipt-preview-meta"><strong>'+escapeHtml(file.name)+'</strong><span>'+(file.size/1024/1024).toFixed(2)+' MB · Ready to submit</span></div></div>';
+        body.appendChild(input);
+        input.style.display="none";
+        actions.innerHTML='<button type="button" class="button secondary" data-receipt-change>Change image</button><button type="button" class="button primary receipt-upload-submit" data-receipt-submit>Submit receipt</button>';
+        actions.querySelector("[data-receipt-change]")?.addEventListener("click",()=>{input.value="";input.click();});
+        actions.querySelector("[data-receipt-submit]")?.addEventListener("click",async()=>{
+            if(!selectedReceiptFile)return;
+            const fileToSubmit=selectedReceiptFile;
+            await uploadReceiptFile(fileToSubmit);
+        });
+        notify("Receipt image selected. Review it, then tap Submit receipt.","success",2600);
     });
 }
 function setReceiptStage(show){const paid=document.getElementById("ivePaidButton");if(paid)paid.hidden=Boolean(show);}
