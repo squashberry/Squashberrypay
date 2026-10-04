@@ -1199,6 +1199,18 @@ receiptInput?.addEventListener(
 );
 
 
+function showReceiptUploadSuccess(file){
+    const modal=document.getElementById("receiptUploadModal");
+    if(!modal||!file)return;
+    const body=modal.querySelector(".receipt-upload-body");
+    const actions=modal.querySelector(".receipt-upload-actions");
+    if(!body||!actions)return;
+    const url=URL.createObjectURL(file);
+    body.innerHTML='<div class="receipt-upload-success"><div class="receipt-success-check">✓</div><span class="eyebrow">UPLOAD COMPLETE</span><h3>Receipt uploaded</h3><p>Your image was saved and sent to the business for verification.</p><div class="receipt-upload-preview"><img src="'+url+'" alt="Uploaded payment receipt preview"></div></div>';
+    actions.innerHTML='<button type="button" class="button primary" data-receipt-close>Done</button>';
+    actions.querySelector("[data-receipt-close]")?.addEventListener("click",closeReceiptUploadModal);
+}
+
 /* ============================================================
    SUBMIT RECEIPT
 ============================================================ */
@@ -1323,9 +1335,10 @@ async function submitReceipt() {
             true
         );
 
+        showReceiptUploadSuccess(file);
 
         notify(
-            "Receipt submitted successfully.",
+            "Receipt uploaded successfully.",
             "success"
         );
 
