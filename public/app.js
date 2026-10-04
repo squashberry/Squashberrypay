@@ -870,163 +870,30 @@ async function openMethod(
    DETAILS
 ============================================================ */
 
+function paymentDetailRow(label,value){
+    return '<div class="detail-row item-enter"><span>'+escapeHtml(label)+'</span><strong>'+escapeHtml(value)+'</strong><button class="detail-copy" type="button" data-copy-payment-detail="'+escapeHtml(value)+'">Copy</button></div>';
+}
+
 function renderDetails(
     method
 ) {
+    $("#selectedMethodTitle").textContent=method.name;
 
-    $("#selectedMethodTitle")
-        .textContent =
-        method.name;
+    const rows=[];
+    if(method.bank_name)rows.push(paymentDetailRow("Bank",method.bank_name));
+    if(method.account_name)rows.push(paymentDetailRow("Account name",method.account_name));
+    if(method.account_number)rows.push(paymentDetailRow("Account number",method.account_number));
+    if(method.phone_number)rows.push(paymentDetailRow("Phone number",method.phone_number));
+    rows.push(paymentDetailRow("Amount",formatMoney(state.payment.amount,state.payment.currency)));
+    rows.push(paymentDetailRow("Reference",state.payment.reference));
+    rows.push('<div class="instructions item-enter"><strong>Instructions</strong><p>'+escapeHtml(method.instructions||"Follow the payment instructions provided by the merchant.")+'</p></div>');
 
-
-    const rows = [];
-
-
-    if (
-        method.bank_name
-    ) {
-
-        rows.push(
-            `
-                <div class="detail-row item-enter">
-                    <span>Bank</span>
-                    <strong>
-                        ${escapeHtml(
-                            method.bank_name
-                        )}
-                    </strong>
-                </div>
-            `
-        );
-    }
-
-
-    if (
-        method.account_name
-    ) {
-
-        rows.push(
-            `
-                <div class="detail-row item-enter">
-                    <span>Account name</span>
-                    <strong>
-                        ${escapeHtml(
-                            method.account_name
-                        )}
-                    </strong>
-                </div>
-            `
-        );
-    }
-
-
-    if (
-        method.account_number
-    ) {
-
-        rows.push(
-            `
-                <div class="detail-row item-enter">
-                    <span>Account number</span>
-                    <strong>
-                        ${escapeHtml(
-                            method.account_number
-                        )}
-                    </strong>
-                </div>
-            `
-        );
-    }
-
-
-    if (
-        method.phone_number
-    ) {
-
-        rows.push(
-            `
-                <div class="detail-row item-enter">
-                    <span>Phone number</span>
-                    <strong>
-                        ${escapeHtml(
-                            method.phone_number
-                        )}
-                    </strong>
-                </div>
-            `
-        );
-    }
-
-
-    rows.push(
-        `
-            <div class="detail-row item-enter">
-                <span>Amount</span>
-
-                <strong>
-                    ${formatMoney(
-                        state.payment.amount,
-                        state.payment.currency
-                    )}
-                </strong>
-            </div>
-        `
-    );
-
-
-    rows.push(
-        `
-            <div class="detail-row item-enter">
-                <span>Reference</span>
-
-                <strong>
-                    ${escapeHtml(
-                        state.payment.reference
-                    )}
-                </strong>
-            </div>
-        `
-    );
-
-
-    rows.push(
-        `
-            <div class="instructions item-enter">
-
-                <strong>
-                    Instructions
-                </strong>
-
-                <br><br>
-
-                ${escapeHtml(
-                    method.instructions
-                )}
-
-            </div>
-        `
-    );
-
-
-    paymentDetails.innerHTML =
-        rows.join("");
-
-
-    methodContainer.hidden =
-        true;
-
-    detailsContainer.hidden =
-        false;
-
-    verificationContainer.hidden =
-        true;
-
-
-    animateState(
-        detailsContainer
-    );
+    paymentDetails.innerHTML=rows.join("");
+    methodContainer.hidden=true;
+    detailsContainer.hidden=false;
+    verificationContainer.hidden=true;
+    animateState(detailsContainer);
 }
-
 
 /* ============================================================
    EXISTING ATTEMPT
