@@ -2901,3 +2901,87 @@ html,body{overflow-x:hidden}
     transition:none!important;
   }
 }
+
+
+/* ============================================================
+   MOBILE PAYMENT DETAILS — BOTTOM SHEET
+============================================================ */
+.mobile-bottom-sheet-scrim{
+  position:fixed;
+  inset:0;
+  z-index:9000;
+  background:rgba(8,8,8,.36);
+  backdrop-filter:blur(7px) saturate(.85);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .28s ease;
+}
+.mobile-bottom-sheet-scrim.is-visible{
+  opacity:1;
+  pointer-events:auto;
+}
+.mobile-sheet-locked{
+  overflow:hidden!important;
+  touch-action:none;
+}
+.mobile-sheet-handle{
+  display:none;
+}
+@media(max-width:760px){
+  #detailsContainer.mobile-bottom-sheet-open{
+    position:fixed!important;
+    left:0;
+    right:0;
+    bottom:0;
+    z-index:9001;
+    width:100%!important;
+    max-height:min(88dvh,760px);
+    overflow:auto;
+    overscroll-behavior:contain;
+    margin:0!important;
+    padding:10px 18px calc(18px + env(safe-area-inset-bottom))!important;
+    border:1px solid rgba(17,17,17,.08);
+    border-bottom:0;
+    border-radius:28px 28px 0 0!important;
+    background:rgba(255,255,255,.985);
+    box-shadow:0 -25px 90px rgba(0,0,0,.18);
+    transform:translateY(var(--sheet-drag-y,0));
+    animation:paymentSheetIn .42s cubic-bezier(.22,.8,.24,1) both;
+    -webkit-overflow-scrolling:touch;
+  }
+  .mobile-sheet-handle{
+    display:block;
+    width:42px;
+    height:5px;
+    margin:2px auto 14px;
+    border-radius:99px;
+    background:#d5d5d0;
+    touch-action:none;
+  }
+  #detailsContainer.mobile-bottom-sheet-open .text-button{
+    min-height:38px;
+    border-radius:10px;
+    padding:7px 9px;
+  }
+  #detailsContainer.mobile-bottom-sheet-open .checkout-heading{
+    margin-bottom:18px;
+  }
+  #detailsContainer.mobile-bottom-sheet-open .attempt-box{
+    margin-bottom:14px;
+  }
+  #detailsContainer.mobile-bottom-sheet-open .payment-actions{
+    position:sticky;
+    bottom:0;
+    z-index:3;
+    padding-top:10px;
+    background:linear-gradient(to bottom,rgba(255,255,255,.72),#fff 30%);
+  }
+}
+@keyframes paymentSheetIn{
+  from{opacity:0;transform:translateY(100%)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  .mobile-bottom-sheet-scrim{transition:none!important}
+  #detailsContainer.mobile-bottom-sheet-open{animation:none!important}
+}
