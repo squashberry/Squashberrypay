@@ -3740,3 +3740,34 @@ html.customer-payment-page .receipt-upload-actions{grid-template-columns:1fr}
 html.customer-payment-page .receipt-upload-actions .button{min-height:48px}
 }
 @media(prefers-reduced-motion:reduce){html.customer-payment-page .receipt-upload-spinner{animation:none}}
+
+#notification{z-index:2147483647!important}
+.payment-confirm-modal,.receipt-upload-modal,.payment-contact-modal,.mobile-bottom-sheet-scrim{z-index:100000!important}
+.payment-confirm-card,.receipt-upload-card,.payment-contact-card{z-index:100001!important}
+html.customer-payment-page .attempt-box{padding:10px 12px}
+html.customer-payment-page .attempt-timer-copy strong{font-size:19px}
+html.customer-payment-page .attempt-box>p{margin-top:5px}
+html.customer-payment-page .payment-fixed-actions{display:grid!important;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:10px;margin-top:14px}
+html.customer-payment-page .payment-fixed-actions .button{min-height:50px}
+html.customer-payment-page .payment-paid-button{display:flex!important;align-items:center;justify-content:center}
+html.customer-payment-page .payment-expired-overlay{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:20px;background:rgba(12,12,11,.58);backdrop-filter:blur(10px)}
+html.customer-payment-page .payment-expired-card{width:min(470px,100%);padding:30px;border:1px solid #dddcd5;border-radius:24px;background:#fff;box-shadow:0 24px 80px rgba(0,0,0,.25);text-align:center}
+html.customer-payment-page .payment-expired-icon{width:56px;height:56px;margin:0 auto 18px;display:grid;place-items:center;border-radius:50%;background:#111;color:#fff;font-size:22px;font-weight:900}
+html.customer-payment-page .payment-expired-card h2{margin:0;font-size:28px;letter-spacing:-.04em}
+html.customer-payment-page .payment-expired-card p{margin:10px auto 22px;max-width:360px;color:#666;font-size:13px;line-height:1.6}
+html.customer-payment-page .receipt-upload-picker{display:grid;gap:10px;padding:25px 16px;border:1.5px dashed #cfcfc8;border-radius:18px;background:#fafaf7;text-align:center;cursor:pointer}
+html.customer-payment-page .receipt-upload-picker:hover{border-color:#111;background:#f3f3ef}
+html.customer-payment-page .receipt-upload-picker strong{font-size:15px}
+html.customer-payment-page .receipt-upload-picker span{font-size:11px;color:#777}
+.home-menu-button,.home-mobile-nav{display:none!important}
+html.customer-payment-page .brand-mark{display:grid;place-items:center;text-align:center;line-height:1}
+html.customer-payment-page .method-brand-wrap,html.customer-payment-page .checkout-method .method-top>div:first-child{display:grid;place-items:center}
+@media(max-width:760px){
+html.customer-payment-page .payment-fixed-actions{grid-template-columns:1fr 1fr;gap:8px}
+html.customer-payment-page .payment-fixed-actions .button{min-height:48px;font-size:11px;padding-inline:8px}
+html.customer-payment-page .attempt-box{padding:9px 11px}
+html.customer-payment-page .attempt-timer-copy span{font-size:8px}
+html.customer-payment-page .attempt-timer-copy strong{font-size:18px}
+html.customer-payment-page .payment-expired-card{padding:25px 20px;border-radius:20px}
+.site-header{justify-content:center!important}.site-header .brand{margin-inline:auto!important}
+}
