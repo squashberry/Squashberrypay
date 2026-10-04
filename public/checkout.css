@@ -758,3 +758,425 @@ input:focus,textarea:focus{
     animation:none!important;
   }
 }
+
+
+/* ============================================================
+   CHECKOUT ERROR — FULL-CANVAS MORPH RECOVERY
+============================================================ */
+body{
+  transition:background-color .62s cubic-bezier(.2,.8,.2,1);
+}
+.checkout-card{
+  --error-bg:#f6f6f2;
+  --error-ink:#111;
+}
+body.checkout-error-mode{
+  overflow:hidden;
+  background:var(--error-bg,#f6f6f2);
+}
+body.checkout-error-mode .page-shell{
+  width:100%;
+  min-height:100dvh;
+  padding:0;
+  display:grid;
+  place-items:stretch;
+  transition:padding .62s cubic-bezier(.2,.8,.2,1);
+}
+body.checkout-error-mode .checkout-card{
+  width:100%;
+  min-height:100dvh;
+  border-radius:0!important;
+  box-shadow:none;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+  padding:clamp(22px,4vw,52px);
+  background:
+    radial-gradient(circle at 50% 42%,rgba(255,255,255,.98),rgba(246,246,242,.96) 44%,rgba(235,236,231,.98) 100%);
+  animation:checkoutErrorExpand .76s cubic-bezier(.16,.84,.24,1) both;
+}
+body.checkout-error-mode .checkout-card::before{
+  background:
+    radial-gradient(circle at 50% 47%,rgba(255,255,255,.92),transparent 23%),
+    radial-gradient(circle at 50% 48%,rgba(17,17,17,.045),transparent 48%);
+}
+body.checkout-error-mode .brand{
+  opacity:1;
+  flex:none;
+  margin-bottom:0;
+}
+body.checkout-error-mode #loadingState,
+body.checkout-error-mode #checkoutState{
+  display:none!important;
+}
+body.checkout-error-mode #errorState{
+  flex:1;
+}
+
+.error-state{
+  position:relative;
+  overflow:hidden;
+  width:100%;
+  min-height:0;
+  padding:clamp(30px,7vh,76px) 20px calc(30px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+  isolation:isolate;
+  text-align:center;
+  background:
+    radial-gradient(circle at 50% 48%,rgba(255,255,255,.86),transparent 31%),
+    linear-gradient(180deg,rgba(255,255,255,.08),transparent 70%);
+}
+.error-state::before{
+  content:"";
+  position:absolute;
+  width:min(68vw,650px);
+  aspect-ratio:1;
+  top:50%;
+  left:50%;
+  translate:-50% -52%;
+  border-radius:42% 58% 70% 30% / 45% 45% 55% 55%;
+  background:
+    radial-gradient(circle at 35% 28%,rgba(255,255,255,.82),rgba(255,255,255,.18) 35%,rgba(17,17,17,.045) 72%,transparent 74%);
+  filter:blur(1px);
+  opacity:.92;
+  z-index:-3;
+  animation:errorLiquidMorph 11s ease-in-out infinite;
+}
+.error-state::after{
+  content:"";
+  position:absolute;
+  inset:15%;
+  border:1px solid rgba(17,17,17,.055);
+  border-radius:50%;
+  opacity:.7;
+  z-index:-3;
+  animation:errorHaloPulse 5.5s ease-in-out infinite;
+}
+
+.error-orbit{
+  position:absolute;
+  width:min(54vw,470px);
+  aspect-ratio:1;
+  left:50%;
+  top:50%;
+  border:1px solid rgba(17,17,17,.055);
+  border-radius:50%;
+  translate:-50% -51%;
+  pointer-events:none;
+  z-index:-2;
+}
+.error-orbit::after{
+  content:"";
+  position:absolute;
+  inset:11%;
+  border:1px dashed rgba(17,17,17,.05);
+  border-radius:50%;
+}
+.error-orbit-one{animation:errorOrbit 16s linear infinite}
+.error-orbit-two{width:min(76vw,720px);opacity:.55;animation:errorOrbitReverse 22s linear infinite}
+
+.error-visual{
+  position:relative;
+  width:clamp(116px,16vw,160px);
+  aspect-ratio:1;
+  display:grid;
+  place-items:center;
+  margin-bottom:clamp(24px,4vh,38px);
+  transform-origin:center;
+  animation:errorVisualIn .72s cubic-bezier(.16,.84,.24,1) both;
+}
+.error-liquid{
+  position:relative;
+  width:72%;
+  aspect-ratio:1;
+  display:grid;
+  place-items:center;
+  border-radius:44% 56% 60% 40% / 52% 44% 56% 48%;
+  background:
+    linear-gradient(145deg,#171717,#050505);
+  box-shadow:
+    0 24px 70px rgba(17,17,17,.20),
+    inset 0 1px rgba(255,255,255,.12);
+  animation:errorCoreMorph 7s ease-in-out infinite;
+}
+.error-liquid::before{
+  content:"";
+  position:absolute;
+  inset:-14%;
+  z-index:-1;
+  border:1px solid rgba(17,17,17,.065);
+  border-radius:inherit;
+  animation:errorRingMorph 7s ease-in-out infinite;
+}
+.error-liquid-shine{
+  position:absolute;
+  width:43%;
+  height:20%;
+  top:12%;
+  right:12%;
+  border-radius:999px;
+  background:rgba(255,255,255,.12);
+  transform:rotate(-27deg);
+  filter:blur(4px);
+}
+.error-mark{
+  font-size:clamp(44px,6vw,60px);
+  line-height:1;
+  font-weight:900;
+  letter-spacing:-.06em;
+  color:#fff;
+  transform-origin:center;
+  animation:errorMarkBreathe 7s ease-in-out infinite;
+}
+.error-copy{
+  width:min(100%,560px);
+  display:grid;
+  justify-items:center;
+  gap:0;
+  animation:errorCopyIn .58s .08s cubic-bezier(.2,.8,.2,1) both;
+}
+.error-eyebrow{
+  color:#676963;
+  letter-spacing:.16em;
+  font-size:10px;
+  font-weight:900;
+}
+.error-copy h1{
+  max-width:680px;
+  margin:11px 0 10px;
+  font-size:clamp(35px,5vw,58px);
+  line-height:.98;
+  letter-spacing:-.055em;
+}
+.error-copy #errorMessage{
+  width:min(100%,520px);
+  margin:0;
+  color:#33352f;
+  font-size:clamp(14px,1.5vw,16px);
+  line-height:1.65;
+}
+.error-status{
+  width:min(100%,460px);
+  margin:10px 0 0;
+  color:#7b7d76;
+  font-size:12px;
+  line-height:1.6;
+}
+.error-retry-button{
+  position:relative;
+  min-width:176px;
+  margin-top:26px;
+  padding-inline:26px;
+  overflow:hidden;
+  box-shadow:0 18px 42px rgba(17,17,17,.16);
+  transform-origin:center;
+  transition:
+    min-width .32s cubic-bezier(.2,.8,.2,1),
+    border-radius .32s ease,
+    transform .22s ease,
+    box-shadow .22s ease,
+    opacity .22s ease;
+  animation:errorActionIn .58s .16s cubic-bezier(.2,.8,.2,1) both;
+}
+.error-retry-button[data-loading="true"]{
+  min-width:56px;
+  width:56px;
+  padding:0;
+  border-radius:999px;
+  box-shadow:0 8px 24px rgba(17,17,17,.18);
+}
+.retry-button-label{
+  display:inline-block;
+  transition:opacity .16s ease,transform .16s ease;
+}
+.error-retry-button[data-loading="true"] .retry-button-label{
+  opacity:0;
+  transform:scale(.8);
+}
+.retry-mini-spinner{
+  position:absolute;
+  width:19px;
+  height:19px;
+  left:50%;
+  top:50%;
+  translate:-50% -50%;
+  border:2px solid rgba(255,255,255,.35);
+  border-top-color:#fff;
+  border-radius:50%;
+  opacity:0;
+  animation:errorRetrySpin .65s linear infinite;
+}
+.error-retry-button[data-loading="true"] .retry-mini-spinner{opacity:1}
+.error-footnote{
+  margin:13px 0 0;
+  color:#9a9c96;
+  font-size:10px;
+  letter-spacing:.01em;
+  animation:errorCopyIn .58s .22s cubic-bezier(.2,.8,.2,1) both;
+}
+
+#retryButton:disabled{cursor:wait}
+
+body.checkout-error-mode .checkout-card.checkout-error-rewind{
+  animation:checkoutErrorRewind .62s cubic-bezier(.58,0,.78,.28) both;
+}
+body.checkout-error-mode .checkout-card.checkout-error-rewind .error-state{
+  animation:errorRewind .46s cubic-bezier(.58,0,.78,.28) both;
+}
+body.checkout-error-mode .checkout-card.checkout-error-failed{
+  animation:errorFailureShake .64s cubic-bezier(.36,.07,.19,.97) both;
+}
+body.checkout-error-mode .checkout-card.checkout-error-failed .error-liquid{
+  animation:errorFailureCore .7s ease-out both;
+}
+
+@keyframes checkoutErrorExpand{
+  0%{opacity:.68;transform:scale(.985);clip-path:inset(7% 6% round 34px);filter:blur(3px)}
+  48%{opacity:1;transform:scale(1.005);clip-path:inset(1% 1% round 12px);filter:blur(0)}
+  100%{opacity:1;transform:none;clip-path:inset(0 round 0)}
+}
+@keyframes checkoutErrorRewind{
+  0%{opacity:1;transform:none;clip-path:inset(0 round 0)}
+  48%{opacity:1;transform:scale(.988);clip-path:inset(2% 3% round 28px)}
+  100%{opacity:.25;transform:scale(.965);clip-path:inset(10% 12% round 42px);filter:blur(2px)}
+}
+@keyframes errorLiquidMorph{
+  0%,100%{border-radius:42% 58% 70% 30% / 45% 45% 55% 55%;transform:rotate(0) scale(1)}
+  25%{border-radius:64% 36% 42% 58% / 57% 38% 62% 43%;transform:rotate(5deg) scale(1.02)}
+  50%{border-radius:50% 50% 30% 70% / 40% 60% 30% 70%;transform:rotate(-3deg) scale(.98)}
+  75%{border-radius:35% 65% 58% 42% / 62% 42% 58% 38%;transform:rotate(3deg) scale(1.015)}
+}
+@keyframes errorCoreMorph{
+  0%,100%{border-radius:44% 56% 60% 40% / 52% 44% 56% 48%;transform:scale(1) rotate(0)}
+  33%{border-radius:58% 42% 52% 48% / 40% 62% 38% 60%;transform:scale(1.035) rotate(-2deg)}
+  66%{border-radius:48% 52% 38% 62% / 58% 36% 64% 42%;transform:scale(.97) rotate(2deg)}
+}
+@keyframes errorRingMorph{
+  0%,100%{border-radius:44% 56% 60% 40% / 52% 44% 56% 48%;transform:scale(1)}
+  50%{border-radius:55% 45% 42% 58% / 38% 64% 36% 62%;transform:scale(1.08)}
+}
+@keyframes errorMarkBreathe{
+  0%,100%{transform:scale(1,1)}
+  34%{transform:scale(1.02,1.065)}
+  67%{transform:scale(1.055,.985)}
+}
+@keyframes errorVisualIn{
+  0%{opacity:0;transform:translateY(20px) scale(.72)}
+  62%{opacity:1;transform:translateY(-2px) scale(1.045)}
+  100%{opacity:1;transform:none}
+}
+@keyframes errorCopyIn{
+  0%{opacity:0;transform:translateY(12px)}
+  100%{opacity:1;transform:none}
+}
+@keyframes errorActionIn{
+  0%{opacity:0;transform:translateY(16px) scale(.96)}
+  100%{opacity:1;transform:none}
+}
+@keyframes errorHaloPulse{
+  0%,100%{scale:.95;opacity:.42}
+  50%{scale:1.04;opacity:.75}
+}
+@keyframes errorOrbit{
+  to{transform:rotate(360deg)}
+}
+@keyframes errorOrbitReverse{
+  to{transform:rotate(-360deg)}
+}
+@keyframes errorRetrySpin{
+  to{transform:rotate(360deg)}
+}
+@keyframes errorRewind{
+  0%{opacity:1;transform:none}
+  100%{opacity:0;transform:scale(.76) translateY(12px)}
+}
+@keyframes errorFailureShake{
+  0%,100%{transform:translateX(0)}
+  12%{transform:translateX(-7px)}
+  24%{transform:translateX(7px)}
+  36%{transform:translateX(-5px)}
+  48%{transform:translateX(5px)}
+  60%{transform:translateX(-2px)}
+  72%{transform:translateX(2px)}
+}
+@keyframes errorFailureCore{
+  0%{transform:scale(1)}
+  20%{transform:scale(1.08,.94)}
+  48%{transform:scale(.96,1.05)}
+  72%{transform:scale(1.04,.98)}
+  100%{transform:scale(1)}
+}
+
+@media(max-width:760px){
+  body.checkout-error-mode .checkout-card{
+    padding:14px 16px calc(18px + env(safe-area-inset-bottom));
+  }
+  body.checkout-error-mode .brand{
+    margin-bottom:0;
+  }
+  .error-state{
+    padding-top:7vh;
+    padding-bottom:calc(26px + env(safe-area-inset-bottom));
+  }
+  .error-state::before{
+    width:118vw;
+  }
+  .error-orbit-one{width:84vw}
+  .error-orbit-two{width:116vw}
+  .error-visual{
+    width:124px;
+    margin-bottom:24px;
+  }
+  .error-copy h1{
+    max-width:360px;
+    font-size:38px;
+  }
+  .error-copy #errorMessage{
+    max-width:360px;
+    font-size:14px;
+  }
+  .error-status{
+    max-width:330px;
+    font-size:11px;
+  }
+  .error-retry-button{
+    width:min(100%,280px);
+    min-height:56px;
+  }
+  .error-retry-button[data-loading="true"]{
+    width:56px;
+    min-width:56px;
+  }
+}
+@media(max-height:700px) and (max-width:760px){
+  .error-visual{width:98px;margin-bottom:18px}
+  .error-copy h1{font-size:32px}
+  .error-copy #errorMessage{font-size:13px}
+  .error-status{margin-top:7px}
+  .error-retry-button{margin-top:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  body.checkout-error-mode .checkout-card,
+  .error-state::before,
+  .error-state::after,
+  .error-orbit,
+  .error-visual,
+  .error-liquid,
+  .error-liquid::before,
+  .error-mark,
+  .error-copy,
+  .error-retry-button,
+  .error-footnote{
+    animation:none!important;
+  }
+  body.checkout-error-mode .checkout-card{
+    transition:none!important;
+  }
+  .retry-mini-spinner{
+    animation:none!important;
+  }
+}
