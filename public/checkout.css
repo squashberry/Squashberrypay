@@ -1180,3 +1180,40 @@ body.checkout-error-mode .checkout-card.checkout-error-failed .error-liquid{
     animation:none!important;
   }
 }
+
+
+/* Mobile sheet portal fix — the sheet lives under <body> while open,
+   preventing the checkout card from trapping it under the scrim. */
+@media(max-width:760px){
+  .mobile-bottom-sheet-scrim{
+    z-index:10040!important;
+    background:rgba(8,8,8,.30)!important;
+    backdrop-filter:blur(2px) saturate(.92)!important;
+    -webkit-backdrop-filter:blur(2px) saturate(.92)!important;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open{
+    z-index:10050!important;
+    isolation:isolate;
+    background:#fff!important;
+    color:#111;
+    opacity:1!important;
+    filter:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    visibility:visible!important;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open .button.primary{
+    position:sticky;
+    bottom:0;
+    z-index:3;
+    background:#111;
+    color:#fff;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open .back-button{
+    color:#555;
+    background:#f5f5f2;
+  }
+  #checkoutDetails.mobile-bottom-sheet-open .back-button:hover{
+    background:#edede8;
+  }
+}
