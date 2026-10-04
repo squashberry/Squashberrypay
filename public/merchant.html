@@ -72,7 +72,34 @@
   <main class="merchant-main">
     <div id="merchantNotification" class="merchant-notification" hidden></div><div id="workspaceReadiness" class="workspace-readiness" hidden></div>
 
-    <section id="section-overview" class="merchant-section active">
+    <section id="section-overview" class="merchant-section active dashboard-data-loading" aria-busy="true">
+      <div id="dashboardSkeleton" class="dashboard-skeleton" role="status" aria-label="Loading dashboard">
+        <div class="dashboard-skeleton-welcome">
+          <div class="dashboard-skeleton-copy">
+            <span class="skeleton-line skeleton-eyebrow"></span>
+            <span class="skeleton-line skeleton-title"></span>
+            <span class="skeleton-line skeleton-subtitle"></span>
+          </div>
+          <div class="dashboard-skeleton-actions">
+            <span class="skeleton-box"></span>
+            <span class="skeleton-box"></span>
+          </div>
+        </div>
+        <div class="dashboard-skeleton-range">
+          <span class="skeleton-box skeleton-range"></span>
+          <span class="skeleton-line skeleton-updated"></span>
+        </div>
+        <div class="dashboard-skeleton-metrics">
+          <span class="skeleton-card skeleton-card-featured"></span>
+          <span class="skeleton-card"></span>
+          <span class="skeleton-card"></span>
+          <span class="skeleton-card"></span>
+        </div>
+        <div class="dashboard-skeleton-panels">
+          <span class="skeleton-panel"></span>
+          <span class="skeleton-panel"></span>
+        </div>
+      </div>
       <div class="dashboard-welcome">
         <div><span class="eyebrow">OVERVIEW</span><h1>Good morning, <span id="overviewName">Loading account…</span></h1><p>Here's what’s happening across your SquashberryPay business.</p></div>
         <div class="overview-actions"><button class="button secondary small" data-section-jump="payments">View payments</button><button class="button primary small" data-section-jump="payment-links">Create payment link</button></div>
