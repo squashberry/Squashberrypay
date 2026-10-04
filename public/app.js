@@ -752,46 +752,49 @@ function renderMethods() {
                 `${index * 45}ms`;
 
 
-            const icon =
-                method.type ===
-                    "wave"
-                    ? "W"
-                    : method.type ===
-                        "aps"
-                        ? "A"
-                        : method.type ===
-                            "nada"
-                            ? "N"
-                            : "";
-
+            const type = String(method.type || "").toLowerCase();
 
             const description =
-                method.type ===
-                    "wave"
+                type === "wave"
                     ? "Mobile payment"
-                    : method.type ===
-                        "aps"
+                    : type === "aps"
                         ? "Mobile payment"
-                        : method.type ===
-                            "nada"
+                        : type === "nada"
                             ? "Mobile payment"
-                            : "Bank transfer";
+                            : type === "afrimoney"
+                                ? "Mobile payment"
+                                : "Bank transfer";
 
+            const logoUrls = {
+                wave: "https://infas.ciconcours.com/images/wave-mobile-money.jpg",
+                afrimoney: "https://pbs.twimg.com/profile_images/1834585432111136768/KdqVOYmu_400x400.jpg"
+            };
+
+            const logoUrl = logoUrls[type] || "";
+
+            const fallbackLetter =
+                type === "wave" ? "W" :
+                type === "aps" ? "A" :
+                type === "nada" ? "N" :
+                type === "afrimoney" ? "A" :
+                "D";
+
+            const fallbackMarkup = type === "bank"
+                ? '<span class="method-brand-dalasi" aria-hidden="true">D</span>'
+                : escapeHtml(fallbackLetter);
 
             button.innerHTML =
                 `
                     <div class="method-top">
-
-                        <span
-                            class="method-icon"
-                        >
-                            ${icon}
+                        <span class="method-brand-wrap">
+                            ${logoUrl
+                                ? `<img class="method-brand-image" data-method-logo src="${logoUrl}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+                                : `<span class="method-brand-fallback" data-type="${escapeHtml(type)}" aria-hidden="true">${fallbackMarkup}</span>`}
                         </span>
 
                         <span>
                             →
                         </span>
-
                     </div>
 
                     <h3>
@@ -805,6 +808,12 @@ function renderMethods() {
                     </p>
                 `;
 
+            const methodLogo = button.querySelector("[data-method-logo]");
+            methodLogo?.addEventListener("error",()=>{
+                const wrap=methodLogo.parentElement;
+                if(!wrap)return;
+                wrap.innerHTML='<span class="method-brand-fallback" data-type="'+escapeHtml(type)+'" aria-hidden="true">'+fallbackMarkup+"</span>";
+            });
 
             button.addEventListener(
                 "click",
