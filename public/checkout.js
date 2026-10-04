@@ -578,7 +578,7 @@ function renderCheckout() {
         otherAmountButton.hidden=!state.isDonation || !product.allow_custom_amount || donationEnded.hidden===false;
     }
     if(overviewContinue){
-        overviewContinue.hidden=state.isDonation;
+        overviewContinue.hidden=!isMobileSheet() && state.isDonation;
         overviewContinue.textContent=product.payment_type==="donate"?(link.button_label||"Continue"):(link.button_label||"Continue to payment");
     }
     const donation=link.donation||{enabled:false};
@@ -683,7 +683,7 @@ function renderCheckout() {
     loadingState.hidden=true;
     errorState.hidden=true;
     checkoutState.hidden=false;
-    setCheckoutStage(state.isDonation ? 1 : 2);
+    setCheckoutStage(isMobileSheet() ? 1 : (state.isDonation ? 1 : 2));
 }
 
 function normalizePublicUrl(u){
