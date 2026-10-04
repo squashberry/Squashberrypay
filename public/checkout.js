@@ -24,6 +24,8 @@ const state = {
         null,
 
     selectedDonationAmount:
+        null,
+    clickId:
         null
 };
 
@@ -168,6 +170,47 @@ function setFormError(
         !message;
 }
 
+function getVisitorId(){
+    try{
+        const key="sbp_checkout_visitor_id";
+        let id=localStorage.getItem(key);
+        if(!id){
+            id=window.crypto?.randomUUID?.() || ("v_"+Math.random().toString(36).slice(2)+"_"+Date.now().toString(36));
+            localStorage.setItem(key,id);
+        }
+        return id;
+    }catch{
+        return "v_"+Math.random().toString(36).slice(2)+"_"+Date.now().toString(36);
+    }
+}
+function getDeviceType(){
+    const w=window.innerWidth;
+    return w<600?"mobile":w<950?"tablet":"desktop";
+}
+async function trackPaymentLinkClick(){
+    if(state.isDonation || !state.slug)return;
+    const params=new URLSearchParams(window.location.search);
+    const body={
+        visitor_id:getVisitorId(),
+        device_type:getDeviceType(),
+        referrer:document.referrer||"",
+        utm_source:params.get("utm_source")||"",
+        utm_medium:params.get("utm_medium")||"",
+        utm_campaign:params.get("utm_campaign")||""
+    };
+    try{
+        const response=await fetch(apiBase+"/api/public/links/"+encodeURIComponent(state.slug)+"/click",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify(body),
+            keepalive:true
+        });
+        const data=await response.json().catch(()=>({}));
+        if(response.ok&&data.click_id)state.clickId=data.click_id;
+    }catch(error){
+        console.debug("Payment-link analytics unavailable:",error);
+    }
+}
 async function loadCheckout() {
     loadingState.hidden = false;
     errorState.hidden = true;
@@ -175,6 +218,7 @@ async function loadCheckout() {
     setCheckoutLoading("Loading secure payment link…","Connecting to SquashberryPay.");
 
     try {
+        void trackPaymentLinkClick();
         setCheckoutLoading("Checking payment details…","Verifying the payment link and product.");
         const response =
             await fetchWithTimeout(
@@ -357,6 +401,12 @@ function renderDonationCampaign(
 
                     $("#customAmount").value =
                         String(value);
+                    $("#amountLabel").textContent =
+                        money(value, currency);
+                    if(donationContinue){
+                        donationContinue.disabled=false;
+                        donationContinue.textContent="Continue with this amount";
+                    }
 
                     if (
                         product.allow_custom_amount
@@ -463,7 +513,12 @@ function renderCheckout() {
     state.donationStarted = !state.isDonation;
     if(donationContinue){
         donationContinue.hidden=!state.isDonation || donationEnded.hidden===false;
-        donationContinue.textContent=product.payment_type==="donate"?"Continue to donation":"Continue";
+        donationContinue.disabled=state.isDonation && Boolean(product.allow_custom_amount) && !state.selectedDonationAmount;
+        donationContinue.textContent=product.payment_type==="donate"?(state.selectedDonationAmount?"Continue with this amount":"Choose an amount"):"Continue";
+    }
+    const otherAmountButton=$("#donationOtherAmount");
+    if(otherAmountButton){
+        otherAmountButton.hidden=!state.isDonation || !product.allow_custom_amount || donationEnded.hidden===false;
     }
     if(overviewContinue){
         overviewContinue.hidden=state.isDonation;
@@ -481,7 +536,7 @@ function renderCheckout() {
         product.allow_custom_amount;
 
     const summaryAmount = $("#amountLabel")?.parentElement;
-    if (summaryAmount) summaryAmount.hidden = product.payment_type === "donate" && custom;
+    if (summaryAmount) summaryAmount.hidden = false;
 
     $("#customAmountWrap").hidden =
         !custom;
@@ -493,6 +548,7 @@ function renderCheckout() {
         product.currency;
 
     if (custom) {
+        $("#amountLabel").textContent = state.selectedDonationAmount ? money(state.selectedDonationAmount, product.currency) : "Choose amount";
         $("#customAmountLabel").textContent =
             "Donation amount";
 
@@ -611,7 +667,8 @@ async function startPayment(
         state.link.donation || { enabled: false };
 
     const body = {
-        email
+        email,
+        click_id: state.clickId
     };
 
     if (
@@ -726,20 +783,25 @@ async function startPayment(
 }
 
 function goToDetails(){
-    if(state.isDonation && !state.selectedDonationAmount && state.link?.product?.allow_custom_amount){
-        const presets=state.link?.donation?.presets||[];
-        if(presets.length){
-            state.selectedDonationAmount=Number(presets[0]);
-            $("#customAmount").value=String(presets[0]);
-        }
-    }
     setCheckoutStage(2);
-    setTimeout(()=>$("#email")?.focus(),40);
+    setTimeout(()=>{
+        if(state.isDonation && state.link?.product?.allow_custom_amount && !state.selectedDonationAmount){
+            $("#customAmount")?.focus();
+        }else{
+            $("#email")?.focus();
+        }
+    },40);
 }
 
 donationContinue?.addEventListener("click",()=>{
     if(donationContinue.disabled)return;
     state.donationStarted=true;
+    goToDetails();
+});
+$("#donationOtherAmount")?.addEventListener("click",()=>{
+    state.selectedDonationAmount=null;
+    $("#customAmount").value="";
+    $("#amountLabel").textContent="Choose amount";
     goToDetails();
 });
 
