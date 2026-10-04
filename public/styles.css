@@ -3771,3 +3771,70 @@ html.customer-payment-page .attempt-timer-copy strong{font-size:18px}
 html.customer-payment-page .payment-expired-card{padding:25px 20px;border-radius:20px}
 .site-header{justify-content:center!important}.site-header .brand{margin-inline:auto!important}
 }
+
+/* Hosted payment sheet interaction fix: keep body locked without disabling sheet gestures. */
+.mobile-sheet-locked{
+  overflow:hidden!important;
+  touch-action:auto!important;
+}
+@media(max-width:760px){
+  #detailsContainer.payment-sheet-open,
+  #detailsContainer.mobile-bottom-sheet-open{
+    z-index:2147481000!important;
+    pointer-events:auto!important;
+    touch-action:pan-y!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior-y:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  #detailsContainer.payment-sheet-open button,
+  #detailsContainer.mobile-bottom-sheet-open button,
+  #detailsContainer.payment-sheet-open a,
+  #detailsContainer.mobile-bottom-sheet-open a,
+  #detailsContainer.payment-sheet-open input,
+  #detailsContainer.mobile-bottom-sheet-open input,
+  #detailsContainer.payment-sheet-open textarea,
+  #detailsContainer.mobile-bottom-sheet-open textarea{
+    pointer-events:auto!important;
+    touch-action:manipulation!important;
+  }
+  .mobile-bottom-sheet-scrim{
+    z-index:2147480000!important;
+  }
+
+  /* Compact the payment-attempt timer on small screens. */
+  html.customer-payment-page .attempt-box{
+    padding:7px 9px!important;
+    margin-bottom:9px!important;
+    border-radius:12px!important;
+  }
+  html.customer-payment-page .attempt-timer-row{
+    min-height:31px!important;
+    gap:7px!important;
+  }
+  html.customer-payment-page .attempt-timer-copy{
+    display:flex!important;
+    align-items:baseline!important;
+    gap:7px!important;
+  }
+  html.customer-payment-page .attempt-timer-copy span{
+    font-size:7px!important;
+    letter-spacing:.09em!important;
+    white-space:nowrap!important;
+  }
+  html.customer-payment-page .attempt-timer-copy strong{
+    font-size:16px!important;
+    line-height:1!important;
+  }
+  html.customer-payment-page .attempt-box>p{
+    display:none!important;
+  }
+  html.customer-payment-page .payment-top-cancel{
+    min-height:32px!important;
+    min-width:68px!important;
+    padding:5px 9px!important;
+    border-radius:9px!important;
+    font-size:10px!important;
+  }
+}
