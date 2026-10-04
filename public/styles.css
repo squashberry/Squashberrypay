@@ -3228,3 +3228,28 @@ html.customer-payment-page .site-header .brand{
 }
 @keyframes unifiedPaymentSheetIn{from{opacity:0;transform:translateX(-50%) translateY(105%)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 @media(prefers-reduced-motion:reduce){#detailsContainer.payment-sheet-open{animation:none!important}}
+
+
+/* Mobile homepage account access */
+.mobile-auth-link{display:none}
+@media(max-width:760px){
+  .mobile-auth-link{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    margin:15px auto 0;
+    color:#777;
+    font-size:12px;
+    line-height:1.4;
+  }
+  .mobile-auth-link a{
+    color:#111;
+    font-weight:850;
+    text-decoration:none;
+  }
+  .mobile-auth-link a::after{
+    content:" →";
+    font-weight:700;
+  }
+}
