@@ -1163,6 +1163,40 @@ async function submitReceipt() {
 }
 
 
+document.addEventListener("click",async event=>{
+    const button=event.target.closest("[data-copy-payment-detail]");
+    if(!button)return;
+    const value=button.dataset.copyPaymentDetail||"";
+    const original=button.textContent;
+    button.disabled=true;
+    button.textContent="Copying…";
+    try{
+        await navigator.clipboard.writeText(value);
+        button.textContent="Copied";
+        notify("Payment detail copied.","success",1800);
+        setTimeout(()=>{button.disabled=false;button.textContent=original},1200);
+    }catch{
+        button.disabled=false;
+        button.textContent=original;
+        notify("Could not copy that payment detail.","error");
+    }
+});
+
+async function showCancelConfirmation(){
+    return new Promise(resolve=>{
+        const modal=document.createElement("div");
+        modal.className="payment-confirm-modal";
+        modal.innerHTML='<div class="payment-confirm-backdrop"></div><div class="payment-confirm-card" role="dialog" aria-modal="true" aria-labelledby="cancelPaymentTitle"><div class="payment-confirm-icon">?</div><span class="eyebrow">CANCEL PAYMENT</span><h2 id="cancelPaymentTitle">Leave this payment?</h2><p>Your current payment attempt will be cancelled and the app will receive the cancellation result.</p><div class="payment-confirm-actions"><button type="button" class="button secondary" data-cancel-stay>Keep payment</button><button type="button" class="button primary" data-cancel-leave>Cancel payment</button></div></div>';
+        document.body.appendChild(modal);
+        const finish=value=>{modal.remove();resolve(value)};
+        modal.addEventListener("click",event=>{
+            if(event.target.closest("[data-cancel-stay]"))finish(false);
+            if(event.target.closest("[data-cancel-leave]"))finish(true);
+        });
+        setTimeout(()=>modal.querySelector("[data-cancel-stay]")?.focus(),20);
+    });
+}
+
 /* ============================================================
    CANCEL
 ============================================================ */
@@ -1171,15 +1205,8 @@ cancelPaymentBtn?.addEventListener(
     "click",
     async () => {
 
-        const confirmed =
-            window.confirm(
-                "Cancel this payment and return to the app?"
-            );
-
-
-        if (!confirmed) {
-            return;
-        }
+        const confirmed=await showCancelConfirmation();
+        if(!confirmed)return;
 
 
         setButtonLoading(
