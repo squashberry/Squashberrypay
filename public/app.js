@@ -1181,44 +1181,42 @@ function showExistingAttempt() {
    RECEIPT INPUT
 ============================================================ */
 
-receiptInput?.addEventListener(
-    "change",
-    () => {
-        const file=receiptInput.files?.[0];
-        if(!file){
-            if(selectedFile)selectedFile.hidden=true;
-            return;
-        }
-        const allowed=["image/jpeg","image/jpg","image/png","image/webp"];
-        if(!allowed.includes(String(file.type||"").toLowerCase())){
-            receiptInput.value="";
-            if(selectedFile)selectedFile.hidden=true;
-            notify("Only JPG, PNG or WEBP receipt images are supported.","error");
-            return;
-        }
-        if(file.size>8*1024*1024){
-            receiptInput.value="";
-            if(selectedFile)selectedFile.hidden=true;
-            notify("Receipt images must be 8 MB or smaller.","error");
-            return;
-        }
-        selectedFile.innerHTML="";
-        const preview=document.createElement("div");
-        preview.className="receipt-preview";
-        const img=document.createElement("img");
-        img.src=URL.createObjectURL(file);
-        img.alt="Selected payment receipt preview";
-        img.onload=()=>URL.revokeObjectURL(img.src);
-        const meta=document.createElement("div");
-        meta.className="receipt-preview-meta";
-        meta.innerHTML="<strong>"+escapeHtml(file.name)+"</strong><span>"+(file.size/1024/1024).toFixed(2)+" MB · Image ready</span>";
-        preview.append(img,meta);
-        selectedFile.append(preview);
-        selectedFile.hidden=false;
-        notify("Receipt image selected.","success",2200);
-    }
-);
+receiptInput?.addEventListener("change", async () => {
+    const file=receiptInput.files?.[0];
+    if(!file){if(selectedFile)selectedFile.hidden=true;return;}
+    const allowed=["image/jpeg","image/jpg","image/png","image/webp"];
+    if(!allowed.includes(String(file.type||"").toLowerCase())){receiptInput.value="";if(selectedFile)selectedFile.hidden=true;notify("Only JPG, PNG or WEBP receipt images are supported.","error");return;}
+    if(file.size>8*1024*1024){receiptInput.value="";if(selectedFile)selectedFile.hidden=true;notify("Receipt images must be 8 MB or smaller.","error");return;}
+    if(document.getElementById("receiptUploadModal")){await uploadReceiptFile(file);return;}
+    selectedFile.innerHTML="";
+    const preview=document.createElement("div");preview.className="receipt-preview";
+    const img=document.createElement("img");img.src=URL.createObjectURL(file);img.alt="Selected payment receipt preview";
+    const meta=document.createElement("div");meta.className="receipt-preview-meta";meta.innerHTML="<strong>"+escapeHtml(file.name)+"</strong><span>"+(file.size/1024/1024).toFixed(2)+" MB · Image ready</span>";
+    preview.append(img,meta);selectedFile.append(preview);selectedFile.hidden=false;notify("Receipt image selected.","success",2200);
+});
 
+async function uploadReceiptFile(file){
+    const modal=document.getElementById("receiptUploadModal");
+    if(!modal||!file)return false;
+    const body=modal.querySelector(".receipt-upload-body"),actions=modal.querySelector(".receipt-upload-actions");
+    if(!body||!actions)return false;
+    body.innerHTML='<div class="receipt-upload-loading" role="status" aria-live="polite"><div class="receipt-upload-spinner"></div><strong>Uploading your receipt…</strong><p>We’re securely sending the image to the business for verification. Please keep this window open.</p></div>';
+    actions.innerHTML='<button type="button" class="button secondary" disabled>Uploading…</button>';
+    try{
+        const formData=new FormData();formData.append("receipt",file);
+        const response=await fetch(apiBase+"/api/public/session/"+encodeURIComponent(state.token)+"/receipt",{method:"POST",body:formData});
+        const data=await response.json().catch(()=>({}));
+        if(response.status===410){handleAttemptExpired();return false;}
+        if(!response.ok)throw new Error(data.error||"Could not submit receipt.");
+        clearInterval(state.paymentTimer);state.payment.status="awaiting_verification";
+        showVerification(true);showReceiptUploadSuccess(file);notify("Receipt uploaded successfully.","success");return true;
+    }catch(error){
+        body.innerHTML='<div class="receipt-upload-loading"><div class="receipt-success-check">!</div><strong>Upload failed</strong><p>'+escapeHtml(error.message||"Could not upload the receipt.")+'</p></div>';
+        actions.innerHTML='<button type="button" class="button secondary" data-receipt-retry>Try again</button><button type="button" class="button primary" data-receipt-close>Close</button>';
+        actions.querySelector("[data-receipt-retry]")?.addEventListener("click",()=>{closeReceiptUploadModal();openReceiptUploadModal();});
+        actions.querySelector("[data-receipt-close]")?.addEventListener("click",closeReceiptUploadModal);notify(error.message||"Could not upload receipt.","error");return false;
+    }
+}
 
 function showReceiptUploadSuccess(file){
     const modal=document.getElementById("receiptUploadModal");
@@ -1242,147 +1240,12 @@ submitReceiptBtn?.addEventListener(
 );
 
 
-async function submitReceipt() {
-
-    const file =
-        receiptInput?.files?.[0];
-
-
-    if (!file) {
-
-        submitReceiptBtn.classList.add(
-            "error-shake"
-        );
-
-
-        setTimeout(
-            () => {
-                submitReceiptBtn.classList.remove(
-                    "error-shake"
-                );
-            },
-            450
-        );
-
-
-        notify(
-            "Please select your payment receipt first.",
-            "error"
-        );
-
-        return;
-    }
-
-
-    if (
-        state.paymentDeadlineAt &&
-        new Date(
-            state.paymentDeadlineAt
-        ) <= new Date()
-    ) {
-
-        handleAttemptExpired();
-
-        return;
-    }
-
-
-    setButtonLoading(
-        submitReceiptBtn,
-        "Submitting receipt…"
-    );
-
-
-    try {
-
-        const formData =
-            new FormData();
-
-
-        formData.append(
-            "receipt",
-            file
-        );
-
-
-        const response =
-            await fetch(
-                apiBase + `/api/public/session/${encodeURIComponent(
-                    state.token
-                )}/receipt`,
-                {
-                    method:
-                        "POST",
-
-                    body:
-                        formData
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            response.status ===
-                410
-        ) {
-
-            handleAttemptExpired();
-
-            return;
-        }
-
-
-        if (!response.ok) {
-            throw new Error(
-                data.error ||
-                "Could not submit receipt."
-            );
-        }
-
-
-        clearInterval(
-            state.paymentTimer
-        );
-
-
-        state.payment.status =
-            "awaiting_verification";
-
-
-        showVerification(
-            true
-        );
-
-        showReceiptUploadSuccess(file);
-
-        notify(
-            "Receipt uploaded successfully.",
-            "success"
-        );
-
-    } catch (error) {
-
-        submitReceiptBtn.classList.add(
-            "error-shake"
-        );
-
-
-        notify(
-            error.message,
-            "error"
-        );
-
-    } finally {
-
-        resetButton(
-            submitReceiptBtn
-        );
-    }
+async function submitReceipt(){
+    const file=receiptInput?.files?.[0];
+    if(!file){notify("Please select your payment receipt first.","error");return;}
+    if(state.paymentDeadlineAt && new Date(state.paymentDeadlineAt)<=new Date()){handleAttemptExpired();return;}
+    await uploadReceiptFile(file);
 }
-
 
 document.addEventListener("click",async event=>{
     const button=event.target.closest("[data-copy-payment-detail]");
@@ -1458,6 +1321,8 @@ mobileSheetHandle?.addEventListener("touchend",()=>{
 /* ============================================================
    CANCEL
 ============================================================ */
+
+document.getElementById("cancelPaymentTop")?.addEventListener("click",()=>cancelPaymentBtn?.click());
 
 cancelPaymentBtn?.addEventListener(
     "click",
