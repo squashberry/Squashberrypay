@@ -3742,8 +3742,16 @@ html.customer-payment-page .receipt-upload-actions .button{min-height:48px}
 @media(prefers-reduced-motion:reduce){html.customer-payment-page .receipt-upload-spinner{animation:none}}
 
 #notification{z-index:2147483647!important}
-.payment-confirm-modal,.receipt-upload-modal,.payment-contact-modal,.mobile-bottom-sheet-scrim{z-index:100000!important}
-.payment-confirm-card,.receipt-upload-card,.payment-contact-card{z-index:100001!important}
+.payment-confirm-modal,.receipt-upload-modal,.payment-contact-modal{
+  z-index:2147482000!important;
+}
+.payment-confirm-card,.receipt-upload-card,.payment-contact-card{
+  position:relative!important;
+  z-index:2147482001!important;
+}
+.mobile-bottom-sheet-scrim{
+  z-index:2147480000!important;
+}
 html.customer-payment-page .attempt-box{padding:10px 12px}
 html.customer-payment-page .attempt-timer-copy strong{font-size:19px}
 html.customer-payment-page .attempt-box>p{margin-top:5px}
