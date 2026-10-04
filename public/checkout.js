@@ -135,6 +135,12 @@ function setCheckoutStage(step){
         if(el)el.classList.toggle("active",i+1===normalized);
         if(el)el.classList.toggle("complete",i+1<normalized);
     });
+    const activeStage=normalized===1?checkoutOverview:checkoutDetails;
+    [checkoutOverview,checkoutDetails].forEach(el=>el.classList.remove("state-enter"));
+    if(activeStage&&!activeStage.hidden){
+        void activeStage.offsetWidth;
+        activeStage.classList.add("state-enter");
+    }
 }
 function setError(message){
     document.querySelectorAll(".checkout-session-overlay").forEach(el=>el.remove());
@@ -212,6 +218,8 @@ async function trackPaymentLinkClick(){
     }
 }
 async function loadCheckout() {
+    const loaderStartedAt=performance.now();
+    const minimumLoaderMs=2000;
     loadingState.hidden = false;
     errorState.hidden = true;
     checkoutState.hidden = true;
@@ -261,6 +269,8 @@ async function loadCheckout() {
         }
 
         setCheckoutLoading("Preparing checkout…","Your secure payment page is ready.");
+        const loaderRemaining=minimumLoaderMs-(performance.now()-loaderStartedAt);
+        if(loaderRemaining>0) await new Promise(resolve=>setTimeout(resolve,loaderRemaining));
         renderCheckout();
 
     } catch (error) {
@@ -813,12 +823,12 @@ backToOverview?.addEventListener("click",()=>{
     setCheckoutStage(1);
 });
 
-retryButton.addEventListener(
+retryButton?.addEventListener(
     "click",
     loadCheckout
 );
 
-checkoutForm.addEventListener(
+checkoutForm?.addEventListener(
     "submit",
     startPayment
 );
