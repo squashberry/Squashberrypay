@@ -237,8 +237,7 @@ const upload =
                 "image/jpeg",
                 "image/png",
                 "image/webp",
-                "image/jpg",
-                "application/pdf"
+                "image/jpg"
             ];
 
             if (
@@ -249,7 +248,7 @@ const upload =
 
                 return callback(
                     new Error(
-                        "Only JPG, PNG, WEBP and PDF files are allowed."
+                        "Only JPG, PNG and WEBP receipt images are allowed."
                     )
                 );
             }
@@ -8469,6 +8468,25 @@ app.post(
                 }
             }catch(emailError){console.error("Payment submission email error:",emailError);}
 
+            try{
+                let merchantId=null;
+                if(payment.service_id){
+                    const {data:svc}=await supabase.from("services").select("merchant_id").eq("id",payment.service_id).maybeSingle();
+                    merchantId=svc?.merchant_id||null;
+                }else if(payment.donation_campaign_id){
+                    const {data:camp}=await supabase.from("donation_campaigns").select("merchant_id").eq("id",payment.donation_campaign_id).maybeSingle();
+                    merchantId=camp?.merchant_id||null;
+                }
+                await sendMerchantPaymentNotification({
+                    merchantId,
+                    subject:"Payment receipt submitted — action required",
+                    title:"A payment is waiting for your verification",
+                    message:"A customer has completed a transfer and uploaded a receipt. Please review the receipt and confirm or reject the payment in your SquashberryPay dashboard.",
+                    payment,
+                    kind:"PAYMENT VERIFICATION"
+                });
+            }catch(emailError){console.error("Merchant receipt notification error:",emailError);}
+
             await enqueueWebhookEvent(
                 "payment.receipt_submitted",
                 {
@@ -8543,8 +8561,8 @@ app.post(
                         payment_reference,
                         service_id,
                         donation_campaign_id,
-                        services (name),
-                        donation_campaigns (name)
+                        services (name, merchant_id),
+                        donation_campaigns (name, merchant_id)
                     )
                 `)
                 .eq("session_token_hash",hash(req.params.token))
@@ -8597,6 +8615,15 @@ app.post(
             }catch(emailError){
                 console.error("Payment cancellation email error:",emailError);
             }
+
+            await sendMerchantPaymentNotification({
+                merchantId:payment.services?.merchant_id||payment.donation_campaigns?.merchant_id,
+                subject:"Payment cancelled by customer",
+                title:"Customer cancelled a payment",
+                message:"A customer cancelled this payment attempt before completion. No confirmation was issued.",
+                payment,
+                kind:"PAYMENT CANCELLED"
+            });
 
             res.json({
                 success:true,
@@ -8717,6 +8744,20 @@ async function sendDonationRejectedEmail({email,name,amount,currency,reference,c
   });
 }
 
+async function sendMerchantPaymentNotification({merchantId,subject,title,message,payment,kind="payment"}) {
+  if(!merchantId)return;
+  try{
+    const {data:merchant,error}=await supabase.from("merchant_profiles").select("email,business_name").eq("id",merchantId).maybeSingle();
+    if(error)throw error;
+    const email=normalizeEmail(merchant?.email||"");if(!email)return;
+    const safeBusiness=escapeHtml(merchant?.business_name||"Business"),safeTitle=escapeHtml(title||"Payment update"),safeMessage=escapeHtml(message||""),safeRef=escapeHtml(payment?.payment_reference||"—");
+    const amount=escapeHtml(payment?.currency||"GMD")+" "+Number(payment?.amount||0).toFixed(2);
+    const label=escapeHtml(String(kind||"PAYMENT").toUpperCase());
+    const html='<!doctype html><html><body style="margin:0;background:#f3f3f0;font-family:Arial,Helvetica,sans-serif;color:#111"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:30px 14px"><table width="100%" style="max-width:620px;background:#fff;border:1px solid #dddcd5;border-radius:22px;overflow:hidden"><tr><td style="padding:26px 28px;border-bottom:1px solid #ecece6"><strong style="font-size:17px">SquashberryPay</strong><div style="font-size:10px;color:#888;letter-spacing:1.5px;margin-top:4px">'+label+'</div></td></tr><tr><td style="padding:30px 28px"><div style="font-size:11px;color:#777;letter-spacing:1.5px;font-weight:800">PAYMENT UPDATE</div><h1 style="font-size:28px;margin:9px 0 12px">'+safeTitle+'</h1><p style="font-size:14px;line-height:1.65;color:#666">'+safeMessage+'</p><div style="margin-top:20px;padding:15px;border:1px solid #e4e4de;border-radius:14px;background:#fafaf7"><div style="font-size:11px;color:#888">AMOUNT</div><strong style="font-size:17px">'+amount+'</strong><div style="font-size:11px;color:#888;margin-top:12px">REFERENCE</div><strong style="font-size:13px">'+safeRef+'</strong></div><p style="font-size:12px;color:#777;line-height:1.6;margin-top:20px">You are receiving this notification because '+safeBusiness+' is using SquashberryPay.</p></td></tr></table></td></tr></table></body></html>';
+    await sendResendEmail({to:email,subject,html,text:message+" Reference: "+(payment?.payment_reference||"—")});
+  }catch(error){console.error("Merchant payment notification email error:",error);}
+}
+
 async function approveMerchantPayment(paymentId,merchantId){
   const {data:p,error}=await supabase
     .from("payments")
@@ -8789,6 +8830,8 @@ async function approveMerchantPayment(paymentId,merchantId){
       customerReference:
         p.customer_reference
     });
+
+    await sendMerchantPaymentNotification({merchantId:owner,subject:"Donation confirmed successfully",title:"Donation payment confirmed",message:"The donation has been reviewed and successfully confirmed in SquashberryPay.",payment:p,kind:"DONATION CONFIRMED"});
 
     return {
       status:200,
@@ -8993,6 +9036,8 @@ async function approveMerchantPayment(paymentId,merchantId){
     }
   );
 
+  await sendMerchantPaymentNotification({merchantId:merchantId,subject:"Payment confirmed successfully",title:"Payment approved",message:"The payment has been verified successfully. The customer has been sent their one-time payment code.",payment:p,kind:"PAYMENT CONFIRMED"});
+
   return {
     status:200,
     body:{
@@ -9031,6 +9076,7 @@ app.post("/api/merchant/payments/:paymentId/reject",authenticateMerchant,async(r
     try{await sendDonationRejectedEmail({email:p.customer_email||p.service_users?.email,name:p.donation_campaigns?.name||"this campaign",amount:p.amount,currency:p.currency,reference:p.payment_reference,customerReference:p.customer_reference,reason});}
     catch(emailError){console.error("Donation rejection email error:",emailError);}
   }
+  await sendMerchantPaymentNotification({merchantId:req.merchant.id,subject:donation?"Donation rejected":"Payment rejected",title:donation?"Donation rejected":"Payment rejected",message:"The submitted receipt was reviewed and the transaction was rejected. The customer has been notified.",payment:p,kind:donation?"DONATION REJECTED":"PAYMENT REJECTED"});
   res.json({success:true,type:donation?"donation":"payment"});
 }catch(e){console.error(e);res.status(500).json({error:"Could not reject payment."})}});
 
