@@ -109,9 +109,14 @@
                         This donation campaign is no longer accepting donations.
                     </div>
 
-                        <button id="donationContinue" class="button primary" type="button" hidden>
-                            Continue to donation
-                        </button>
+                        <div class="donation-action-stack">
+                            <button id="donationContinue" class="button primary" type="button" hidden disabled>
+                                Continue with this amount
+                            </button>
+                            <button id="donationOtherAmount" class="button secondary donation-secondary" type="button" hidden>
+                                Enter another amount
+                            </button>
+                        </div>
                     </section>
 
                     <button id="overviewContinue" class="button primary stage-continue" type="button" hidden>
@@ -162,7 +167,7 @@
                         <span id="buttonText">Continue to payment</span>
                     </button>
 
-                    <p class="security-note">You’ll be redirected to the SquashberryPay payment page to choose an available payment method and complete the transfer.</p>
+                    <p class="security-note"><span>Secure hosted checkout</span> · No SquashberryPay account required · You’ll choose an available payment method on the next step.</p>
                         <p id="formError" class="form-error" role="alert" hidden></p>
                     </form>
                 </div></div>
