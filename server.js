@@ -781,7 +781,7 @@ function generatePaymentLinkSlug(
         "-" +
         crypto
             .randomBytes(
-                3
+                8
             )
             .toString(
                 "hex"
@@ -5397,6 +5397,65 @@ app.get(
 );
 
 
+app.get("/api/merchant/payment-link-analytics", authenticateMerchant, async (req,res) => {
+    try {
+        const now=new Date();
+        const requestedEnd=req.query?.end?new Date(String(req.query.end)):now;
+        const requestedStart=req.query?.start?new Date(String(req.query.start)):new Date(requestedEnd.getTime()-30*86400000);
+        const end=Number.isNaN(requestedEnd.getTime())?now:requestedEnd;
+        let start=Number.isNaN(requestedStart.getTime())?new Date(end.getTime()-30*86400000):requestedStart;
+        if(end<=start)return res.status(400).json({error:"Analytics end date must be after the start date."});
+        const maxStart=new Date(end.getTime()-366*86400000);
+        if(start<maxStart)start=maxStart;
+
+        const {data,error}=await supabase.rpc("merchant_payment_link_analytics",{
+            p_merchant_id:req.merchant.id,
+            p_start:start.toISOString(),
+            p_end:end.toISOString()
+        });
+        if(error){
+            console.error("Payment-link analytics error:",error);
+            return res.status(500).json({error:"Could not load payment-link analytics."});
+        }
+
+        const rows=Array.isArray(data)?data:[];
+        const totalClicks=rows.reduce((n,x)=>n+Number(x.clicks||0),0);
+        const uniqueVisitors=rows.reduce((n,x)=>n+Number(x.unique_visitors||0),0);
+        const paymentStarts=rows.reduce((n,x)=>n+Number(x.payment_starts||0),0);
+        const completedPayments=rows.reduce((n,x)=>n+Number(x.completed_payments||0),0);
+        const revenue=rows.reduce((n,x)=>n+Number(x.revenue||0),0);
+
+        res.json({
+            start:start.toISOString(),
+            end:end.toISOString(),
+            totals:{
+                clicks:totalClicks,
+                unique_visitors:uniqueVisitors,
+                payment_starts:paymentStarts,
+                completed_payments:completedPayments,
+                revenue,
+                conversion_rate:totalClicks?Math.round((completedPayments/totalClicks)*10000)/100:0
+            },
+            links:rows.map(x=>({
+                payment_link_id:x.payment_link_id,
+                slug:x.slug,
+                title:x.title,
+                product_name:x.product_name,
+                service_name:x.service_name,
+                clicks:Number(x.clicks||0),
+                unique_visitors:Number(x.unique_visitors||0),
+                payment_starts:Number(x.payment_starts||0),
+                completed_payments:Number(x.completed_payments||0),
+                revenue:Number(x.revenue||0),
+                conversion_rate:Number(x.clicks||0)?Math.round((Number(x.completed_payments||0)/Number(x.clicks||0))*10000)/100:0
+            }))
+        });
+    }catch(error){
+        console.error("Payment-link analytics route error:",error);
+        res.status(500).json({error:"Could not load payment-link analytics."});
+    }
+});
+
 app.post(
     "/api/merchant/apps/:id/payment-links",
     authenticateMerchant,
@@ -5512,86 +5571,43 @@ app.post(
                         ? "Donate"
                         : "Pay Now";
 
-            let slug = generatePaymentLinkSlug(
-                result.service.slug,
-                product.product_code
-            );
-            for (let attempt = 0; attempt < 5; attempt++) {
-                const { data: slugMatch } = await supabase
-                    .from("payment_links")
-                    .select("id")
-                    .eq("slug", slug)
-                    .maybeSingle();
-                if (!slugMatch) break;
-                slug = generatePaymentLinkSlug(result.service.slug, product.product_code);
-            }
-
-            const {
-                data,
-                error
-            } =
-                await supabase
+            let createdLink=null;
+            let createError=null;
+            for(let attempt=0;attempt<8;attempt++){
+                const slug=generatePaymentLinkSlug(result.service.slug,product.product_code);
+                const {data,error}=await supabase
                     .from("payment_links")
                     .insert({
-                        service_id:
-                            result.service.id,
-                        product_id:
-                            product.id,
+                        service_id:result.service.id,
+                        product_id:product.id,
                         slug,
-                        title:
-                            String(
-                                req.body?.title ||
-                                product.name
-                            )
-                                .trim()
-                                .slice(0, 120),
-                        description:
-                            String(
-                                req.body?.description ||
-                                product.description ||
-                                ""
-                            )
-                                .trim()
-                                .slice(0, 500) ||
-                            null,
-                        button_label:
-                            String(
-                                req.body?.button_label ||
-                                defaultButtonLabel
-                            )
-                                .trim()
-                                .slice(0, 40) ||
-                            defaultButtonLabel,
-                        return_url:
-                            returnUrl,
-                        cancel_url:
-                            cancelUrl,
-                        status:
-                            "active"
+                        title:String(req.body?.title||product.name).trim().slice(0,120),
+                        description:String(req.body?.description||product.description||"").trim().slice(0,500)||null,
+                        button_label:String(req.body?.button_label||defaultButtonLabel).trim().slice(0,40)||defaultButtonLabel,
+                        return_url:returnUrl,
+                        cancel_url:cancelUrl,
+                        status:"active"
                     })
                     .select("*")
                     .single();
+                if(!error){
+                    createdLink=data;
+                    break;
+                }
+                createError=error;
+                if(error.code!=="23505"){
+                    break;
+                }
+            }
 
-            if (error) {
-                console.error(
-                    "Create payment-link database error:",
-                    error
-                );
-                return res.status(500).json({
-                    error:
-                        "Could not create payment link."
-                });
+            if(!createdLink){
+                console.error("Create payment-link database error:",createError);
+                return res.status(500).json({error:"Could not create payment link."});
             }
 
             res.status(201).json({
-                payment_link:
-                    data,
-                payment_url:
-                    PUBLIC_SITE_URL +
-                    "/checkout/" +
-                    encodeURIComponent(
-                        data.slug
-                    )
+                payment_link:createdLink,
+                payment_url:PUBLIC_SITE_URL+"/checkout/"+encodeURIComponent(createdLink.slug)
             });
 
         } catch (error) {
@@ -6970,6 +6986,64 @@ app.post("/api/public/donations/:slug/payments",async(req,res)=>{
   }catch(e){console.error("Donation payment error:",e);res.status(500).json({error:"Could not start donation."});}
 });
 
+app.post("/api/public/links/:slug/click", async (req,res) => {
+    try {
+        const slug=String(req.params.slug||"").trim().toLowerCase();
+        const visitorId=String(req.body?.visitor_id||"").trim().slice(0,128);
+        if(!slug || visitorId.length < 16){
+            return res.status(400).json({error:"Invalid link click data."});
+        }
+
+        const {data:link,error}=await supabase
+            .from("payment_links")
+            .select("id,service_id,status,services(merchant_id,status)")
+            .eq("slug",slug)
+            .eq("status","active")
+            .maybeSingle();
+
+        if(error){
+            console.error("Payment-link click lookup error:",error);
+            return res.status(500).json({error:"Could not record this visit."});
+        }
+        if(!link || link.services?.status!=="active"){
+            return res.status(404).json({error:"This payment link is unavailable."});
+        }
+
+        const device=String(req.body?.device_type||"unknown");
+        const deviceType=["mobile","tablet","desktop"].includes(device)?device:"unknown";
+        const referrer=String(req.body?.referrer||"").trim().slice(0,500)||null;
+        const utmSource=String(req.body?.utm_source||"").trim().slice(0,120)||null;
+        const utmMedium=String(req.body?.utm_medium||"").trim().slice(0,120)||null;
+        const utmCampaign=String(req.body?.utm_campaign||"").trim().slice(0,160)||null;
+
+        const {data:click,error:clickError}=await supabase
+            .from("payment_link_clicks")
+            .insert({
+                payment_link_id:link.id,
+                service_id:link.service_id,
+                merchant_id:link.services.merchant_id,
+                visitor_id:visitorId,
+                device_type:deviceType,
+                referrer,
+                utm_source:utmSource,
+                utm_medium:utmMedium,
+                utm_campaign:utmCampaign
+            })
+            .select("id,clicked_at")
+            .single();
+
+        if(clickError){
+            console.error("Payment-link click insert error:",clickError);
+            return res.status(500).json({error:"Could not record this visit."});
+        }
+
+        res.status(201).json({click_id:click.id,clicked_at:click.clicked_at});
+    }catch(error){
+        console.error("Payment-link click route error:",error);
+        res.status(500).json({error:"Could not record this visit."});
+    }
+});
+
 /* ============================================================
    PUBLIC HOSTED PAYMENT LINKS
 ============================================================ */
@@ -7351,6 +7425,18 @@ app.post(
                 }
             }
 
+            let paymentLinkClickId=null;
+            const requestedClickId=String(req.body?.click_id||"").trim();
+            if(requestedClickId){
+                const {data:click}=await supabase
+                    .from("payment_link_clicks")
+                    .select("id")
+                    .eq("id",requestedClickId)
+                    .eq("payment_link_id",link.id)
+                    .maybeSingle();
+                if(click?.id)paymentLinkClickId=click.id;
+            }
+
             const donorAnonymous =
                 Boolean(
                     req.body?.donor_anonymous
@@ -7463,6 +7549,8 @@ app.post(
                             link.cancel_url,
                         payment_link_id:
                             link.id,
+                        payment_link_click_id:
+                            paymentLinkClickId,
                         donor_name:
                             donorName,
                         donor_message:
@@ -9468,7 +9556,7 @@ app.post("/api/merchant/donation-campaigns", authenticateMerchant, async (req,re
             return res.status(500).json({ error: "Could not create donation campaign." });
         }
 
-        res.status(201).json({ campaign, payment_url: PUBLIC_SITE_URL + "/checkout.html?donation=" + encodeURIComponent(campaign.slug) });
+        res.status(201).json({ campaign, payment_url: PUBLIC_SITE_URL + "/donate/" + encodeURIComponent(campaign.slug) });
     } catch (error) {
         console.error("Create donation campaign error:", error);
         res.status(500).json({ error: "Could not create donation campaign." });
@@ -9503,7 +9591,7 @@ app.patch("/api/merchant/donation-campaigns/:id", authenticateMerchant, async (r
         if(!id||Object.keys(patch).length===0)return res.status(400).json({error:"Nothing to update."});
         const {data,error}=await supabase.from("donation_campaigns").update(patch).eq("id",id).eq("merchant_id",req.merchant.id).select("*").single();
         if(error||!data)return res.status(404).json({error:"Donation campaign not found."});
-        res.json({campaign:data,payment_url:PUBLIC_SITE_URL+"/checkout.html?donation="+encodeURIComponent(data.slug)});
+        res.json({campaign:data,payment_url:PUBLIC_SITE_URL+"/donate/"+encodeURIComponent(data.slug)});
     }catch(e){console.error(e);res.status(500).json({error:"Could not update donation campaign."});}
 });
 app.delete("/api/merchant/donation-campaigns/:id", authenticateMerchant, async (req,res) => {
