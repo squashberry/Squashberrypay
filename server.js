@@ -90,6 +90,8 @@ const ADMIN_SECRET =
     process.env.ADMIN_SESSION_SECRET;
 
 
+const ADMIN_ACCOUNT_EMAIL = "squashberrypro@gmail.com";
+
 /* ============================================================
    CUSTOM AUTH OTP CONFIG
 ============================================================ */
@@ -1257,44 +1259,23 @@ async function authenticateService(
 }
 
 
-function requireAdmin(
-    req,
-    res,
-    next
-) {
-
-    const cookies =
-        String(
-            req.headers.cookie ||
-            ""
-        );
-
-    const match =
-        cookies.match(
-            /(?:^|;\s*)sbp_admin=([^;]+)/
-        );
-
-    if (
-        !match ||
-        !verifyAdminCookie(
-            match[1]
-        )
-    ) {
-
-        return res.status(
-            401
-        ).json({
-            error:
-                "Administrator authentication required."
-        });
+async function requireAdmin(req, res, next) {
+  try {
+    const cookies = String(req.headers.cookie || '');
+    const match = cookies.match(/(?:^|;\\s*)sbp_admin=([^;]+)/);
+    if (match && verifyAdminCookie(match[1])) { req.admin = true; return next(); }
+    const token = parseBearerToken(req);
+    if (token) {
+      const { data, error } = await authClient.auth.getUser(token);
+      const email = String(data?.user?.email || '').trim().toLowerCase();
+      if (!error && data?.user && email === ADMIN_ACCOUNT_EMAIL) { req.admin = true; req.adminUser = data.user; return next(); }
     }
-
-    req.admin =
-        true;
-
-    next();
+    return res.status(401).json({ error: 'Administrator access requires the authorized SquashberryPro merchant account.' });
+  } catch (error) {
+    console.error('Administrator authorization error:', error);
+    return res.status(401).json({ error: 'Administrator authentication required.' });
+  }
 }
-
 
 /* ============================================================
    AUTH OTP STORES
@@ -3671,19 +3652,10 @@ app.post(
    MERCHANT PROFILE
 ============================================================ */
 
-app.get(
-    "/api/merchant/me",
-    authenticateMerchant,
-    (req, res) => {
-
-        res.json({
-
-            merchant:
-                req.merchant
-        });
-    }
-);
-
+app.get("/api/merchant/me", authenticateMerchant, (req, res) => {
+  const isAdmin = String(req.user?.email || '').trim().toLowerCase() === ADMIN_ACCOUNT_EMAIL;
+  return res.json({ merchant: req.merchant, is_admin: isAdmin });
+});
 
 /* ============================================================
    MERCHANT APPS
@@ -8985,34 +8957,20 @@ app.post(
    ADMIN ME
 ============================================================ */
 
-app.get(
-    "/api/admin/me",
-    (req, res) => {
-
-        const cookies =
-            req.headers.cookie ||
-            "";
-
-
-        const match =
-            cookies.match(
-                /sbp_admin=([^;]+)/
-            );
-
-
-        res.json({
-
-            authenticated:
-                Boolean(
-                    match &&
-                    verifyAdminCookie(
-                        match[1]
-                    )
-                )
-        });
-    }
-);
-
+app.get("/api/admin/me", async (req, res) => {
+  const cookies = String(req.headers.cookie || '');
+  const match = cookies.match(/(?:^|;\\s*)sbp_admin=([^;]+)/);
+  if (match && verifyAdminCookie(match[1])) return res.json({ authenticated: true, email: ADMIN_ACCOUNT_EMAIL });
+  const token = parseBearerToken(req);
+  if (token) {
+    try {
+      const { data, error } = await authClient.auth.getUser(token);
+      const email = String(data?.user?.email || '').trim().toLowerCase();
+      if (!error && data?.user && email === ADMIN_ACCOUNT_EMAIL) return res.json({ authenticated: true, email });
+    } catch (error) { console.error('Administrator session check error:', error); }
+  }
+  return res.json({ authenticated: false });
+});
 
 /* ============================================================
    ADMIN APPLICATION QUEUE
