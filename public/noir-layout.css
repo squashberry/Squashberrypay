@@ -1,0 +1,222 @@
+/* ==========================================================================
+   SQUASHBERRYPAY — NOIR LAYOUT (v2)
+   New structure: icon rail · command bar · ledger overview · verify queue ·
+   row-based lists. Load after noir.css.
+   ========================================================================== */
+body.nx{--rail:72px;--rail-open:252px;--top:60px}
+body.nx [hidden]{display:none!important}
+
+/* ---------- Top bar ---------- */
+body.nx .merchant-header{height:var(--top);gap:14px}
+body.nx .palette-trigger{
+  display:flex;align-items:center;gap:10px;height:40px;padding:0 8px 0 14px;min-width:0;
+  border:1px solid #000;border-radius:10px;background:#fff;color:#666;font:500 14px var(--f-body);
+  cursor:pointer;text-align:left;box-shadow:3px 3px 0 #000;transition:transform .15s,box-shadow .15s;
+}
+body.nx .palette-trigger:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 #000}
+body.nx .pt-icon{font-size:18px;color:#000}
+body.nx .pt-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.nx .palette-trigger kbd{border:1px solid #000;border-radius:6px;padding:3px 8px;background:#f1f1f1;color:#000;font:700 12px var(--f-body)}
+body.nx .crumb{display:none}
+
+@media(min-width:761px){
+  body.nx .merchant-header{display:grid;grid-template-columns:var(--rail) auto minmax(200px,560px) 1fr;padding:0 20px 0 0;align-items:center}
+  body.nx .merchant-header .brand{justify-content:center;gap:0}
+  body.nx .merchant-header .brand-word{display:none}
+  body.nx .crumb{display:flex;align-items:center;gap:10px;font:700 14px var(--f-body);white-space:nowrap}
+  body.nx .crumb i{font-style:normal;color:#999}
+  body.nx .merchant-header-right{justify-self:end}
+
+  /* ---------- Rail ---------- */
+  body.nx .merchant-layout{display:block;width:100%;max-width:none;margin:0}
+  body.nx .merchant-sidebar{
+    position:fixed;top:var(--top);left:0;bottom:0;height:auto;width:var(--rail);z-index:300;
+    padding:14px 10px;overflow:hidden;background:#fff;border-right:1px solid #000;
+    transition:width .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s;
+  }
+  body.nx .merchant-sidebar:hover,body.nx .merchant-sidebar:focus-within{width:var(--rail-open);overflow-y:auto;box-shadow:12px 0 0 rgba(0,0,0,.07)}
+  body.nx .sidebar-label{display:none}
+  body.nx .merchant-sidebar:hover .sidebar-label,body.nx .merchant-sidebar:focus-within .sidebar-label{display:flex}
+  body.nx .business-switcher{grid-template-columns:36px;padding:5px;box-shadow:none;border-color:transparent;width:max-content}
+  body.nx .business-switcher>span:nth-child(2),body.nx .business-switcher>b{display:none}
+  body.nx .merchant-sidebar:hover .business-switcher,body.nx .merchant-sidebar:focus-within .business-switcher{grid-template-columns:36px minmax(0,1fr) 14px;width:auto;border-color:#000;box-shadow:3px 3px 0 #000}
+  body.nx .merchant-sidebar:hover .business-switcher>span:nth-child(2),body.nx .merchant-sidebar:hover .business-switcher>b,
+  body.nx .merchant-sidebar:focus-within .business-switcher>span:nth-child(2),body.nx .merchant-sidebar:focus-within .business-switcher>b{display:block}
+  body.nx .side-link{font-size:0;height:44px;padding:0 13px;gap:14px;position:relative;white-space:nowrap}
+  body.nx .merchant-sidebar:hover .side-link,body.nx .merchant-sidebar:focus-within .side-link{font-size:13px}
+  body.nx .side-link>span{font-size:17px;width:22px;flex:0 0 22px}
+  body.nx .side-link em{position:absolute;top:4px;left:28px;min-width:17px;height:17px;display:grid;place-items:center;padding:0 4px;border:0;border-radius:9px;background:#000;color:#fff;font-size:10px;line-height:1}
+  body.nx .side-link.active em{background:#fff;color:#000}
+  body.nx .merchant-sidebar:hover .side-link em,body.nx .merchant-sidebar:focus-within .side-link em{position:static;margin-left:auto;font-size:11px}
+  body.nx .nav-divider{margin:8px 6px}
+  body.nx .merchant-main{margin-left:var(--rail);padding:34px 44px 120px;max-width:none}
+  body.nx .merchant-section{max-width:1320px}
+}
+
+/* ---------- Section titles (slimmer than v1) ---------- */
+body.nx .section-title-row h2,body.nx #section-applications .section-title-row h2{font-size:clamp(34px,4.2vw,60px)}
+body.nx .toolbar{position:sticky;top:calc(var(--top) + 6px);z-index:25;padding:10px;margin:0 0 14px;background:rgba(255,255,255,.94);border:1px solid #000;border-radius:12px;box-shadow:4px 4px 0 #000}
+body.nx .toolbar input,body.nx .toolbar select{border-color:#000}
+
+/* ---------- Command palette ---------- */
+.pal{position:fixed;inset:0;z-index:20000;display:grid;justify-items:center;align-content:start;padding:13vh 16px 16px;background:rgba(0,0,0,.6)}
+.pal[hidden]{display:none}
+.pal-box{width:min(660px,100%);background:#fff;border:2px solid #000;border-radius:14px;box-shadow:8px 8px 0 #fff;overflow:hidden;font-family:"Instrument Sans",system-ui,sans-serif}
+.pal-box input{width:100%;height:62px;border:0;border-bottom:2px solid #000;padding:0 20px;font:600 18px "Instrument Sans",system-ui,sans-serif;outline:0;background:#fff;color:#000}
+.pal-list{max-height:min(54vh,440px);overflow:auto;padding:6px}
+.pal-group{padding:12px 12px 4px;font:600 12px "Instrument Sans",system-ui,sans-serif;color:#777}
+.pal-item{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border:0;border-radius:8px;background:none;color:#000;text-align:left;font:600 14px "Instrument Sans",system-ui,sans-serif;cursor:pointer}
+.pal-item span{width:22px;text-align:center}
+.pal-item small{margin-left:auto;color:#777;font-weight:500}
+.pal-item.on{background:#000;color:#fff}.pal-item.on small{color:#bbb}
+.pal-empty{padding:28px;text-align:center;color:#777;font-size:14px}
+.pal-foot{display:flex;gap:16px;padding:10px 16px;border-top:1px dashed #bbb;color:#777;font-size:12px}
+
+/* ---------- Overview ---------- */
+body.nx .dashboard-data-loading .ov-wrap{display:none}
+body.nx .ov-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:22px}
+body.nx .ov-head h1{margin:12px 0 0;font:800 clamp(34px,4.4vw,64px)/.92 var(--f-display);font-variation-settings:"wdth" 78;letter-spacing:-.045em;text-wrap:balance}
+body.nx .ov-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+body.nx .ov-grid{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:22px;align-items:stretch}
+
+body.nx .ov-hero{
+  position:relative;overflow:hidden;display:flex;flex-direction:column;padding:26px 30px 14px;border-radius:18px;color:#fff;
+  background-color:#000;background-image:radial-gradient(rgba(255,255,255,.15) 1px,transparent 1.4px);background-size:14px 14px;
+  border:0;box-shadow:8px 8px 0 #b5b5b5;
+}
+body.nx .ov-hero:hover{transform:none;box-shadow:8px 8px 0 #b5b5b5}
+body.nx .ov-hero .range-bar{margin:0 0 30px;padding:0;border:0;gap:12px;flex-wrap:wrap}
+body.nx .ov-hero .range-bar>div{background:transparent;border-color:#fff}
+body.nx .ov-hero .range{color:#fff}
+body.nx .ov-hero .range:hover:not(.active){background:#222}
+body.nx .ov-hero .range.active{background:#fff;color:#000}
+body.nx .ov-hero .dashboard-live-status{background:transparent;border-color:#fff;color:#fff}
+body.nx .ov-hero .dashboard-live-status i{background:#fff}
+body.nx .ov-label{font:600 15px var(--f-body);color:#d0d0d0}
+body.nx .ov-gross{display:block;margin:6px 0 10px;font:800 clamp(52px,8.4vw,132px)/.84 var(--f-display);font-variation-settings:"wdth" 75;letter-spacing:-.055em;font-variant-numeric:tabular-nums;color:#fff;overflow-wrap:anywhere}
+body.nx .ov-sub{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:#cfcfcf;border-top:1px dashed rgba(255,255,255,.4);padding-top:12px}
+body.nx .ov-sub b{color:#fff;font-weight:700;margin-left:4px}
+body.nx .ov-chart{margin:12px -8px 0;min-height:200px;height:auto}
+body.nx .ov-hero .revenue-svg{height:210px}
+body.nx .ov-hero .chart-line{stroke:#fff}
+body.nx .ov-hero .chart-point{fill:#fff;stroke:#000}
+body.nx .ov-hero .chart-grid-line{stroke:#fff;stroke-opacity:.25}
+body.nx .ov-hero .chart-axis-label{fill:#bdbdbd}
+body.nx .ov-hero #revenueFill stop{stop-color:#fff}
+body.nx .ov-hero .chart-empty{color:#bdbdbd;height:200px}
+body.nx .ov-hero .chart-empty strong{color:#fff}
+body.nx .ov-hero .chart-empty-art{color:#fff}
+
+/* The tape: receipt paper with torn bottom edge */
+body.nx .ov-tape-wrap{filter:drop-shadow(8px 8px 0 #000);display:flex}
+body.nx .ov-tape{
+  flex:1;background:#fff;padding:24px 22px 38px;
+  -webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/18px 100%;
+          mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/18px 100%;
+}
+body.nx .ov-tape-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:14px;margin-bottom:6px;border-bottom:2px dashed #000}
+body.nx .ov-tape-head h3{margin:8px 0 0;font:700 28px/1 var(--f-display);font-variation-settings:"wdth" 78;letter-spacing:-.035em}
+body.nx .ov-tape .payment-row{padding:13px 4px}
+
+/* Stat band */
+body.nx .ov-band{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin-top:26px;border:1px solid #000;border-radius:14px;background:#fff;overflow:hidden}
+body.nx .ov-band>div{padding:18px 18px 16px;border-right:1px solid #000;min-width:0}
+body.nx .ov-band>div:last-child{border-right:0}
+body.nx .ov-band span{display:block;font:600 12px var(--f-body);color:#555}
+body.nx .ov-band strong{display:block;margin:12px 0 4px;font:800 clamp(24px,2.4vw,36px)/1 var(--f-display);font-variation-settings:"wdth" 78;letter-spacing:-.04em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+body.nx .ov-band small{font-size:11px;color:#666}
+
+/* Jump tiles */
+body.nx .ov-jump{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:22px}
+body.nx .ov-jump button{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;min-height:104px;padding:18px;border:1px solid #000;border-radius:14px;background:#fff;color:#000;text-align:left;cursor:pointer;transition:background .15s,color .15s,transform .15s,box-shadow .15s}
+body.nx .ov-jump b{font:700 24px/1 var(--f-display);font-variation-settings:"wdth" 78;letter-spacing:-.035em;max-width:11ch}
+body.nx .ov-jump i{font-style:normal;font-size:24px}
+body.nx .ov-jump button:hover{background:#000;color:#fff;transform:translate(-3px,-3px);box-shadow:6px 6px 0 #b5b5b5}
+
+/* ---------- Verify queue (split view) ---------- */
+body.nx .vq{display:grid;grid-template-columns:minmax(290px,390px) minmax(0,1fr);gap:22px;align-items:start;width:100%}
+body.nx .vq-list{border:1px solid #000;border-radius:14px;background:#fff;overflow:hidden}
+body.nx .vq-item{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;padding:15px 16px;border:0;border-bottom:1px solid #e2e2e2;background:#fff;color:#000;text-align:left;cursor:pointer;transition:background .12s,color .12s}
+body.nx .vq-item:last-child{border-bottom:0}
+body.nx .vq-item:hover:not(.active){background:#f2f2f2}
+body.nx .vq-item.active{background:#000;color:#fff}
+body.nx .vq-item strong,body.nx .vq-item small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.nx .vq-item strong{font-size:14px}body.nx .vq-item small{font-size:12px;color:#777;margin-top:3px}
+body.nx .vq-item.active small{color:#bbb}
+body.nx .vq-item b{font:700 14px var(--f-body);font-variant-numeric:tabular-nums}
+body.nx .vq-item.active .payment-icon{background:#fff;color:#000}
+body.nx .vq-detail{position:sticky;top:calc(var(--top) + 20px);padding:30px;border:1px solid #000;border-radius:16px;background:#fff;box-shadow:8px 8px 0 #000}
+body.nx .vq-amount{margin:18px 0 4px;font:800 clamp(48px,6.4vw,96px)/.88 var(--f-display);font-variation-settings:"wdth" 75;letter-spacing:-.055em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+body.nx .vq-title{margin:0;font:700 22px var(--f-body);color:#333}
+body.nx .vq-facts{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:26px 0;border:1px solid #000;border-radius:12px;overflow:hidden}
+body.nx .vq-facts div{padding:14px 16px;border-bottom:1px dashed #bbb;min-width:0}
+body.nx .vq-facts div:nth-child(odd){border-right:1px dashed #bbb}
+body.nx .vq-facts div:nth-last-child(-n+2){border-bottom:0}
+body.nx .vq-facts span{display:block;font:600 12px var(--f-body);color:#777}
+body.nx .vq-facts strong{display:block;margin-top:5px;font-size:14px;overflow-wrap:anywhere}
+body.nx .vq-actions{display:flex;gap:10px;flex-wrap:wrap}
+body.nx .vq-actions .button{flex:1 1 160px}
+body.nx .vq-actions .button.reject{border-style:dashed}
+
+/* ---------- Lists as rows (desktop) ---------- */
+@media(min-width:900px){
+  body.nx .links-grid,body.nx .product-list{grid-template-columns:1fr;gap:12px}
+  body.nx .links-grid .link-card{display:grid;grid-template-columns:44px minmax(0,1.2fr) minmax(0,1.3fr) auto;grid-template-areas:"sym title url act" "sym desc stats act" "sym meta badge act";column-gap:20px;row-gap:4px;align-items:center;padding:18px 20px}
+  body.nx .link-card-top{display:contents}
+  body.nx .link-card .link-symbol{grid-area:sym;align-self:start}
+  body.nx .link-card .link-card-top .status-badge{grid-area:badge;justify-self:start;margin-top:4px}
+  body.nx .link-card h3{grid-area:title;margin:0}
+  body.nx .link-card>p{grid-area:desc;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body.nx .link-card>small{grid-area:meta}
+  body.nx .link-card .link-url{grid-area:url;margin:0}
+  body.nx .link-card .link-stats{grid-area:stats;margin:0}
+  body.nx .link-card .card-actions{grid-area:act;margin:0;padding:0;flex-wrap:nowrap}
+  body.nx .product-list .product-card{display:grid;grid-template-columns:110px minmax(0,1.5fr) minmax(0,1fr) auto;grid-template-areas:"type title price act" "badge desc small act";column-gap:20px;row-gap:6px;align-items:center;padding:18px 20px}
+  body.nx .product-card-top{display:contents}
+  body.nx .product-card .product-type{grid-area:type}
+  body.nx .product-card .product-card-top .status-badge{grid-area:badge;justify-self:start}
+  body.nx .product-card h3{grid-area:title;margin:0}
+  body.nx .product-card>p{grid-area:desc;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body.nx .product-card>strong{grid-area:price;margin:0;font:800 24px var(--f-display);font-variation-settings:"wdth" 78;letter-spacing:-.03em}
+  body.nx .product-card>small{grid-area:small}
+  body.nx .product-card .card-actions{grid-area:act;margin:0;padding:0;flex-wrap:nowrap}
+}
+body.nx .customer-grid{grid-template-columns:repeat(auto-fill,minmax(310px,1fr))}
+
+/* ---------- Responsive ---------- */
+@media(max-width:1180px){
+  body.nx .ov-grid{grid-template-columns:1fr}
+  body.nx .ov-tape-wrap{margin-bottom:14px}
+  body.nx .ov-band{grid-template-columns:repeat(3,1fr)}
+  body.nx .ov-band>div:nth-child(3n){border-right:0}
+  body.nx .ov-band>div:nth-child(-n+3){border-bottom:1px solid #000}
+  body.nx .ov-jump{grid-template-columns:repeat(2,1fr)}
+  body.nx .vq{grid-template-columns:1fr}
+  body.nx .vq-detail{position:static}
+}
+@media(max-width:760px){
+  body.nx .merchant-header{gap:8px}
+  body.nx .palette-trigger{width:40px;padding:0;justify-content:center;margin-left:auto;box-shadow:none}
+  body.nx .pt-text,body.nx .palette-trigger kbd{display:none}
+  body.nx .merchant-header .brand-word{display:inline}
+  body.nx .merchant-main{padding:22px 14px calc(100px + env(safe-area-inset-bottom))!important}
+  body.nx .ov-head{align-items:stretch}
+  body.nx .ov-head h1{font-size:clamp(34px,10.5vw,48px)}
+  body.nx .ov-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  body.nx .ov-actions .density-toggle{grid-column:1/-1;justify-content:center}
+  body.nx .ov-hero{padding:20px 18px 8px;box-shadow:5px 5px 0 #b5b5b5}
+  body.nx .ov-hero .range-bar{margin-bottom:22px}
+  body.nx .ov-gross{font-size:clamp(44px,15vw,72px)}
+  body.nx .ov-tape{padding:20px 16px 34px}
+  body.nx .ov-band{grid-template-columns:1fr 1fr}
+  body.nx .ov-band>div{border-right:1px solid #000!important;border-bottom:1px solid #000}
+  body.nx .ov-band>div:nth-child(2n){border-right:0!important}
+  body.nx .ov-band>div:nth-last-child(-n+2){border-bottom:0}
+  body.nx .ov-jump b{font-size:19px}
+  body.nx .vq-detail{padding:20px;box-shadow:5px 5px 0 #000}
+  body.nx .vq-facts{grid-template-columns:1fr}
+  body.nx .vq-facts div:nth-child(odd){border-right:0}
+  body.nx .vq-facts div:nth-last-child(2){border-bottom:1px dashed #bbb}
+  body.nx .toolbar{position:static;box-shadow:none}
+}
+@media(prefers-reduced-motion:reduce){body.nx .ov-jump button:hover,body.nx .palette-trigger:hover{transform:none}}
