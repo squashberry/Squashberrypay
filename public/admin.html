@@ -62,49 +62,11 @@
     class="admin-page"
 >
 
-    <section
-        id="loginSection"
-        class="admin-login"
-    >
-
-        <span class="eyebrow">
-            OWNER ACCESS
-        </span>
-
-        <h1>
-            Control Center
-        </h1>
-
-        <p>
-            Manage applications, payments and
-            platform operations.
-        </p>
-
-
-        <input
-            id="username"
-            class="admin-input"
-            type="text"
-            placeholder="Username"
-        >
-
-
-        <input
-            id="password"
-            class="admin-input"
-            type="password"
-            placeholder="Password"
-        >
-
-
-        <button
-            id="loginButton"
-            class="button primary full"
-            type="button"
-        >
-            Sign in
-        </button>
-
+    <section id="loginSection" class="admin-login">
+        <span class="eyebrow">ADMINISTRATOR ACCESS</span>
+        <h1>Use your authorized account</h1>
+        <p>SquashberryPay administration is restricted to <strong>squashberrypro@gmail.com</strong>. Sign in to the merchant dashboard with that account, then select “Switch to admin dashboard”.</p>
+        <a class="button primary full" href="./signin/index.html">Go to merchant sign in</a>
     </section>
 
 
@@ -134,13 +96,10 @@
             </div>
 
 
-            <button
-                id="logoutButton"
-                class="button secondary"
-                type="button"
-            >
-                Sign out
-            </button>
+            <div class="admin-header-actions">
+                <a id="switchMerchantDashboard" class="button secondary" href="./merchant.html">Switch to merchant dashboard</a>
+                <button id="logoutButton" class="button secondary" type="button">Sign out</button>
+            </div>
 
         </div>
 
@@ -354,7 +313,7 @@
 
 
 <script
-    src="./admin.js"
+    src="./admin.js?v=20261026-admin-role-1"
 ></script>
 
 <script src="/Squashberrypay/site-splash.js" defer></script>
