@@ -6,11 +6,16 @@
 <title>SquashberryPay Dashboard</title>
 <meta name="description" content="Manage SquashberryPay applications, products, payment links, donations and payment methods.">
 <meta name="robots" content="noindex,nofollow">
-<link rel="stylesheet" href="./styles.css?v=20261026-3">
-<link rel="stylesheet" href="./merchant.css?v=20261026-3">
-<link rel="stylesheet" href="./layout-v3.css?v=20261026-3">
-<link rel="stylesheet" href="./ui-overhaul.css?v=20261026-3">
-<link rel="stylesheet" href="./state-flow.css?v=20261026-3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=Instrument+Sans:wght@400..700&display=swap">
+<link rel="stylesheet" href="./styles.css?v=20261026-4">
+<link rel="stylesheet" href="./merchant.css?v=20261026-4">
+<link rel="stylesheet" href="./layout-v3.css?v=20261026-4">
+<link rel="stylesheet" href="./ui-overhaul.css?v=20261026-4">
+<link rel="stylesheet" href="./state-flow.css?v=20261026-4">
+<link rel="stylesheet" href="./noir.css?v=20261026-4">
+<link rel="stylesheet" href="./noir-layout.css?v=20261026-4">
 <meta name="site-base" content="/Squashberrypay/">
 <link rel="icon" href="/Squashberrypay/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/Squashberrypay/favicon.svg">
@@ -22,102 +27,108 @@
     if(n){
       document.documentElement.dataset.cachedMerchantName=n;
       window.addEventListener("DOMContentLoaded",function(){
-        ["merchantName","sidebarBusinessName","overviewName"].forEach(function(id){
-          var e=document.getElementById(id); if(e)e.textContent=n;
-        });
-        var a=document.getElementById("businessAvatar"); if(a)a.textContent=n.charAt(0).toUpperCase();
+        ["merchantName","sidebarBusinessName","overviewName"].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=n});
+        var a=document.getElementById("businessAvatar");if(a)a.textContent=n.charAt(0).toUpperCase();
       },{once:true});
     }
   }catch(_){}
 })();
 </script>
 </head>
-<body class="merchant-page">
+<body class="merchant-page nx">
+
+<!-- ============ TOP BAR ============ -->
 <header class="merchant-header">
-  <a href="./" class="brand"><span class="brand-mark">S</span><span>SquashberryPay</span></a>
+  <a href="./" class="brand" aria-label="SquashberryPay"><span class="brand-mark">S</span><span class="brand-word">SquashberryPay</span></a>
+  <span class="crumb" aria-live="polite"><i>/</i><span id="crumb">Overview</span></span>
+  <button id="openPalette" class="palette-trigger" type="button" aria-label="Open command menu"><span class="pt-icon">⌕</span><span class="pt-text">Search payments, customers, or jump to…</span><kbd>/</kbd></button>
   <div class="merchant-header-right">
     <button class="icon-button merchant-menu-button" id="openMobileNav" aria-label="Open dashboard navigation">☰</button>
     <button class="notification-button" id="openNotifications" aria-label="Notifications"><span>♢</span><i id="notificationDot" hidden></i></button>
     <span id="merchantName">Loading account…</span>
-    <a id="switchAdminDashboard" class="text-button admin-dashboard-switch" href="./admin.html" hidden>Switch to admin dashboard</a>
+    <a id="switchAdminDashboard" class="text-button admin-dashboard-switch" href="./admin.html" hidden>Admin</a>
     <button id="signOut" class="text-button">Sign out</button>
   </div>
 </header>
 
 <div class="merchant-layout">
+  <!-- ============ RAIL (icons; expands on hover) ============ -->
   <aside class="merchant-sidebar" id="merchantSidebar">
     <div class="sidebar-top">
       <span class="sidebar-label">BUSINESS</span>
       <div class="business-switcher"><span class="business-avatar" id="businessAvatar">…</span><span><strong id="sidebarBusinessName">Loading account…</strong><small id="sidebarBusinessStatus">Loading…</small></span><b>⌄</b></div>
     </div>
     <nav class="dashboard-nav" aria-label="Dashboard">
-      <button data-section="overview" class="side-link active"><span>⌂</span>Overview</button><button data-section="applications" class="side-link"><span>▣</span>Applications</button>
-      <button data-section="payment-requests" class="side-link"><span>✓</span>Verify payments <em id="navVerificationCount">0</em></button><button data-section="payments" class="side-link"><span>↗</span>Payments <em id="navPaymentCount">0</em></button>
+      <button data-section="overview" class="side-link active"><span>⌂</span>Overview</button>
+      <button data-section="payment-requests" class="side-link"><span>✓</span>Verify payments <em id="navVerificationCount">0</em></button>
+      <button data-section="payments" class="side-link"><span>↗</span>Payments <em id="navPaymentCount">0</em></button>
       <button data-section="customers" class="side-link"><span>♙</span>Customers</button>
       <button data-section="balances" class="side-link"><span>◈</span>Balances</button>
-      <button data-section="payment-links" class="side-link"><span>↗</span>Payment Links</button>
+      <div class="nav-divider"></div>
+      <span class="sidebar-label">SELL</span>
+      <button data-section="payment-links" class="side-link"><span>⛓</span>Payment Links</button>
       <button data-section="products" class="side-link"><span>▦</span>Products</button>
-      <button data-section="methods" class="side-link"><span>◉</span>Payment Methods</button>
       <button data-section="subscriptions" class="side-link"><span>↻</span>Subscriptions</button>
       <button data-section="donations" class="side-link"><span>♡</span>Donations</button>
+      <button data-section="methods" class="side-link"><span>◉</span>Payment Methods</button>
       <button data-section="analytics" class="side-link"><span>⌁</span>Analytics</button>
-            <div class="nav-divider"></div>
+      <div class="nav-divider"></div>
       <span class="sidebar-label">DEVELOPERS</span>
+      <button data-section="applications" class="side-link"><span>▣</span>Applications</button>
       <button data-section="developers" class="side-link"><span>⌘</span>Developers</button>
       <button data-section="settings" class="side-link"><span>⚙</span>Settings</button>
     </nav>
     <div class="sidebar-bottom">
-      <button data-section="integration" class="side-link"><span>?</span>Help & Integration</button>
+      <button data-section="integration" class="side-link"><span>?</span>Help &amp; Integration</button>
     </div>
   </aside>
 
   <main class="merchant-main">
     <div id="merchantNotification" class="merchant-notification" hidden></div><div id="workspaceReadiness" class="workspace-readiness" hidden></div>
 
+    <!-- ============ OVERVIEW — the ledger ============ -->
     <section id="section-overview" class="merchant-section active dashboard-data-loading" aria-busy="true">
       <div id="dashboardSkeleton" class="dashboard-skeleton" role="status" aria-label="Loading dashboard">
-        <div class="dashboard-skeleton-welcome">
-          <div class="dashboard-skeleton-copy">
-            <span class="skeleton-line skeleton-eyebrow"></span>
-            <span class="skeleton-line skeleton-title"></span>
-            <span class="skeleton-line skeleton-subtitle"></span>
-          </div>
-          <div class="dashboard-skeleton-actions">
-            <span class="skeleton-box"></span>
-            <span class="skeleton-box"></span>
-          </div>
+        <span class="skeleton-line skeleton-title"></span>
+        <div class="dashboard-skeleton-panels" style="grid-template-columns:minmax(0,1fr) 360px"><span class="skeleton-card skeleton-card-featured" style="height:430px"></span><span class="skeleton-panel" style="height:430px"></span></div>
+        <div class="dashboard-skeleton-metrics" style="grid-template-columns:repeat(3,1fr)"><span class="skeleton-card"></span><span class="skeleton-card"></span><span class="skeleton-card"></span></div>
+      </div>
+      <div class="ov-wrap">
+        <div class="ov-head">
+          <div><span class="eyebrow">OVERVIEW</span><h1><span id="greetWord">Good morning</span>, <span id="overviewName">Loading account…</span></h1></div>
+          <div class="ov-actions"><button class="button secondary small" data-section-jump="payments">View payments</button><button class="button primary small magnetic" data-section-jump="payment-links">Create payment link</button><button id="toggleDashboardDensity" class="density-toggle" type="button" aria-pressed="false"><span class="density-icon">◒</span><span>Density · Comfortable</span></button></div>
         </div>
-        <div class="dashboard-skeleton-range">
-          <span class="skeleton-box skeleton-range"></span>
-          <span class="skeleton-line skeleton-updated"></span>
+
+        <div class="ov-grid">
+          <article class="ov-hero chart-panel">
+            <div class="range-bar"><div><button class="range active" data-range="7">7 days</button><button class="range" data-range="30">30 days</button><button class="range" data-range="90">90 days</button></div><span class="dashboard-live-status"><i></i><span id="lastUpdated">Updating…</span></span></div>
+            <span class="ov-label">Gross collected</span>
+            <strong id="grossCollected" class="ov-gross">GMD 0.00</strong>
+            <div class="ov-sub"><small id="grossTrend">Recorded successful payments</small><span>In this period <b id="chartTotal">GMD 0</b></span></div>
+            <div id="revenueChart" class="revenue-chart ov-chart"></div>
+          </article>
+          <div class="ov-tape-wrap"><aside class="ov-tape">
+            <div class="ov-tape-head"><div><span class="eyebrow">ACTIVITY</span><h3>Recent payments</h3></div><button class="text-link" data-section-jump="payments">View all</button></div>
+            <div id="recentPayments" class="compact-list"></div>
+          </aside></div>
         </div>
-        <div class="dashboard-skeleton-metrics">
-          <span class="skeleton-card skeleton-card-featured"></span>
-          <span class="skeleton-card"></span>
-          <span class="skeleton-card"></span>
-          <span class="skeleton-card"></span>
+
+        <div class="ov-band">
+          <div><span>Pending</span><strong id="pendingAmount">GMD 0.00</strong><small id="pendingCount">0 payments</small></div>
+          <div><span>Successful</span><strong id="successfulCount">0</strong><small>Completed payments</small></div>
+          <div><span>Customers</span><strong id="customerCount">0</strong><small>Registered at checkout</small></div>
+          <div><span>Success rate</span><strong id="successRate">0%</strong><small>Completed vs failed</small></div>
+          <div><span>Failed</span><strong id="failedCount">0</strong><small>Needs a retry</small></div>
+          <div><span>Refunded</span><strong id="refundCount">0</strong><small>Returned to customers</small></div>
         </div>
-        <div class="dashboard-skeleton-panels">
-          <span class="skeleton-panel"></span>
-          <span class="skeleton-panel"></span>
+
+        <div class="ov-jump">
+          <button data-section-jump="payment-links"><b>Create a payment link</b><i>↗</i></button>
+          <button data-section-jump="payment-requests"><b>Verify payments</b><i>↗</i></button>
+          <button data-section-jump="customers"><b>Find a customer</b><i>↗</i></button>
+          <button data-section-jump="developers"><b>API &amp; webhooks</b><i>↗</i></button>
         </div>
       </div>
-      <div class="dashboard-welcome">
-        <div><span class="eyebrow">OVERVIEW</span><h1>Good morning, <span id="overviewName">Loading account…</span></h1><p>Here's what’s happening across your SquashberryPay business.</p></div>
-        <div class="overview-actions"><button class="button secondary small" data-section-jump="payments">View payments</button><button class="button primary small magnetic" data-section-jump="payment-links">Create payment link</button><button id="toggleDashboardDensity" class="density-toggle" type="button" aria-pressed="false"><span class="density-icon">◒</span><span>Density · Comfortable</span></button></div>
-      </div>
-      <div class="range-bar"><div><button class="range active" data-range="7">7 days</button><button class="range" data-range="30">30 days</button><button class="range" data-range="90">90 days</button></div><span class="dashboard-live-status"><i></i><span id="lastUpdated">Updating…</span></span></div>
-      <div class="money-grid">
-        <article class="money-card featured"><span>Gross collected</span><strong id="grossCollected">GMD 0.00</strong><small id="grossTrend">Recorded successful payments</small></article>
-        <article class="money-card"><span>Pending</span><strong id="pendingAmount">GMD 0.00</strong><small id="pendingCount">0 payments</small></article>
-        <article class="money-card"><span>Successful</span><strong id="successfulCount">0</strong><small>Completed payments</small></article>
-        <article class="money-card"><span>Customers</span><strong id="customerCount">0</strong><small>Registered checkout customers</small></article>
-      </div>
-      <div class="dashboard-two-col">
-        <article class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">REVENUE</span><h3>Collected over time</h3></div><span id="chartTotal">GMD 0</span></div><div id="revenueChart" class="revenue-chart"></div></article>
-        <article class="panel"><div class="panel-heading"><div><span class="eyebrow">ACTIVITY</span><h3>Recent payments</h3></div><button class="text-link" data-section-jump="payments">View all</button></div><div id="recentPayments" class="compact-list"></div></article>
-      </div>
-      <div class="dashboard-two-col lower"><article class="panel"><div class="panel-heading"><div><span class="eyebrow">PERFORMANCE</span><h3>Payment health</h3></div></div><div class="health-grid"><div><strong id="successRate">0%</strong><span>Success rate</span></div><div><strong id="failedCount">0</strong><span>Failed</span></div><div><strong id="refundCount">0</strong><span>Refunded</span></div></div></article><article class="panel"><div class="panel-heading"><div><span class="eyebrow">QUICK ACTIONS</span><h3>Manage your business</h3></div></div><div class="quick-actions"><button data-section-jump="payment-links">Create a payment link</button><button data-section-jump="customers">Find a customer</button><button data-section-jump="analytics">Open analytics</button><button data-section-jump="developers">API & webhooks</button></div></article></div>
     </section>
 
     <section id="section-applications" class="merchant-section" hidden>
@@ -127,7 +138,7 @@
     </section>
 
     <section id="section-payment-requests" class="merchant-section" hidden>
-      <div class="section-title-row"><div><span class="eyebrow">VERIFICATION</span><h2>Payments waiting for you.</h2><p>Review the customer's receipt, then confirm or reject the payment.</p></div></div>
+      <div class="section-title-row"><div><span class="eyebrow">VERIFICATION</span><h2>Payments waiting for you.</h2><p>Pick a payment on the left, check the receipt, then confirm or reject.</p></div></div>
       <div id="paymentRequestsList" class="app-list"></div>
     </section>
 
@@ -157,36 +168,18 @@
       </div>
       <div id="paymentLinkCreateWrap" class="merchant-form workspace-form-active" hidden>
         <div class="workspace-form-head"><div><span class="eyebrow">NEW PAYMENT LINK</span><h3>Create a secure checkout link</h3><p>Choose the application and product this link should open.</p></div><button id="cancelPaymentLinkCreate" class="text-button" type="button">Cancel</button></div>
-        <div class="form-grid two">
-          <label>Application<select id="linkApp"></select></label>
-          <label>Product<select id="linkProduct"></select></label>
-        </div>
+        <div class="form-grid two"><label>Application<select id="linkApp"></select></label><label>Product<select id="linkProduct"></select></label></div>
         <div class="form-actions"><button id="createPaymentLink" class="button primary" type="button">Create secure payment link</button></div>
       </div>
       <div id="paymentLinksGrid" class="links-grid"></div>
-
       <section class="link-analytics-panel" aria-labelledby="linkAnalyticsTitle">
         <div class="link-analytics-head">
-          <div>
-            <span class="eyebrow">LINK ANALYTICS</span>
-            <h3 id="linkAnalyticsTitle">Who is engaging with your links.</h3>
-            <p>Track visits, unique browsers, payment starts and completed payments for any date range.</p>
-          </div>
+          <div><span class="eyebrow">LINK ANALYTICS</span><h3 id="linkAnalyticsTitle">Who is engaging with your links.</h3><p>Track visits, unique browsers, payment starts and completed payments for any date range.</p></div>
           <div class="analytics-range-controls">
-            <div class="analytics-range-presets" role="group" aria-label="Analytics date range">
-              <button class="analytics-range active" data-link-range="7" type="button">7 days</button>
-              <button class="analytics-range" data-link-range="30" type="button">30 days</button>
-              <button class="analytics-range" data-link-range="90" type="button">90 days</button>
-            </div>
-            <div class="analytics-custom-range">
-              <input id="linkAnalyticsStart" type="date" aria-label="Analytics start date">
-              <span>to</span>
-              <input id="linkAnalyticsEnd" type="date" aria-label="Analytics end date">
-              <button id="applyLinkAnalyticsRange" class="button secondary small" type="button">Apply</button>
-            </div>
+            <div class="analytics-range-presets" role="group" aria-label="Analytics date range"><button class="analytics-range active" data-link-range="7" type="button">7 days</button><button class="analytics-range" data-link-range="30" type="button">30 days</button><button class="analytics-range" data-link-range="90" type="button">90 days</button></div>
+            <div class="analytics-custom-range"><input id="linkAnalyticsStart" type="date" aria-label="Analytics start date"><span>to</span><input id="linkAnalyticsEnd" type="date" aria-label="Analytics end date"><button id="applyLinkAnalyticsRange" class="button secondary small" type="button">Apply</button></div>
           </div>
         </div>
-
         <div class="link-analytics-metrics">
           <article><span>Clicks</span><strong id="linkAnalyticsClicks">0</strong><small>Total visits to your payment links</small></article>
           <article><span>Unique visitors</span><strong id="linkAnalyticsVisitors">0</strong><small>Distinct first-party browser IDs</small></article>
@@ -194,7 +187,6 @@
           <article><span>Completed</span><strong id="linkAnalyticsCompleted">0</strong><small>Approved or completed payments</small></article>
           <article><span>Conversion</span><strong id="linkAnalyticsConversion">0%</strong><small>Completed payments ÷ clicks</small></article>
         </div>
-
         <div id="linkAnalyticsTable" class="link-analytics-table"></div>
       </section>
     </section>
@@ -217,6 +209,7 @@
       </div>
       <div id="methodsList" class="method-list"></div>
     </section>
+
     <section id="section-products" class="merchant-section" hidden>
       <div class="section-title-row"><div><span class="eyebrow">PRODUCTS</span><h2>Your products.</h2><p>Products define what customers can buy, subscribe to or donate toward.</p></div><button id="openProductCreate" class="button primary small" type="button">+ Create product</button></div>
       <div id="productCreateWrap" class="merchant-form product-form workspace-form-active" hidden>
@@ -271,13 +264,8 @@
         <div class="form-actions"><button id="cancelDonationCreate" class="button secondary" type="button">Back to campaigns</button><button id="createDonationCampaign" class="button primary">Create donation campaign</button></div>
       </div></div></div><div class="workspace-panel" data-workspace-panel="donations-destination" hidden>
   <div id="donationDestinationReadiness" class="workspace-status"></div>
-  <div class="panel capability-panel donation-destination-intro">
-    <div><h3>Donation payment destination</h3><p>Configured destinations are shown first. Add a destination only when you need another one.</p></div>
-  </div>
-  <div class="workspace-content-head">
-    <div><div><span class="eyebrow">CONFIGURED DESTINATIONS</span><h3>Where donor payments should be sent</h3></div><p>These destinations are used by standalone donation checkout.</p></div>
-    <button id="openDonationMethodForm" class="button primary small destination-add-button" type="button">+ Add destination</button>
-  </div>
+  <div class="panel capability-panel donation-destination-intro"><div><h3>Donation payment destination</h3><p>Configured destinations are shown first. Add a destination only when you need another one.</p></div></div>
+  <div class="workspace-content-head"><div><div><span class="eyebrow">CONFIGURED DESTINATIONS</span><h3>Where donor payments should be sent</h3></div><p>These destinations are used by standalone donation checkout.</p></div><button id="openDonationMethodForm" class="button primary small destination-add-button" type="button">+ Add destination</button></div>
   <div id="donationMethodsList" class="method-list"></div>
   <div id="donationMethodForm" class="merchant-form workspace-form-active" hidden>
     <div class="workspace-form-head"><div><span class="eyebrow">NEW DESTINATION</span><h3>Add donation payment method</h3><p>Add the account or instructions donors should use.</p></div><button id="cancelDonationMethodForm" class="text-button" type="button">Cancel</button></div>
@@ -296,11 +284,9 @@
       <div class="dashboard-two-col"><article class="panel"><div class="panel-heading"><h3>Revenue by product</h3></div><div id="productAnalytics" class="bar-list"></div></article><article class="panel"><div class="panel-heading"><h3>Revenue by application</h3></div><div id="appAnalytics" class="bar-list"></div></article></div>
     </section>
 
-    
-
     <section id="section-developers" class="merchant-section" hidden>
       <div class="section-title-row"><div><span class="eyebrow">DEVELOPERS</span><h2>Build with SquashberryPay.</h2><p>Keep credentials, webhooks and API activity in one place.</p></div></div>
-      <div class="developer-grid"><article class="dev-card"><span>⌘</span><h3>API credentials</h3><p>Client IDs are visible here. Client secrets are only shown when generated and should never be placed in browser code.</p><button class="button secondary small" data-section-jump="apps">Manage apps</button></article><article class="dev-card"><span>↯¯</span><h3>Webhooks</h3><p>Configure an HTTPS endpoint for your application to receive signed payment.completed events and automatically deliver purchases after verification.</p><span class="status-pill">Available</span></article><article class="dev-card"><span>⌁</span><h3>API logs</h3><p>Request-level logs will show status, latency and request IDs once API event logging is enabled.</p><span class="status-pill">Coming online</span></article><article class="dev-card"><span>▤¤</span><h3>Documentation</h3><p>Use the integration guide to configure signed payment webhooks for automatic fulfilment after payment confirmation.</p><button class="button secondary small" data-section-jump="integration">Open guide</button></article></div>
+      <div class="developer-grid"><article class="dev-card"><span>⌘</span><h3>API credentials</h3><p>Client IDs are visible here. Client secrets are only shown when generated and should never be placed in browser code.</p><button class="button secondary small" data-section-jump="applications">Manage apps</button></article><article class="dev-card"><span>↯</span><h3>Webhooks</h3><p>Configure an HTTPS endpoint for your application to receive signed payment.completed events and automatically deliver purchases after verification.</p><span class="status-pill">Available</span></article><article class="dev-card"><span>⌁</span><h3>API logs</h3><p>Request-level logs will show status, latency and request IDs once API event logging is enabled.</p><span class="status-pill">Coming online</span></article><article class="dev-card"><span>▤</span><h3>Documentation</h3><p>Use the integration guide to configure signed payment webhooks for automatic fulfilment after payment confirmation.</p><button class="button secondary small" data-section-jump="integration">Open guide</button></article></div>
     </section>
 
     <section id="section-settings" class="merchant-section" hidden>
@@ -309,9 +295,9 @@
     </section>
 
     <section id="section-integration" class="merchant-section" hidden>
-      <div class="section-title-row"><div><span class="eyebrow">HELP & INTEGRATION</span><h2>Connect SquashberryPay.</h2><p>Create an app, define what customers can buy, configure payment destinations, then add the hosted checkout button.</p></div></div>
+      <div class="section-title-row"><div><span class="eyebrow">HELP &amp; INTEGRATION</span><h2>Connect SquashberryPay.</h2><p>Create an app, define what customers can buy, configure payment destinations, then add the hosted checkout button.</p></div></div>
       <div class="guide-steps"><article><b>01</b><h3>Create an app</h3><p>Connect a website, web app or mobile application.</p></article><article><b>02</b><h3>Create products</h3><p>Define one-time, subscription or donation offerings.</p></article><article><b>03</b><h3>Configure payment methods</h3><p>Add Wave, APS, NADA or bank transfer instructions.</p></article><article><b>04</b><h3>Create a payment link</h3><p>Generate a hosted checkout that can be shared anywhere.</p></article><article><b>05</b><h3>Deliver verified payments</h3><p>Configure your HTTPS webhook to receive signed payment.completed events. Customers no longer need to enter a payment code.</p></article></div>
-      <div class="code-guide"><div class="guide-header"><strong>Automatic fulfilment webhook</strong></div><p>Set your application's HTTPS webhook URL in Manage apps. SquashberryPay sends a signed <code>payment.completed</code> event after a payment is verified and marked complete. Verify <code>X-SquashberryPay-Signature</code> with your application's Webhook Secret against the raw request body and <code>X-SquashberryPay-Timestamp</code> before fulfilling anything. Use <code>X-SquashberryPay-Event-ID</code> for idempotency so retries never deliver the same purchase twice.</p><pre><code>{
+      <div class="code-guide"><div class="guide-header"><strong>Automatic fulfilment webhook</strong></div><p>Set your application's HTTPS webhook URL in Applications. SquashberryPay sends a signed <code>payment.completed</code> event after a payment is verified and marked complete. Verify <code>X-SquashberryPay-Signature</code> with your application's Webhook Secret against the raw request body and <code>X-SquashberryPay-Timestamp</code> before fulfilling anything. Use <code>X-SquashberryPay-Event-ID</code> for idempotency so retries never deliver the same purchase twice.</p><pre><code>{
   "type": "payment.completed",
   "data": {
     "payment_id": "payment-id",
@@ -327,15 +313,13 @@
   </main>
 </div>
 
-
-  <nav class="merchant-mobile-bar" aria-label="Dashboard actions">
-    <button type="button" id="mobileMoreNav" aria-label="Open dashboard actions"><span>☰</span></button>
-  </nav>
+<nav class="merchant-mobile-bar" aria-label="Dashboard actions"><button type="button" id="mobileMoreNav" aria-label="Open dashboard actions"><span>☰</span></button></nav>
 <div class="mobile-nav-scrim" id="mobileNavScrim" hidden></div>
 <div class="notification-drawer" id="notificationDrawer" hidden><div class="drawer-head"><strong>Notifications</strong><button id="closeNotifications">&times;</button></div><div class="drawer-empty"><span>♢</span><h3>You’re all caught up</h3><p>Important account activity will appear here.</p></div></div>
 <div class="payment-drawer" id="paymentDrawer" hidden><div class="drawer-head"><strong>Payment details</strong><button id="closePaymentDrawer">&times;</button></div><div id="paymentDrawerBody"></div></div>
 
-<script src="./merchant.js?v=20261026-3"></script>
+<script src="./merchant.js?v=20261026-4"></script>
+<script src="./shell.js?v=20261026-4"></script>
 <script src="/Squashberrypay/offline.js" defer></script>
 </body>
 </html>
