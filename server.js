@@ -6732,19 +6732,23 @@ async function handleV1CancelPayment(
                     service_id:
                         req.service.id,
                     payment_reference:
-                        null,
-                    status:
-                        "cancelled",
-                    payment_state:
-                        "cancelled",
-                    payment_type:
-                        null,
-                    amount:
-                        null,
-                    currency:
-                        null,
-                    product_id:
-                        null
+                         payment.payment_reference || null,
+                     customer_reference:
+                         payment.customer_reference || null,
+                     processing_page_id:
+                         payment.processing_page_id || null,
+                     status:
+                         "cancelled",
+                     payment_state:
+                         "cancelled",
+                     payment_type:
+                         payment.payment_type || null,
+                     amount:
+                         payment.amount ?? null,
+                     currency:
+                         payment.currency || null,
+                     product_id:
+                         payment.product_id || null
                 },
                 {
                     reason:
