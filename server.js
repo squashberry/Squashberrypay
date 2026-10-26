@@ -1261,16 +1261,16 @@ async function authenticateService(
 
 async function requireAdmin(req, res, next) {
   try {
-    const cookies = String(req.headers.cookie || '');
-    const match = cookies.match(/(?:^|;\\s*)sbp_admin=([^;]+)/);
-    if (match && verifyAdminCookie(match[1])) { req.admin = true; return next(); }
     const token = parseBearerToken(req);
-    if (token) {
-      const { data, error } = await authClient.auth.getUser(token);
-      const email = String(data?.user?.email || '').trim().toLowerCase();
-      if (!error && data?.user && email === ADMIN_ACCOUNT_EMAIL) { req.admin = true; req.adminUser = data.user; return next(); }
+    if (!token) return res.status(401).json({ error: 'Administrator authentication required.' });
+    const { data, error } = await authClient.auth.getUser(token);
+    const email = String(data?.user?.email || '').trim().toLowerCase();
+    if (error || !data?.user || email !== ADMIN_ACCOUNT_EMAIL) {
+      return res.status(403).json({ error: 'Administrator access is restricted to the authorized SquashberryPro account.' });
     }
-    return res.status(401).json({ error: 'Administrator access requires the authorized SquashberryPro merchant account.' });
+    req.admin = true;
+    req.adminUser = data.user;
+    return next();
   } catch (error) {
     console.error('Administrator authorization error:', error);
     return res.status(401).json({ error: 'Administrator authentication required.' });
@@ -8871,56 +8871,21 @@ app.post("/api/merchant/payments/:paymentId/reject",authenticateMerchant,async(r
    ADMIN LOGIN
 ============================================================ */
 
-app.post(
-    "/api/admin/login",
-    (req, res) => {
-
-        const {
-            username,
-            password
-        } = req.body;
-
-
-        if (
-            username !==
-                process.env.ADMIN_USERNAME ||
-            password !==
-                process.env.ADMIN_PASSWORD
-        ) {
-
-            return res.status(401).json({
-                error:
-                    "Invalid administrator credentials."
-            });
-        }
-
-
-        const cookie =
-            createAdminCookie();
-
-
-        res.setHeader(
-            "Set-Cookie",
-            [
-                `sbp_admin=${cookie}`,
-                "HttpOnly",
-                "Path=/",
-                "SameSite=Strict",
-                "Max-Age=28800"
-            ].join(
-                "; "
-            )
-        );
-
-
-        res.json({
-
-            success:
-                true
-        });
+app.post("/api/admin/login", async (req, res) => {
+  const token = parseBearerToken(req);
+  if (!token) return res.status(401).json({ error: 'Sign in with the authorized merchant account first.' });
+  try {
+    const { data, error } = await authClient.auth.getUser(token);
+    const email = String(data?.user?.email || '').trim().toLowerCase();
+    if (error || !data?.user || email !== ADMIN_ACCOUNT_EMAIL) {
+      return res.status(403).json({ error: 'Administrator access is restricted to the authorized SquashberryPro account.' });
     }
-);
-
+    return res.json({ success: true, email });
+  } catch (error) {
+    console.error('Admin login authorization error:', error);
+    return res.status(401).json({ error: 'Administrator authentication required.' });
+  }
+});
 
 /* ============================================================
    ADMIN LOGOUT
@@ -8958,17 +8923,13 @@ app.post(
 ============================================================ */
 
 app.get("/api/admin/me", async (req, res) => {
-  const cookies = String(req.headers.cookie || '');
-  const match = cookies.match(/(?:^|;\\s*)sbp_admin=([^;]+)/);
-  if (match && verifyAdminCookie(match[1])) return res.json({ authenticated: true, email: ADMIN_ACCOUNT_EMAIL });
   const token = parseBearerToken(req);
-  if (token) {
-    try {
-      const { data, error } = await authClient.auth.getUser(token);
-      const email = String(data?.user?.email || '').trim().toLowerCase();
-      if (!error && data?.user && email === ADMIN_ACCOUNT_EMAIL) return res.json({ authenticated: true, email });
-    } catch (error) { console.error('Administrator session check error:', error); }
-  }
+  if (!token) return res.json({ authenticated: false });
+  try {
+    const { data, error } = await authClient.auth.getUser(token);
+    const email = String(data?.user?.email || '').trim().toLowerCase();
+    if (!error && data?.user && email === ADMIN_ACCOUNT_EMAIL) return res.json({ authenticated: true, email });
+  } catch (error) { console.error('Administrator session check error:', error); }
   return res.json({ authenticated: false });
 });
 
