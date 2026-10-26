@@ -162,122 +162,7 @@ async function api(
 }
 
 
-/* ============================================================
-   LOGIN
-============================================================ */
-
-loginButton
-    .addEventListener(
-        "click",
-        async () => {
-
-            const username =
-                $("#username")
-                    .value
-                    .trim();
-
-
-            const password =
-                $("#password")
-                    .value;
-
-
-            if (
-                !username ||
-                !password
-            ) {
-
-                loginButton.classList.add(
-                    "error-shake"
-                );
-
-
-                setTimeout(
-                    () => {
-                        loginButton.classList.remove(
-                            "error-shake"
-                        );
-                    },
-                    450
-                );
-
-
-                return;
-            }
-
-
-            setLoading(
-                loginButton,
-                "Signing in…"
-            );
-
-
-            try {
-
-                await api(
-                    "/api/admin/login",
-                    {
-                        method:
-                            "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body:
-                            JSON.stringify({
-                                username,
-                                password
-                            })
-                    }
-                );
-
-
-                loginSection.hidden =
-                    true;
-
-                dashboardSection.hidden =
-                    false;
-
-
-                dashboardSection.classList.add(
-                    "state-enter"
-                );
-
-
-                loadPayments();
-
-            } catch (error) {
-
-                loginButton.classList.add(
-                    "error-shake"
-                );
-
-
-                alert(
-                    error.message
-                );
-
-
-            } finally {
-
-                setTimeout(
-                    () => {
-                        loginButton.classList.remove(
-                            "error-shake"
-                        );
-                    },
-                    450
-                );
-
-
-                resetButton(
-                    loginButton
-                );
-            }
-        }
-    );
+/* Admin authorization is checked using the signed-in merchant account. */
 
 
 /* ============================================================
@@ -307,8 +192,11 @@ logoutButton
 
             } finally {
 
-                window.location.href =
-                    "/";
+                sessionStorage.removeItem("sbp_access_token");
+                sessionStorage.removeItem("sbp_refresh_token");
+                sessionStorage.removeItem("sbp_expires_at");
+                sessionStorage.removeItem("sbp_merchant");
+                window.location.href = "./signin/index.html?signed_out=1";
             }
         }
     );
