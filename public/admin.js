@@ -121,10 +121,14 @@ async function api(
         await fetch(
             apiBase + url,
             {
-                credentials:
-                    "same-origin",
-
-                ...options
+                credentials: "same-origin",
+                ...options,
+                headers: {
+                    ...(options.headers || {}),
+                    ...(sessionStorage.getItem("sbp_access_token")
+                        ? { Authorization: "Bearer " + sessionStorage.getItem("sbp_access_token") }
+                        : {})
+                }
             }
         );
 
