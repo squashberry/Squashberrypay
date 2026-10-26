@@ -431,3 +431,5 @@ th {
     margin-top:3px;
     color:#999;
 }
+
+.admin-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}.admin-header-actions .button{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}@media(max-width:600px){.admin-header-actions{width:100%;justify-content:stretch}.admin-header-actions .button{flex:1;min-width:0;padding:10px 9px;font-size:11px}}
