@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node --use-system-ca server.js",
-    "dev": "nodemon --exec \"node --use-system-ca\" server.js"
+    "dev": "nodemon --exec \"node --use-system-ca\" server.js",
+    "test": "node --test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

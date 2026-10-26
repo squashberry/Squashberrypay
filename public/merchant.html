@@ -229,6 +229,11 @@
           <label id="subscriptionIntervalGroup" hidden>Billing period<select id="subscriptionInterval"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></label>
         </div>
         <label>Description<textarea id="productDescription" rows="3" placeholder="Describe what the customer gets."></textarea></label>
+        <div id="customPriceSettings" class="donation-settings" hidden>
+          <div class="form-section-label">API pricing</div>
+          <label class="checkbox-line"><input id="customPayNow" type="checkbox"> Allow an API integration to supply the amount</label>
+          <p>API-only variable pricing. Each payment request must include a positive amount. These products cannot be used for fixed-price hosted payment links.</p>
+        </div>
         <div id="donationSettings" class="donation-settings" hidden>
           <div class="form-section-label">Donation settings</div>
           <div class="form-grid two">

@@ -5,6 +5,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
+const { supportsCustomAmount, validateProductAmountInput, normalizeProductAmount, resolveProductAmount } = require("./product-pricing");
 const bcrypt = require("bcryptjs");
 const multer = require("multer");
 const path = require("path");
@@ -4547,24 +4548,8 @@ app.post(
             }
 
 
-            if (
-                (
-                    payment_type !==
-                        "donate" ||
-                    !allow_custom_amount
-                ) &&
-                (
-                    amount === undefined ||
-                    amount === null ||
-                    amount === "" ||
-                    Number(amount) <= 0
-                )
-            ) {
-
-                return res.status(400).json({
-                    error:
-                        "A positive amount is required."
-                });
+            if (!validateProductAmountInput(payment_type, allow_custom_amount, amount)) {
+                return res.status(400).json({ error: "A positive amount is required." });
             }
 
 
@@ -4816,22 +4801,7 @@ app.post(
 
                     payment_type,
 
-                    amount:
-                        (
-                            payment_type ===
-                                "donate" &&
-                            allow_custom_amount
-                        )
-                            ? (
-                                amount
-                                    ? Number(
-                                        amount
-                                    )
-                                    : null
-                            )
-                            : Number(
-                                amount
-                            ),
+                    amount: normalizeProductAmount(payment_type, allow_custom_amount, amount),
 
                     currency:
                         (
@@ -4845,13 +4815,7 @@ app.post(
                             ? subscription_interval
                             : null,
 
-                    allow_custom_amount:
-                        payment_type ===
-                            "donate"
-                            ? Boolean(
-                                allow_custom_amount
-                            )
-                            : false,
+                    allow_custom_amount: supportsCustomAmount(payment_type, allow_custom_amount),
 
                     donation_goal:
                         payment_type ===
@@ -5535,6 +5499,12 @@ app.post(
                 });
             }
 
+            if (product.payment_type === "pay_now" && supportsCustomAmount(product.payment_type, product.allow_custom_amount)) {
+                return res.status(409).json({
+                    error: "This variable-price product is for API integrations and cannot be used for a fixed-price hosted payment link."
+                });
+            }
+
             let returnUrl =
                 null;
 
@@ -5836,27 +5806,7 @@ async function handleV1CreatePayment(
             }
 
 
-            let finalAmount;
-
-
-            if (
-                product.payment_type ===
-                    "donate" &&
-                product.allow_custom_amount
-            ) {
-
-                finalAmount =
-                    Number(
-                        amount
-                    );
-
-            } else {
-
-                finalAmount =
-                    Number(
-                        product.amount
-                    );
-            }
+            const finalAmount = resolveProductAmount(product, amount);
 
 
             if (
