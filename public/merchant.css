@@ -1338,3 +1338,5 @@ body.merchant-page .webhook-secret-card .merchant-modal-actions .button{min-heig
   body.merchant-page .webhook-secret-card .merchant-modal-actions .button{width:100%}
 }
 
+
+.admin-dashboard-switch{font-size:12px;font-weight:800;text-decoration:none;padding:8px 11px;border:1px solid #d8e8dc;border-radius:10px;background:#f2faf4;color:#176b3a!important;white-space:nowrap}.admin-dashboard-switch:hover{background:#e7f5ec;border-color:#afd4b9}@media(max-width:720px){.admin-dashboard-switch{font-size:11px;padding:7px 8px}}
