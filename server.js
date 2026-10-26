@@ -8860,201 +8860,61 @@ async function approveMerchantPayment(paymentId,merchantId){
     };
   }
 
-  const rawCode =
-    generatePaymentCode();
-
-  const tokenExpiresAt =
-    addMinutes(
-      PAYMENT_TOKEN_MINUTES
-    );
-
   const {
-    error:
-      tokenError
-  } = await supabase
-    .from("payment_tokens")
-    .upsert({
-      payment_id:
-        p.id,
-      service_id:
-        p.service_id,
-      service_user_id:
-        p.service_user_id,
-      token_hash:
-        hash(rawCode),
-      expires_at:
-        tokenExpiresAt,
-      used_at:
-        null
-    },{
-      onConflict:
-        "payment_id"
-    });
-
-  if(tokenError) throw tokenError;
-
-  const {
-    data:approvedPayment,
-    error:
-      approveError
-  } = await supabase
+    data:completedPayment,
+    error:completionError
+  }=await supabase
     .from("payments")
-    .update({
-      status:
-        "approved",
-      payment_state:
-        "code_issued",
-      approved_at:
-        now,
-      code_issued_at:
-        now
-    })
-    .eq(
-      "id",
-      p.id
-    )
-    .eq(
-      "status",
-      "awaiting_verification"
-    )
-    .select("id,status,payment_state")
+    .update({status:"completed",payment_state:"completed",approved_at:now,completed_at:now,code_issued_at:null})
+    .eq("id",p.id)
+    .eq("status","awaiting_verification")
+    .select("id,status,payment_state,approved_at,completed_at")
     .maybeSingle();
 
-  if(approveError){
-    await supabase
-      .from("payment_tokens")
-      .delete()
-      .eq(
-        "payment_id",
-        p.id
-      );
-
-    throw approveError;
-  }
-
-  if(!approvedPayment){
-    return {
-      status:409,
-      body:{
-        error:
-          "This payment has already been processed."
-      }
-    };
-  }
-
-  await persistPaymentEvent(
-    p,
-    "payment.approved",
-    "awaiting_verification",
-    "approved",
-    {
-      merchant_id:merchantId
-    }
-  );
+  if(completionError)throw completionError;
+  if(!completedPayment)return {status:409,body:{error:"This payment has already been processed."}};
 
   try{
-    if(
-      p.payment_type==="subscribe"
-    ){
-      await ensureSubscriptionContract(
-        p
-      );
-    }
-
-    await sendPaymentCodeEmail({
-      email:
-        p.service_users?.email,
-      code:
-        rawCode,
-      serviceName:
-        p.services?.name,
-      amount:
-        p.amount,
-      currency:
-        p.currency,
-      reference:
-        p.payment_reference
-    });
-  }catch(emailError){
-    await supabase
-      .from("payment_tokens")
-      .delete()
-      .eq(
-        "payment_id",
-        p.id
-      );
-
-    await supabase
-      .from("payments")
-      .update({
-        status:
-          "awaiting_verification",
-        payment_state:
-          "awaiting_verification",
-        approved_at:
-          null,
-        code_issued_at:
-          null
-      })
-      .eq(
-        "id",
-        p.id
-      )
-      .eq(
-        "status",
-        "approved"
-      );
-
-    throw emailError;
+    if(p.payment_type==="subscribe")await ensureSubscriptionContract(p);
+  }catch(subscriptionError){
+    await supabase.from("payments").update({
+      status:"awaiting_verification",payment_state:"awaiting_verification",
+      approved_at:null,completed_at:null,code_issued_at:null
+    }).eq("id",p.id).eq("status","completed");
+    throw subscriptionError;
   }
 
-  await enqueueWebhookEvent(
-    "payment.approved",
-    {
-      ...p,
-      status:"approved",
-      payment_state:"approved"
-    }
-  );
-
-  await persistPaymentEvent(
-    p,
-    "payment.code_issued",
-    "approved",
-    "code_issued",
-    {
-      code_expires_at:
-        tokenExpiresAt
-    }
-  );
-
-  await enqueueWebhookEvent(
-    "payment.code_issued",
-    {
-      ...p,
-      status:"approved",
-      payment_state:"code_issued"
-    },
-    {
-      code_expires_at:
-        tokenExpiresAt
-    }
-  );
-
-  await sendMerchantPaymentNotification({merchantId:merchantId,subject:"Payment confirmed successfully",title:"Payment approved",message:"The payment has been verified successfully. The customer has been sent their one-time payment code.",payment:p,kind:"PAYMENT CONFIRMED"});
-
-  return {
-    status:200,
-    body:{
-      success:true,
-      type:
-        p.payment_type,
-      message:
-        "Payment approved and one-time code emailed.",
-      code_expires_at:
-        tokenExpiresAt
-    }
+  const eventPayment={...p,...completedPayment,status:"completed",payment_state:"completed",approved_at:now,completed_at:now};
+  const deliveryMetadata={
+    merchant_id:merchantId,
+    external_user_id:p.service_users?.external_user_id||null,
+    customer_email:p.customer_email||p.service_users?.email||null,
+    product_code:p.products?.product_code||null,
+    product_name:p.products?.name||null,
+    subscription_interval:p.products?.subscription_interval||null
   };
+
+  await persistPaymentEvent(eventPayment,"payment.completed","awaiting_verification","completed",deliveryMetadata);
+  await enqueueWebhookEvent("payment.completed",eventPayment,deliveryMetadata);
+
+  try{
+    await sendPaymentLinkApprovedEmail({
+      email:p.customer_email||p.service_users?.email,
+      serviceName:p.services?.name,amount:p.amount,currency:p.currency,
+      reference:p.payment_reference,returnUrl:p.return_url
+    });
+  }catch(emailError){console.error("Payment confirmation email error:",emailError);}
+
+  await sendMerchantPaymentNotification({
+    merchantId,subject:"Payment confirmed successfully",title:"Payment completed",
+    message:"The payment has been verified and marked complete. Configure an HTTPS webhook to receive the signed payment.completed event and deliver the purchase automatically.",
+    payment:eventPayment,kind:"PAYMENT COMPLETED"
+  });
+
+  return {status:200,body:{
+    success:true,type:p.payment_type,
+    message:"Payment verified and completed. The application can deliver the purchase automatically through its configured webhook."
+  }};
 }
 app.get("/api/merchant/payment-requests",authenticateMerchant,async(req,res)=>{try{const {data:services}=await merchantServices(req);const ids=(services||[]).map(s=>s.id);const {data:campaigns}=await supabase.from("donation_campaigns").select("id").eq("merchant_id",req.merchant.id);const cids=(campaigns||[]).map(c=>c.id);const qs=[];if(ids.length)qs.push(supabase.from("payments").select("*,service_users(email,external_user_id),services(name,slug),products(name,product_code,subscription_interval),payment_methods(name,type)").in("service_id",ids).eq("status","awaiting_verification"));if(cids.length)qs.push(supabase.from("payments").select("*,service_users(email,external_user_id),donation_campaigns(name,slug)").in("donation_campaign_id",cids).eq("status","awaiting_verification"));const rs=await Promise.all(qs);res.json({payments:rs.flatMap(x=>x.data||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))});}catch(e){console.error(e);res.status(500).json({error:"Could not load payment requests."})}});
 app.get("/api/merchant/payments/:paymentId/receipt",authenticateMerchant,async(req,res)=>{try{const {data:p}=await supabase.from("payments").select("id,service_id,donation_campaign_id,receipt_path").eq("id",req.params.paymentId).maybeSingle();if(!p?.receipt_path)return res.status(404).json({error:"Receipt not found."});let allowed=false;if(p.service_id){const {data:x}=await supabase.from("services").select("id").eq("id",p.service_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(p.donation_campaign_id){const {data:x}=await supabase.from("donation_campaigns").select("id").eq("id",p.donation_campaign_id).eq("merchant_id",req.merchant.id).maybeSingle();allowed=!!x}if(!allowed)return res.status(404).json({error:"Receipt not found."});const {data,error}=await supabase.storage.from("payment-receipts").createSignedUrl(p.receipt_path,300);if(error)throw error;res.json({url:data?.signedUrl||data?.signedURL});}catch(e){console.error(e);res.status(500).json({error:"Could not open receipt."})}});
@@ -9831,13 +9691,18 @@ app.patch("/api/merchant/apps/:id/webhook", authenticateMerchant, async (req,res
         if(lookupError)throw lookupError;
         if(!service)return res.status(404).json({error:"Application not found."});
         const patch={webhook_url:webhookUrl||null,updated_at:new Date().toISOString()};
-        if(webhookUrl && !service.webhook_secret)patch.webhook_secret="whsec_"+randomHex(32);
+        const createdWebhookSecret=Boolean(webhookUrl&&!service.webhook_secret);
+        if(createdWebhookSecret)patch.webhook_secret="whsec_"+randomHex(32);
         if(!webhookUrl)patch.webhook_secret=null;
         const {data:updated,error}=await supabase.from("services").update(patch)
             .eq("id",id).eq("merchant_id",req.merchant.id)
             .select("id,name,webhook_url,environment,status,created_at,updated_at").single();
         if(error)throw error;
-        res.json({success:true,app:updated,webhook_configured:Boolean(updated.webhook_url),message:webhookUrl?"Webhook delivery is enabled for this application.":"Webhook delivery is disabled for this application."});
+        res.json({
+            success:true,app:updated,webhook_configured:Boolean(updated.webhook_url),
+            ...(createdWebhookSecret?{webhook_secret:patch.webhook_secret}:{}),
+            message:webhookUrl?"Webhook delivery is enabled for this application.":"Webhook delivery is disabled for this application."
+        });
     }catch(error){
         console.error("Update webhook configuration error:",error);
         res.status(500).json({error:"Could not update webhook configuration."});
@@ -10352,11 +10217,18 @@ app.post(
                     `
                     *,
                     service_users (
-                        email
+                        email,
+                        external_user_id
                     ),
                     services (
                         name,
-                        status
+                        status,
+                        merchant_id
+                    ),
+                    products (
+                        name,
+                        product_code,
+                        subscription_interval
                     )
                     `
                 )
@@ -10423,32 +10295,20 @@ app.post(
                 payment.payment_link_id
             ) {
 
+                const completedAt=new Date().toISOString();
                 const {
-                    error:
-                        linkUpdateError
-                } =
-                    await supabase
-                        .from(
-                            "payments"
-                        )
-                        .update({
-                            status:
-                                "completed",
-                            approved_at:
-                                new Date()
-                                    .toISOString(),
-                            completed_at:
-                                new Date()
-                                    .toISOString()
-                        })
-                        .eq(
-                            "id",
-                            payment.id
-                        )
-                        .eq(
-                            "status",
-                            "awaiting_verification"
-                        );
+                    data:linkCompletedPayment,
+                    error:linkUpdateError
+                }=await supabase
+                    .from("payments")
+                    .update({
+                        status:"completed",payment_state:"completed",
+                        approved_at:completedAt,completed_at:completedAt,code_issued_at:null
+                    })
+                    .eq("id",payment.id)
+                    .eq("status","awaiting_verification")
+                    .select("id,status,payment_state,approved_at,completed_at")
+                    .maybeSingle();
 
                 if (linkUpdateError) {
                     console.error(
@@ -10462,24 +10322,24 @@ app.post(
                     });
                 }
 
-                await supabase
-                    .from(
-                        "audit_logs"
-                    )
-                    .insert({
-                        actor_type:
-                            "admin",
-                        actor_id:
-                            "admin",
-                        action:
-                            "payment_link_completed",
-                        payment_id:
-                            payment.id,
-                        metadata: {
-                            payment_link_id:
-                                payment.payment_link_id
-                        }
-                    });
+                if(!linkCompletedPayment){
+                    return res.status(409).json({error:"This payment has already been processed."});
+                }
+                const linkEventPayment={...payment,...linkCompletedPayment,status:"completed",payment_state:"completed",approved_at:completedAt,completed_at:completedAt};
+                const linkDeliveryMetadata={
+                    external_user_id:payment.service_users?.external_user_id||null,
+                    customer_email:payment.customer_email||payment.service_users?.email||null,
+                    product_code:payment.products?.product_code||null,
+                    product_name:payment.products?.name||null,
+                    subscription_interval:payment.products?.subscription_interval||null,
+                    payment_link_id:payment.payment_link_id
+                };
+                await persistPaymentEvent(linkEventPayment,"payment.completed","awaiting_verification","completed",linkDeliveryMetadata);
+                await enqueueWebhookEvent("payment.completed",linkEventPayment,linkDeliveryMetadata);
+                await supabase.from("audit_logs").insert({
+                    actor_type:"admin",actor_id:"admin",action:"payment_link_completed",
+                    payment_id:payment.id,metadata:{payment_link_id:payment.payment_link_id}
+                });
 
                 try {
 
@@ -10521,131 +10381,59 @@ app.post(
             }
 
 
-            const rawCode =
-                generatePaymentCode();
+            const approvedAt=new Date().toISOString();
+            const {data:completedPayment,error:updateError}=await supabase
+                .from("payments")
+                .update({
+                    status:"completed",payment_state:"completed",approved_at:approvedAt,
+                    completed_at:approvedAt,code_issued_at:null
+                })
+                .eq("id",payment.id)
+                .eq("status","awaiting_verification")
+                .select("id,status,payment_state,approved_at,completed_at")
+                .maybeSingle();
 
-
-            const {
-                error:
-                    tokenError
-            } =
-                await supabase
-                    .from(
-                        "payment_tokens"
-                    )
-                    .upsert({
-
-                        payment_id:
-                            payment.id,
-
-                        service_id:
-                            payment.service_id,
-
-                        service_user_id:
-                            payment.service_user_id,
-
-                        token_hash:
-                            hash(
-                                rawCode
-                            ),
-
-                        expires_at:
-                            addHours(
-                                PAYMENT_TOKEN_HOURS
-                            ),
-
-                        used_at:
-                            null
-
-                    }, {
-
-                        onConflict:
-                            "payment_id"
-                    });
-
-
-            if (tokenError) {
-
-                console.error(
-                    "Payment token error:",
-                    tokenError
-                );
-
-                return res.status(500).json({
-                    error:
-                        "Could not generate the payment verification code."
-                });
+            if(updateError){
+                console.error("Admin payment completion update error:",updateError);
+                return res.status(500).json({error:"Could not complete payment."});
+            }
+            if(!completedPayment){
+                return res.status(409).json({error:"This payment has already been processed."});
             }
 
-
-            const {
-                error:
-                    updateError
-            } =
-                await supabase
-                    .from(
-                        "payments"
-                    )
-                    .update({
-                        status:
-                            "approved",
-                        approved_at:
-                            new Date()
-                                .toISOString()
-                    })
-                    .eq(
-                        "id",
-                        payment.id
-                    );
-
-
-            if (updateError) {
-
-                console.error(
-                    "Approve payment update error:",
-                    updateError
-                );
-
-                return res.status(500).json({
-                    error:
-                        "Could not approve payment."
-                });
+            try{
+                if(payment.payment_type==="subscribe")await ensureSubscriptionContract(payment);
+            }catch(subscriptionError){
+                await supabase.from("payments").update({
+                    status:"awaiting_verification",payment_state:"awaiting_verification",
+                    approved_at:null,completed_at:null,code_issued_at:null
+                }).eq("id",payment.id).eq("status","completed");
+                throw subscriptionError;
             }
 
+            const completedEventPayment={...payment,...completedPayment,status:"completed",payment_state:"completed",approved_at:approvedAt,completed_at:approvedAt};
+            const deliveryMetadata={
+                external_user_id:payment.service_users?.external_user_id||null,
+                customer_email:payment.customer_email||payment.service_users?.email||null,
+                product_code:payment.products?.product_code||null,
+                product_name:payment.products?.name||null,
+                subscription_interval:payment.products?.subscription_interval||null
+            };
 
-            await sendPaymentCodeEmail({
+            await persistPaymentEvent(completedEventPayment,"payment.completed","awaiting_verification","completed",deliveryMetadata);
+            await enqueueWebhookEvent("payment.completed",completedEventPayment,deliveryMetadata);
 
-                email:
-                    payment
-                        .service_users
-                        ?.email,
+            try{
+                await sendPaymentLinkApprovedEmail({
+                    email:payment.customer_email||payment.service_users?.email,
+                    serviceName:payment.services?.name,amount:payment.amount,currency:payment.currency,
+                    reference:payment.payment_reference,returnUrl:payment.return_url
+                });
+            }catch(emailError){console.error("Admin payment confirmation email error:",emailError);}
 
-                code:
-                    rawCode,
-
-                serviceName:
-                    payment
-                        .services
-                        ?.name,
-
-                amount:
-                    payment.amount,
-
-                currency:
-                    payment.currency,
-
-                reference:
-                    payment.payment_reference
-            });
-
-
-            res.json({
-
-                success:
-                    true,
-
-                message:
-                    "Payment approved. The one-time payment code has been sent to the customer."
+            return res.json({
+                success:true,
+                message:"Payment verified and completed. The application can deliver the purchase automatically through its configured webhook."
             });
 
         } catch (error) {

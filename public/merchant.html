@@ -294,7 +294,7 @@
 
     <section id="section-developers" class="merchant-section" hidden>
       <div class="section-title-row"><div><span class="eyebrow">DEVELOPERS</span><h2>Build with SquashberryPay.</h2><p>Keep credentials, webhooks and API activity in one place.</p></div></div>
-      <div class="developer-grid"><article class="dev-card"><span>⌘</span><h3>API credentials</h3><p>Client IDs are visible here. Client secrets are only shown when generated and should never be placed in browser code.</p><button class="button secondary small" data-section-jump="apps">Manage apps</button></article><article class="dev-card"><span>↯¯</span><h3>Webhooks</h3><p>Webhook delivery is the next operational layer for payment events, subscriptions and integration automation.</p><span class="status-pill">Coming online</span></article><article class="dev-card"><span>⌁</span><h3>API logs</h3><p>Request-level logs will show status, latency and request IDs once API event logging is enabled.</p><span class="status-pill">Coming online</span></article><article class="dev-card"><span>▤¤</span><h3>Documentation</h3><p>Use the integration guide for the current payment-button and verification flow.</p><button class="button secondary small" data-section-jump="integration">Open guide</button></article></div>
+      <div class="developer-grid"><article class="dev-card"><span>⌘</span><h3>API credentials</h3><p>Client IDs are visible here. Client secrets are only shown when generated and should never be placed in browser code.</p><button class="button secondary small" data-section-jump="apps">Manage apps</button></article><article class="dev-card"><span>↯¯</span><h3>Webhooks</h3><p>Configure an HTTPS endpoint for your application to receive signed payment.completed events and automatically deliver purchases after verification.</p><span class="status-pill">Available</span></article><article class="dev-card"><span>⌁</span><h3>API logs</h3><p>Request-level logs will show status, latency and request IDs once API event logging is enabled.</p><span class="status-pill">Coming online</span></article><article class="dev-card"><span>▤¤</span><h3>Documentation</h3><p>Use the integration guide to configure signed payment webhooks for automatic fulfilment after payment confirmation.</p><button class="button secondary small" data-section-jump="integration">Open guide</button></article></div>
     </section>
 
     <section id="section-settings" class="merchant-section" hidden>
@@ -304,22 +304,19 @@
 
     <section id="section-integration" class="merchant-section" hidden>
       <div class="section-title-row"><div><span class="eyebrow">HELP & INTEGRATION</span><h2>Connect SquashberryPay.</h2><p>Create an app, define what customers can buy, configure payment destinations, then add the hosted checkout button.</p></div></div>
-      <div class="guide-steps"><article><b>01</b><h3>Create an app</h3><p>Connect a website, web app or mobile application.</p></article><article><b>02</b><h3>Create products</h3><p>Define one-time, subscription or donation offerings.</p></article><article><b>03</b><h3>Configure payment methods</h3><p>Add Wave, APS, NADA or bank transfer instructions.</p></article><article><b>04</b><h3>Create a payment link</h3><p>Generate a hosted checkout that can be shared anywhere.</p></article><article><b>05</b><h3>Verify payments</h3><p>Use your server-side client credentials to verify payment tokens.</p></article></div>
-      <div class="code-guide"><div class="guide-header"><strong>Server-side verification</strong></div><pre><code>const response = await fetch(
-  "https://squashberrypay.squashberrypay.workers.dev/api/v1/verify-payment",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-SquashberryPay-Client-ID": process.env.SQUASHBERRYPAY_CLIENT_ID,
-      "X-SquashberryPay-Client-Secret": process.env.SQUASHBERRYPAY_CLIENT_SECRET
-    },
-    body: JSON.stringify({
-      external_user_id: customer.id,
-      token: enteredCode
-    })
+      <div class="guide-steps"><article><b>01</b><h3>Create an app</h3><p>Connect a website, web app or mobile application.</p></article><article><b>02</b><h3>Create products</h3><p>Define one-time, subscription or donation offerings.</p></article><article><b>03</b><h3>Configure payment methods</h3><p>Add Wave, APS, NADA or bank transfer instructions.</p></article><article><b>04</b><h3>Create a payment link</h3><p>Generate a hosted checkout that can be shared anywhere.</p></article><article><b>05</b><h3>Deliver verified payments</h3><p>Configure your HTTPS webhook to receive signed payment.completed events. Customers no longer need to enter a payment code.</p></article></div>
+      <div class="code-guide"><div class="guide-header"><strong>Automatic fulfilment webhook</strong></div><p>Set your application's HTTPS webhook URL in Manage apps. SquashberryPay sends a signed <code>payment.completed</code> event after a payment is verified and marked complete. Verify <code>X-SquashberryPay-Signature</code> with your application's Webhook Secret against the raw request body and <code>X-SquashberryPay-Timestamp</code> before fulfilling anything. Use <code>X-SquashberryPay-Event-ID</code> for idempotency so retries never deliver the same purchase twice.</p><pre><code>{
+  "type": "payment.completed",
+  "data": {
+    "payment_id": "payment-id",
+    "payment_reference": "SBP-reference",
+    "external_user_id": "your-user-id",
+    "product_id": "product-id",
+    "product_code": "premium_monthly",
+    "status": "completed",
+    "payment_state": "completed"
   }
-);</code></pre></div>
+}</code></pre><p>After a valid signature and matching payment are confirmed, grant the product or subscription to <code>external_user_id</code>. Keep your webhook secret on the server; never expose it in browser code.</p></div>
     </section>
   </main>
 </div>

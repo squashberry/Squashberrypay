@@ -119,41 +119,21 @@ async function runTest() {
         headers: { Cookie: cookie }
     });
     const approveData = await approveRes.json();
-    console.log("9. Admin Approve Payment:", approveData.success ? "PASSED" : "FAILED", "Code:", approveData.code);
+    console.log("9. Admin Auto-Completion:", approveData.success && !approveData.code ? "PASSED" : "FAILED", approveData.message || approveData.error);
 
-    const generatedCode = approveData.code;
-
-    // 10. Service Atomically Verifies & Redeems Token
-    const verifyRes = await fetch("http://localhost:3000/api/v1/verify-payment", {
-        method: "POST",
+    // 10. Check that approval completes the payment without a customer code step.
+    const statusRes = await fetch(`http://localhost:3000/api/v1/public/payments/${encodeURIComponent(paymentData.payment.id)}`, {
         headers: {
-            "Content-Type": "application/json",
             "X-SquashberryPay-Client-ID": clientId,
             "X-SquashberryPay-Client-Secret": clientSecret
-        },
-        body: JSON.stringify({
-            external_user_id: "user_test_999",
-            token: generatedCode
-        })
+        }
     });
-    const verifyData = await verifyRes.json();
-    console.log("10. Service Token Verification:", verifyData.verified ? "PASSED" : "FAILED", verifyData);
-
-    // 11. Attempt Double-Spend (Should Fail)
-    const doubleSpendRes = await fetch("http://localhost:3000/api/v1/verify-payment", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-SquashberryPay-Client-ID": clientId,
-            "X-SquashberryPay-Client-Secret": clientSecret
-        },
-        body: JSON.stringify({
-            external_user_id: "user_test_999",
-            token: generatedCode
-        })
-    });
-    const doubleSpendData = await doubleSpendRes.json();
-    console.log("11. Double-Spend Protection Test (Expect FAILED verification):", !doubleSpendData.verified ? "PASSED (Correctly rejected duplicate token)" : "FAILED (Double-spend allowed!)", doubleSpendData);
+    const statusData = await statusRes.json();
+    const completedWithoutCode = statusRes.ok &&
+        statusData.payment?.status === "completed" &&
+        statusData.payment?.payment_state === "completed" &&
+        !approveData.code;
+    console.log("10. Payment Completed Without Code:", completedWithoutCode ? "PASSED" : "FAILED", statusData.payment || statusData);
 
     console.log("\n==================================================");
     console.log("✨ ALL E2E TESTS COMPLETED!");

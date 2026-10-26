@@ -681,20 +681,6 @@
 
                 <details>
                     <summary>
-                        Can one payment code work in another app?
-                    </summary>
-
-                    <p>
-                        No. The verification system checks
-                        the exact business application,
-                        customer identity and payment before
-                        accepting a code.
-                    </p>
-                </details>
-
-
-                <details>
-                    <summary>
                         How long does a payment page last?
                     </summary>
 
@@ -710,13 +696,15 @@
 
                 <details>
                     <summary>
-                        How long does a verification code last?
+                        Does a customer need to enter a payment code after approval?
                     </summary>
 
                     <p>
-                        By default, the one-time payment code
-                        remains valid for 24 hours and can be
-                        redeemed only once.
+                        No. Once a business verifies a payment, SquashberryPay marks it
+                        complete and sends a signed payment.completed event to the
+                        application's configured HTTPS webhook. The application can then
+                        deliver the purchase or credit the user's account. Account sign-up
+                        and password-reset codes, where used, are separate.
                     </p>
                 </details>
 
