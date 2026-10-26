@@ -1187,3 +1187,154 @@ body.dashboard-compact .merchant-main{
   body.merchant-page .mobile-nav-scrim{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
 @media(max-width:420px){body.merchant-page .merchant-main{padding-left:12px!important;padding-right:12px!important}body.merchant-page .merchant-mobile-bar{right:12px!important}}
+
+
+/* Application management: cards and security dialogs */
+body.merchant-page #section-applications .section-title-row{
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:22px;
+  margin:0 0 24px;
+}
+body.merchant-page #section-applications .section-title-row>div{min-width:0;max-width:780px}
+body.merchant-page #section-applications .section-title-row h2{
+  margin:9px 0 10px;
+  font-size:clamp(29px,3vw,38px);
+  line-height:1.04;
+  letter-spacing:-.055em;
+}
+body.merchant-page #section-applications .section-title-row p{
+  margin:0;
+  color:#747477;
+  font-size:13px;
+  line-height:1.65;
+  max-width:740px;
+}
+body.merchant-page #section-applications #openAddAppPrimary{flex:0 0 auto;min-height:42px}
+body.merchant-page .app-list{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;width:100%;min-width:0}
+body.merchant-page .app-card{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(240px,330px);
+  align-items:start;
+  gap:22px;
+  min-width:0;
+  padding:22px;
+  border:1px solid #e0e0da;
+  border-radius:18px;
+  background:linear-gradient(145deg,#fff 0%,#fdfdfb 100%);
+  box-shadow:0 8px 26px rgba(20,20,14,.045);
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+body.merchant-page .app-card:hover{border-color:#c9c9c1;box-shadow:0 14px 34px rgba(20,20,14,.075);transform:translateY(-1px)}
+body.merchant-page .app-card-main{min-width:0}
+body.merchant-page .app-card .app-title{display:flex;align-items:flex-start;gap:13px;min-width:0}
+body.merchant-page .app-card .app-symbol{
+  display:grid;
+  place-items:center;
+  width:46px;height:46px;flex:0 0 46px;
+  border-radius:14px;
+  background:#111;color:#fff;
+  font-size:17px;font-weight:900;
+  box-shadow:0 6px 14px rgba(0,0,0,.1);
+}
+body.merchant-page .app-card .app-heading-copy{display:grid;gap:8px;min-width:0;padding-top:2px}
+body.merchant-page .app-card .app-heading-copy h3{
+  margin:0;
+  color:#171717;
+  font-size:18px;
+  line-height:1.3;
+  letter-spacing:-.025em;
+  overflow-wrap:anywhere;
+}
+body.merchant-page .app-card .app-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+body.merchant-page .app-card .status-badge{font-size:9px;min-height:22px;padding:4px 9px;letter-spacing:.035em}
+body.merchant-page .app-card .status-badge.success{background:#e8f6ed;color:#176b3a}
+body.merchant-page .app-card .status-badge.pending{background:#fff1d6;color:#805900}
+body.merchant-page .app-card .status-badge.danger{background:#fff0f0;color:#9f2020}
+body.merchant-page .app-card .status-badge.neutral{background:#f0f0ed;color:#626260}
+body.merchant-page .app-card .app-card-url{
+  margin:16px 0 13px;
+  padding:10px 12px;
+  border:1px solid #efefeb;
+  border-radius:10px;
+  background:#f8f8f5;
+  color:#555;
+  font-size:12px;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+body.merchant-page .app-card .app-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
+body.merchant-page .app-card .app-meta span{
+  display:inline-flex;align-items:center;min-height:26px;
+  max-width:100%;
+  padding:5px 9px;
+  border:1px solid #ecece7;
+  border-radius:8px;
+  background:#f6f6f3;
+  color:#656562;
+  font-size:10px;
+  font-weight:700;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+}
+body.merchant-page .app-card .app-meta-secondary{margin-top:8px;padding-top:11px;border-top:1px solid #eee}
+body.merchant-page .app-card .app-meta span.app-webhook-state.is-configured{background:#e8f6ed;color:#176b3a;border-color:#d5ecdc}
+body.merchant-page .app-card .card-actions.app-card-actions{
+  display:flex;align-content:flex-start;align-items:flex-start;justify-content:flex-start;
+  flex-wrap:wrap;gap:8px;margin:0;padding:0;min-width:0;max-width:none;
+}
+body.merchant-page .app-card .app-card-actions .small-action{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:36px;height:auto;
+  padding:8px 10px;
+  border:1px solid #deded8;
+  border-radius:10px;
+  background:#fff;color:#333;
+  font-size:10px;font-weight:800;line-height:1.25;text-align:center;
+  white-space:normal;overflow-wrap:anywhere;
+  transition:background .15s ease,border-color .15s ease,color .15s ease;
+}
+body.merchant-page .app-card .app-card-actions .small-action:hover{background:#f4f4f0;border-color:#bdbdb5}
+body.merchant-page .app-card .app-card-actions .small-action.danger{color:#a32c25;border-color:#ecc7c3;background:#fffafa}
+body.merchant-page .app-card .app-card-actions .small-action.danger:hover{background:#fff0f0;border-color:#d6a29d}
+body.merchant-page .app-card .app-card-actions .app-status-action:not(.danger){color:#176b3a;border-color:#cce5d3;background:#f4fbf6}
+body.merchant-page .app-card .app-card-actions .app-status-action:not(.danger):hover{background:#e8f6ed;border-color:#add5b8}
+body.merchant-page .webhook-secret-modal{z-index:7000!important}
+body.merchant-page .webhook-secret-card{
+  width:min(620px,calc(100vw - 32px));
+  max-width:620px;
+  padding:clamp(22px,4vw,34px);
+  border-radius:22px;
+  border:1px solid #e2e2dc;
+  box-shadow:0 28px 90px rgba(0,0,0,.24);
+}
+body.merchant-page .webhook-secret-card h3{margin:10px 0 8px;font-size:clamp(23px,4vw,30px);letter-spacing:-.045em;line-height:1.12}
+body.merchant-page .webhook-secret-card .webhook-secret-app{margin:0 0 15px;color:#777;font-size:12px;font-weight:750}
+body.merchant-page .webhook-secret-card .webhook-secret-warning{margin:0 0 18px;padding:12px 14px;border:1px solid #eed7a5;border-radius:12px;background:#fff8e7;color:#795714;font-size:12px;line-height:1.55}
+body.merchant-page .webhook-secret-card .webhook-secret-label{display:block;margin:0 0 7px;color:#555;font-size:11px;font-weight:850}
+body.merchant-page .webhook-secret-card #webhookSecretValue{
+  width:100%;min-height:64px;resize:vertical;
+  padding:14px;border:1px solid #d9d9d2;border-radius:12px;
+  background:#f7f7f4;color:#111;
+  font:600 13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;
+  overflow-wrap:anywhere;word-break:break-all;user-select:all;
+}
+body.merchant-page .webhook-secret-card .webhook-secret-help{margin:10px 0 20px;color:#777;font-size:11px;line-height:1.65}
+body.merchant-page .webhook-secret-card .merchant-modal-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:9px}
+body.merchant-page .webhook-secret-card .merchant-modal-actions .button{min-height:42px}
+@media(max-width:920px){
+  body.merchant-page .app-card{grid-template-columns:minmax(0,1fr);gap:16px}
+  body.merchant-page .app-card .card-actions.app-card-actions{justify-content:flex-start}
+}
+@media(max-width:540px){
+  body.merchant-page #section-applications .section-title-row{align-items:stretch}
+  body.merchant-page #section-applications #openAddAppPrimary{width:100%}
+  body.merchant-page .app-card{padding:16px;border-radius:15px}
+  body.merchant-page .app-card .app-symbol{width:42px;height:42px;flex-basis:42px}
+  body.merchant-page .app-card .app-heading-copy h3{font-size:16px}
+  body.merchant-page .app-card .app-card-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  body.merchant-page .app-card .app-card-actions .small-action{width:100%;min-width:0;padding:9px 7px}
+  body.merchant-page .webhook-secret-card .merchant-modal-actions{display:grid;grid-template-columns:1fr}
+  body.merchant-page .webhook-secret-card .merchant-modal-actions .button{width:100%}
+}
+
