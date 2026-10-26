@@ -1,0 +1,548 @@
+/* ==========================================================================
+   SQUASHBERRYPAY — NOIR
+   Pure black & white. Receipt-paper identity: dot-matrix canvas, hairline
+   ledger rules, condensed poster type, hard offset shadows, ticket-notched
+   hero card. Load this LAST, after state-flow.css.
+   ========================================================================== */
+
+/* ---------- Tokens ---------- */
+body.merchant-page{
+  --ink:#000; --paper:#fff;
+  --g50:#fafafa; --g100:#f3f3f3; --g150:#ebebeb; --g200:#dcdcdc; --g300:#c4c4c4;
+  --g400:#a0a0a0; --g500:#767676; --g600:#555; --g700:#333;
+  --r-card:12px; --r-ctl:8px;
+  --f-display:"Bricolage Grotesque","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-family:var(--f-body);
+  color:#000;
+  background-color:#fafafa;
+  background-image:radial-gradient(rgba(0,0,0,.10) 1px,transparent 1.3px);
+  background-size:22px 22px;
+  -webkit-font-smoothing:antialiased;
+}
+body.merchant-page ::selection{background:#000;color:#fff}
+body.merchant-page *{scrollbar-width:thin;scrollbar-color:#000 transparent}
+body.merchant-page :focus-visible{outline:2px solid #000;outline-offset:3px;box-shadow:0 0 0 5px #fff}
+body.merchant-page button,body.merchant-page input,body.merchant-page select,body.merchant-page textarea{font-family:var(--f-body)}
+
+/* ---------- Display type helper ---------- */
+body.merchant-page :is(.brand,.dashboard-welcome h1,.section-title-row h2,.panel-heading h3,.money-card>strong,.balance-hero>strong,.health-grid strong,.analytics-grid .panel strong,.link-analytics-metrics strong,.drawer-payment-amount,.merchant-modal-card h3,.workspace-form-head h3,.workspace-content-head h3,.donation-card strong,.subscription-card strong,.capability-panel h3,.dev-card h3,.guide-steps h3,.empty-state strong,.chart-empty strong,.panel-heading>span:last-child){
+  font-family:var(--f-display);
+  font-variation-settings:"wdth" 78;
+  font-stretch:78%;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ---------- Labels: lowercase, square bullet ---------- */
+body.merchant-page .eyebrow,
+body.merchant-page .sidebar-label{
+  display:inline-flex;align-items:center;gap:8px;
+  font:600 12px/1 var(--f-body);letter-spacing:0;text-transform:lowercase;color:#555;
+}
+body.merchant-page .eyebrow::before,
+body.merchant-page .sidebar-label::before{content:"";width:7px;height:7px;background:#000;flex:0 0 7px}
+body.merchant-page .sidebar-label{display:flex;margin:0 0 10px}
+
+/* ---------- Header ---------- */
+body.merchant-page .merchant-header{
+  height:68px;background:rgba(255,255,255,.92);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border-bottom:1px solid #000;box-shadow:none;
+}
+body.merchant-page .merchant-header .brand{font-size:23px;font-weight:800;letter-spacing:-.04em;gap:11px}
+body.merchant-page .merchant-header .brand-mark{
+  width:34px;height:34px;border-radius:9px;background:#000;color:#fff;
+  font-family:var(--f-display);font-weight:800;font-size:19px;
+  box-shadow:3px 3px 0 #b5b5b5;transition:transform .2s ease,box-shadow .2s ease;
+}
+body.merchant-page .merchant-header .brand:hover .brand-mark{transform:rotate(-8deg)}
+body.merchant-page .merchant-header-right #merchantName{
+  max-width:210px;padding:6px 14px 6px 6px;border:1px solid #000;border-radius:999px;background:#fff;
+  color:#000;font:600 13px/1 var(--f-body);
+}
+body.merchant-page .merchant-header-right #merchantName::before{background:#000;width:26px;height:26px;flex-basis:26px}
+body.merchant-page .merchant-header-right #signOut,
+body.merchant-page .admin-dashboard-switch{
+  height:36px;padding:0 14px;border:1px solid #000;border-radius:var(--r-ctl);background:#fff;
+  color:#000!important;font:600 13px var(--f-body);text-decoration:none;display:inline-flex;align-items:center;
+  transition:background .15s,color .15s;
+}
+body.merchant-page .merchant-header-right #signOut:hover,
+body.merchant-page .admin-dashboard-switch:hover{background:#000;color:#fff!important;border-color:#000}
+body.merchant-page .notification-button{
+  width:38px;height:38px;border:1px solid #000;border-radius:50%;background:#fff;color:#000;font-size:17px;
+  display:grid;place-items:center;transition:background .15s,color .15s;
+}
+body.merchant-page .notification-button:hover{background:#000;color:#fff}
+body.merchant-page .notification-button i{background:#000;box-shadow:0 0 0 2px #fff;right:7px;top:7px}
+body.merchant-page .notification-button:hover i{background:#fff;box-shadow:0 0 0 2px #000}
+
+/* ---------- Sidebar ---------- */
+body.merchant-page .merchant-sidebar{background:#fff;border-right:1px solid #000;-webkit-backdrop-filter:none;backdrop-filter:none}
+body.merchant-page .sidebar-top{border-bottom:1px dashed #b5b5b5;padding-bottom:16px}
+body.merchant-page .business-switcher{border:1px solid #000;border-radius:10px;background:#fff;box-shadow:3px 3px 0 #000}
+body.merchant-page .business-avatar{border-radius:8px;background:#000;font-family:var(--f-display);font-size:15px;font-weight:800}
+body.merchant-page .business-switcher strong{font:700 13px var(--f-body)}
+body.merchant-page .business-switcher small{font-size:11px;color:#666;text-transform:capitalize}
+body.merchant-page .nav-divider{background:none;border-top:1px dashed #b5b5b5;margin:14px 4px 10px}
+body.merchant-page .sidebar-bottom{border-top:1px dashed #b5b5b5}
+body.merchant-page .side-link{
+  min-height:41px;padding:9px 12px;border:1px solid transparent;border-radius:var(--r-ctl);
+  color:#444;font:600 13px/1 var(--f-body);transition:background .15s,color .15s,border-color .15s,box-shadow .15s;
+}
+body.merchant-page .side-link>span{color:#000;font-size:15px;width:20px}
+body.merchant-page .side-link:hover{background:#f0f0f0;color:#000;border-color:#000;transform:none}
+body.merchant-page .side-link.active{background:#000;color:#fff;border-color:#000;box-shadow:4px 4px 0 #b5b5b5;transform:none}
+body.merchant-page .side-link.active>span{color:#fff}
+body.merchant-page .side-link em{border:1px solid currentColor;background:transparent;color:inherit;font-weight:700;font-size:11px;padding:2px 7px}
+body.merchant-page .side-link.active em{background:#fff;color:#000;border-color:#fff}
+
+/* ---------- Page header / section titles ---------- */
+body.merchant-page .dashboard-welcome{
+  padding-bottom:26px;margin-bottom:22px;border-bottom:3px solid #000;align-items:flex-end;
+}
+body.merchant-page .dashboard-welcome h1{
+  font-weight:800;font-size:clamp(46px,6.6vw,100px);line-height:.88;letter-spacing:-.045em;
+  max-width:none;text-wrap:balance;margin:14px 0 14px;
+}
+body.merchant-page .dashboard-welcome h1 span{background:none;-webkit-text-fill-color:currentColor;color:#000}
+body.merchant-page .dashboard-welcome p{font-size:15px;color:#444;max-width:520px}
+body.merchant-page .section-title-row{padding-bottom:24px;margin-bottom:26px;border-bottom:3px solid #000;align-items:flex-end}
+body.merchant-page .section-title-row h2,
+body.merchant-page #section-applications .section-title-row h2{
+  font-weight:800;font-size:clamp(38px,5vw,76px);line-height:.9;letter-spacing:-.045em;margin:14px 0 12px;
+}
+body.merchant-page .section-title-row p,
+body.merchant-page #section-applications .section-title-row p{font-size:14px;color:#444;max-width:600px;line-height:1.55}
+body.merchant-page #section-applications .section-title-row{margin:0 0 26px;padding-bottom:24px}
+
+/* ---------- Buttons ---------- */
+body.merchant-page .button{
+  min-height:44px;padding:0 18px;border:1px solid #000;border-radius:var(--r-ctl);background:#fff;color:#000;
+  font:600 13px/1 var(--f-body);transition:transform .14s ease,box-shadow .14s ease,background .14s,color .14s;
+}
+body.merchant-page .button.small{min-height:38px;padding:0 14px}
+body.merchant-page .button.primary{background:#000;color:#fff}
+body.merchant-page .button:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:4px 4px 0 #000}
+body.merchant-page .button.primary:hover:not(:disabled){box-shadow:4px 4px 0 #a8a8a8}
+body.merchant-page .button:active:not(:disabled){transform:translate(0,0);box-shadow:none}
+body.merchant-page .overview-actions .magnetic:hover{transform:translate3d(var(--mx,0),var(--my,0),0);box-shadow:4px 4px 0 #a8a8a8}
+body.merchant-page .density-toggle{min-height:38px;border:1px solid #000;border-radius:var(--r-ctl);background:#fff;color:#000;font:600 12px var(--f-body)}
+body.merchant-page .density-toggle:hover{background:#000;color:#fff;box-shadow:none}
+body.merchant-page .density-toggle:hover .density-icon{color:#fff}
+body.merchant-page .text-link{color:#000;font:600 13px var(--f-body);text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1.5px}
+body.merchant-page .text-link:hover{background:#000;color:#fff;text-decoration:none}
+body.merchant-page .text-button{font:600 13px var(--f-body);color:#000}
+body.merchant-page .workspace-form-head .text-button{border:1px solid #000;border-radius:var(--r-ctl);background:#fff;color:#000;padding:8px 12px}
+body.merchant-page .workspace-form-head .text-button:hover{background:#000;color:#fff}
+
+/* ---------- Range bar / live status ---------- */
+body.merchant-page .range-bar{border-bottom:0;padding-bottom:0;margin-bottom:18px}
+body.merchant-page .range-bar>div{background:#fff;border:1px solid #000;border-radius:10px;padding:3px;gap:2px}
+body.merchant-page .range{font:700 12px var(--f-body);color:#000;padding:8px 15px;border-radius:7px}
+body.merchant-page .range:hover:not(.active){background:#efefef}
+body.merchant-page .range.active{background:#000;color:#fff;box-shadow:none}
+body.merchant-page .range-bar>span.dashboard-live-status,
+body.merchant-page .dashboard-live-status{
+  padding:7px 12px;border:1px solid #000;border-radius:999px;background:#fff;color:#000;font:600 12px var(--f-body);
+}
+body.merchant-page .dashboard-live-status i{background:#000}
+
+/* ---------- Money cards ---------- */
+body.merchant-page .money-card{
+  min-height:210px;padding:22px;border:1px solid #000;border-radius:var(--r-card);background:#fff;
+  box-shadow:none;display:flex;flex-direction:column;
+}
+body.merchant-page .money-card::before,
+body.merchant-page .money-card::after{content:none;display:none}
+body.merchant-page .money-card>span{font:600 13px var(--f-body);color:#555}
+body.merchant-page .money-card>strong{
+  margin-top:auto;font-weight:800;font-size:clamp(32px,3.2vw,48px);line-height:.95;letter-spacing:-.04em;color:#000;
+}
+body.merchant-page .money-card>small{margin-top:12px;font-size:12px;color:#666}
+body.merchant-page .money-card:not(.featured):hover{transform:translate(-3px,-3px);box-shadow:6px 6px 0 #000;border-color:#000}
+
+/* Hero: the ticket. Notches + dashed tear line, giant numerals. */
+body.merchant-page .money-card.featured{
+  min-height:230px;padding:24px 28px 0;border:0;color:#fff;
+  background-color:#000;
+  background-image:radial-gradient(rgba(255,255,255,.17) 1px,transparent 1.4px);
+  background-size:13px 13px;
+  box-shadow:none;
+  -webkit-mask:
+    radial-gradient(circle 13px at 0 calc(100% - 62px),#0000 97%,#000) left/51% 100% no-repeat,
+    radial-gradient(circle 13px at 100% calc(100% - 62px),#0000 97%,#000) right/51% 100% no-repeat;
+          mask:
+    radial-gradient(circle 13px at 0 calc(100% - 62px),#0000 97%,#000) left/51% 100% no-repeat,
+    radial-gradient(circle 13px at 100% calc(100% - 62px),#0000 97%,#000) right/51% 100% no-repeat;
+}
+body.merchant-page .money-card.featured:hover{transform:none;box-shadow:none}
+body.merchant-page .money-card.featured>span{color:#d0d0d0;font-size:14px}
+body.merchant-page .money-card.featured>strong{
+  margin:auto 0 20px;color:#fff;font-size:clamp(46px,6vw,92px);line-height:.88;letter-spacing:-.05em;
+}
+body.merchant-page .money-card.featured>small{
+  margin:0 -28px;height:62px;padding:0 28px;display:flex;align-items:center;
+  border-top:2px dashed rgba(255,255,255,.4);color:#d0d0d0;font-size:13px;
+}
+body.dashboard-compact.merchant-page .money-card{min-height:150px;padding-top:16px;padding-bottom:16px}
+body.dashboard-compact.merchant-page .money-card.featured{min-height:190px;padding-top:18px;padding-bottom:0}
+
+/* ---------- Panels ---------- */
+body.merchant-page .panel,
+body.merchant-page .capability-panel,
+body.merchant-page .link-analytics-panel{
+  border:1px solid #000;border-radius:var(--r-card);background:#fff;box-shadow:none;
+}
+body.merchant-page .panel:hover{transform:none;box-shadow:none;border-color:#000}
+body.merchant-page .panel-heading{margin-bottom:20px}
+body.merchant-page .panel-heading h3{font-weight:700;font-size:28px;letter-spacing:-.035em;margin:10px 0 0;line-height:1}
+body.merchant-page .panel-heading>span:last-child{font-weight:800;font-size:26px;letter-spacing:-.03em}
+body.merchant-page .chart-panel{background-image:radial-gradient(rgba(0,0,0,.09) 1px,transparent 1.3px);background-size:16px 16px;background-color:#fff}
+
+/* Chart */
+body.merchant-page .chart-line{stroke:#000;stroke-width:2.75;vector-effect:non-scaling-stroke}
+body.merchant-page .chart-grid-line{stroke:#000;stroke-opacity:.18;stroke-dasharray:2 6;vector-effect:non-scaling-stroke}
+body.merchant-page .chart-point{fill:#000;stroke:#fff;stroke-width:2}
+body.merchant-page .chart-axis-label{fill:#555;font-size:11px;font-weight:600;font-family:var(--f-body)}
+body.merchant-page .chart-empty{color:#555}
+body.merchant-page .chart-empty strong{font-size:20px;color:#000;font-weight:700}
+body.merchant-page .chart-empty-art{color:#000}
+
+/* Recent payments */
+body.merchant-page .payment-row{padding:12px 6px;border-bottom:1px dashed #cfcfcf}
+body.merchant-page .payment-row:hover{background:#f4f4f4;transform:none;box-shadow:inset 4px 0 0 #000;padding-left:14px}
+body.merchant-page .payment-icon,
+body.merchant-page .app-symbol,
+body.merchant-page .method-icon{background:#000;color:#fff;border-radius:8px;font-family:var(--f-display);font-weight:800;font-size:14px}
+body.merchant-page .payment-main strong{font-size:13px;font-weight:700}
+body.merchant-page .payment-main small{font-size:11px;color:#666}
+body.merchant-page .payment-amount strong{font-size:13px;font-weight:700}
+body.merchant-page .status-text{font-size:11px;font-weight:700;text-transform:capitalize}
+body.merchant-page .status-text.success{color:#000}
+body.merchant-page .status-text.pending{color:#555;font-style:italic}
+body.merchant-page .status-text.danger{color:#000;text-decoration:line-through}
+body.merchant-page .status-text.neutral{color:#777}
+
+/* Health + quick actions */
+body.merchant-page .health-grid{gap:0;border:1px solid #000;border-radius:10px;overflow:hidden}
+body.merchant-page .health-grid div{background:#fff;border-radius:0;padding:18px 16px;border-right:1px solid #000}
+body.merchant-page .health-grid div:last-child{border-right:0}
+body.merchant-page .health-grid strong{font-size:44px;font-weight:800;letter-spacing:-.04em;line-height:1}
+body.merchant-page .health-grid span{font-size:12px;color:#555;margin-top:8px}
+body.merchant-page .quick-actions button{
+  min-height:56px;padding:12px 40px 12px 14px;border:1px solid #000;border-radius:10px;background:#fff;color:#000;
+  font:700 13px var(--f-body);transition:background .15s,color .15s,transform .15s,box-shadow .15s;
+}
+body.merchant-page .quick-actions button::after{opacity:1;font-size:15px}
+body.merchant-page .quick-actions button:hover{background:#000;color:#fff;transform:translate(-2px,-2px);box-shadow:4px 4px 0 #a8a8a8;border-color:#000}
+
+/* ---------- Status badges (monochrome semantics) ---------- */
+body.merchant-page .status-badge,
+body.merchant-page .app-card .status-badge,
+body.merchant-page .status-pill,
+body.merchant-page .status{
+  display:inline-flex;align-items:center;width:max-content;min-height:24px;padding:4px 10px;
+  border:1px solid #000;border-radius:999px;font:700 11px/1 var(--f-body);letter-spacing:0;text-transform:capitalize;
+  background:#fff;color:#000;
+}
+body.merchant-page .status-badge::before,
+body.merchant-page .status::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:6px;flex:0 0 6px}
+body.merchant-page .status-badge.success,
+body.merchant-page .app-card .status-badge.success,
+body.merchant-page .status.completed,body.merchant-page .status.active,body.merchant-page .status.enabled{background:#000;color:#fff}
+body.merchant-page .status-badge.pending,
+body.merchant-page .app-card .status-badge.pending,
+body.merchant-page .status.pending{background:#fff;color:#000;border-style:dashed}
+body.merchant-page .status-badge.pending::before{background:transparent;box-shadow:inset 0 0 0 1.5px currentColor}
+body.merchant-page .status-badge.danger,
+body.merchant-page .app-card .status-badge.danger,
+body.merchant-page .status.rejected,body.merchant-page .status.disabled{
+  background:repeating-linear-gradient(135deg,#fff 0 3px,#dedede 3px 6px);color:#000;
+}
+body.merchant-page .status-badge.danger::before{content:"×";width:auto;height:auto;background:none;font-size:13px;line-height:.8;margin-right:5px;box-shadow:none}
+body.merchant-page .status-badge.neutral,
+body.merchant-page .app-card .status-badge.neutral{background:#efefef;color:#444;border-color:#c9c9c9}
+body.merchant-page .status-pill{font-size:11px}
+
+/* ---------- Tables ---------- */
+body.merchant-page .table-card{border:1px solid #000;border-radius:var(--r-card);background:#fff;box-shadow:none;overflow:auto}
+body.merchant-page .table-head{background:#000;color:#fff;padding:14px 20px;font:600 12px var(--f-body);letter-spacing:0;text-transform:none}
+body.merchant-page .table-row{padding:16px 20px;border-top:1px solid #e2e2e2;font-size:13px;transition:background .12s,color .12s}
+body.merchant-page .table-row:hover{background:#000;color:#fff;transform:none}
+body.merchant-page .table-row span:first-child strong{font-weight:700}
+body.merchant-page .table-row span:first-child small{color:#777;font-size:11px}
+body.merchant-page .table-row:hover span:first-child small{color:#bdbdbd}
+body.merchant-page .table-row:hover .status-badge{border-color:#fff}
+body.merchant-page .table-row:hover .status-badge.success{background:#fff;color:#000}
+body.merchant-page .table-row:hover .status-badge.pending{background:transparent;color:#fff}
+body.merchant-page .table-row:hover .status-badge.danger{background:repeating-linear-gradient(135deg,#000 0 3px,#3a3a3a 3px 6px);color:#fff}
+body.merchant-page .table-row:hover .status-badge.neutral{background:#333;color:#ddd}
+body.merchant-page .table-empty .empty-state{border:0;background:transparent}
+
+/* ---------- Inputs & forms ---------- */
+body.merchant-page .toolbar input,
+body.merchant-page .toolbar select,
+body.merchant-page .merchant-form input,
+body.merchant-page .merchant-form select,
+body.merchant-page .merchant-form textarea,
+body.merchant-page .dialog-input-label textarea,
+body.merchant-page .analytics-custom-range input{
+  min-height:46px;border:1px solid #000;border-radius:var(--r-ctl);background:#fff;color:#000;font:500 14px var(--f-body);
+}
+body.merchant-page .merchant-form textarea{min-height:96px}
+body.merchant-page ::placeholder{color:#8c8c8c}
+body.merchant-page .toolbar input:focus,
+body.merchant-page .toolbar select:focus,
+body.merchant-page .merchant-form input:focus,
+body.merchant-page .merchant-form select:focus,
+body.merchant-page .merchant-form textarea:focus,
+body.merchant-page .dialog-input-label textarea:focus{
+  outline:none;border-color:#000;box-shadow:4px 4px 0 #000;transform:translate(-1px,-1px);background:#fff;
+}
+body.merchant-page .merchant-form{border:1px solid #000;border-radius:var(--r-card);background:#fff;box-shadow:none}
+body.merchant-page .merchant-form.workspace-form-active{box-shadow:8px 8px 0 #000}
+body.merchant-page .merchant-form label,
+body.merchant-page .dialog-input-label{font:600 13px var(--f-body);color:#000}
+body.merchant-page .merchant-form label small{color:#777;font-weight:500}
+body.merchant-page .form-section-label{font:700 13px var(--f-body);color:#000;margin-bottom:6px}
+body.merchant-page .checkbox-line{border:1px solid #000;border-radius:var(--r-ctl);background:#fff;font-weight:600!important}
+body.merchant-page .checkbox-line input{accent-color:#000}
+body.merchant-page .donation-settings{border:1px dashed #000;border-radius:10px;padding:16px;background:#fafafa}
+body.merchant-page .workspace-form-head h3,
+body.merchant-page .workspace-content-head h3{font-size:30px;font-weight:700;letter-spacing:-.035em;line-height:1}
+body.merchant-page .workspace-form-head p,
+body.merchant-page .workspace-content-head p{color:#555;font-size:13px}
+
+/* ---------- Item cards: hard-shadow lift ---------- */
+body.merchant-page :is(.customer-card,.link-card,.product-card,.method-card,.app-card,.donation-card,.subscription-card,.dev-card,.settings-card,.resource-card,.campaign-card){
+  border:1px solid #000;border-radius:var(--r-card);background:#fff;box-shadow:none;
+  transition:transform .16s ease,box-shadow .16s ease;
+}
+body.merchant-page :is(.customer-card,.link-card,.product-card,.method-card,.app-card,.donation-card,.subscription-card,.dev-card,.settings-card,.resource-card,.campaign-card):hover{
+  transform:translate(-3px,-3px);box-shadow:6px 6px 0 #000;border-color:#000;
+}
+body.merchant-page :is(.link-card,.product-card,.donation-card,.subscription-card,.dev-card,.customer-card,.app-card) h3{
+  font-family:var(--f-display);font-variation-settings:"wdth" 82;font-weight:700;font-size:21px;letter-spacing:-.03em;line-height:1.05;color:#000;
+}
+body.merchant-page :is(.link-card,.product-card,.donation-card,.subscription-card,.dev-card,.customer-card,.app-card) p{color:#555;font-size:13px}
+body.merchant-page .customer-avatar,
+body.merchant-page .link-symbol,
+body.merchant-page .dev-card>span:first-child,
+body.merchant-page .app-card .app-symbol{background:#000;color:#fff;border-radius:9px;box-shadow:3px 3px 0 #b5b5b5}
+body.merchant-page .capability-icon{background:#000;color:#fff;border-radius:9px}
+body.merchant-page .product-type,
+body.merchant-page .customer-content>div span{color:#555;font:600 12px var(--f-body);text-transform:capitalize}
+body.merchant-page .link-url{border:1px dashed #000;border-radius:8px;background:#f6f6f6;color:#000;font-size:12px;font-weight:500;padding:10px 12px}
+body.merchant-page .link-stats{color:#444;font-size:12px;font-weight:600}
+body.merchant-page .app-card .app-card-url{border:1px dashed #000;background:#f6f6f6;border-radius:8px;color:#000}
+body.merchant-page .app-card .app-meta span{background:#fff;border:1px solid #000;border-radius:999px;color:#000;font-size:11px;font-weight:600}
+body.merchant-page .app-card .app-meta span.app-webhook-state.is-configured{background:#000;color:#fff;border-color:#000}
+body.merchant-page .app-card .app-meta-secondary{border-top:1px dashed #bdbdbd}
+body.merchant-page .donation-card strong,
+body.merchant-page .subscription-card strong{font-size:30px;font-weight:800;letter-spacing:-.04em}
+
+/* Progress: striped bar */
+body.merchant-page .progress-track,
+body.merchant-page .progress{height:12px;background:#fff;border:1px solid #000;border-radius:99px;overflow:hidden}
+body.merchant-page .progress-track i,
+body.merchant-page .progress i{background:repeating-linear-gradient(135deg,#000 0 6px,#3b3b3b 6px 12px);border-radius:0}
+body.merchant-page .bar-row>i{height:10px;background:#fff;border:1px solid #000}
+body.merchant-page .bar-row>i b{background:repeating-linear-gradient(135deg,#000 0 6px,#3b3b3b 6px 12px);border-radius:0}
+body.merchant-page .bar-row>div span{font-size:13px;color:#333}
+body.merchant-page .bar-row>div strong{font-size:13px}
+
+/* Small actions */
+body.merchant-page .small-action,
+body.merchant-page .app-card .app-card-actions .small-action{
+  min-height:36px;padding:0 12px;border:1px solid #000;border-radius:var(--r-ctl);background:#fff;color:#000;
+  font:600 12px/1.2 var(--f-body);transition:background .12s,color .12s,transform .12s,box-shadow .12s;
+}
+body.merchant-page .small-action:hover,
+body.merchant-page .app-card .app-card-actions .small-action:hover{background:#000;color:#fff;border-color:#000;transform:translate(-1px,-1px);box-shadow:3px 3px 0 #a8a8a8}
+body.merchant-page .small-action:active{transform:none;box-shadow:none}
+body.merchant-page .small-action.danger,
+body.merchant-page .app-card .app-card-actions .small-action.danger{border-style:dashed;color:#000;background:#fff}
+body.merchant-page .small-action.danger:hover,
+body.merchant-page .app-card .app-card-actions .small-action.danger:hover{background:#000;color:#fff;border-style:solid}
+body.merchant-page .app-card .app-card-actions .app-status-action:not(.danger){color:#000;border-color:#000;background:#fff}
+body.merchant-page .app-card .app-card-actions .app-status-action:not(.danger):hover{background:#000;color:#fff;border-color:#000}
+
+/* ---------- Tabs ---------- */
+body.merchant-page .workspace-tabs{background:#fff;border:1px solid #000;border-radius:10px;padding:3px;gap:2px;box-shadow:none;width:max-content;max-width:100%}
+body.merchant-page .workspace-tab{min-height:38px;padding:0 16px;border-radius:7px;color:#000;font:600 13px var(--f-body)}
+body.merchant-page .workspace-tab:hover:not(.active){background:#efefef;transform:none}
+body.merchant-page .workspace-tab.active{background:#000;color:#fff;box-shadow:none}
+
+/* ---------- Readiness + state cards ---------- */
+body.merchant-page .workspace-readiness{border:1.5px dashed #000;border-radius:var(--r-card);background:#fff}
+body.merchant-page .readiness-copy>strong{font-family:var(--f-display);font-variation-settings:"wdth" 82;font-size:22px;letter-spacing:-.03em}
+body.merchant-page .readiness-copy>span:last-child{color:#555}
+body.merchant-page .readiness-chip{border:1px solid #000;border-radius:var(--r-ctl);background:#fff;transition:background .15s,color .15s,transform .15s,box-shadow .15s}
+body.merchant-page .readiness-chip:hover{background:#000;color:#fff;transform:translate(-2px,-2px);box-shadow:3px 3px 0 #a8a8a8}
+body.merchant-page .readiness-chip:hover span{color:#ccc}
+body.merchant-page .state-card{border:1px solid #000;border-radius:var(--r-card);background:#fff}
+body.merchant-page .state-card.success{background:#000;color:#fff;border-color:#000}
+body.merchant-page .state-card.success p{color:#cfcfcf}
+body.merchant-page .state-card.success .state-icon{background:#fff;color:#000}
+body.merchant-page .state-card.warning{background:#fff;border-style:dashed;border-width:1.5px}
+body.merchant-page .state-card.neutral{background:#f5f5f5;border-color:#bdbdbd}
+body.merchant-page .state-icon{background:#000;color:#fff}
+
+/* ---------- Balances hero ---------- */
+body.merchant-page .balance-hero{
+  padding:34px;border-radius:var(--r-card);color:#fff;
+  background-color:#000;background-image:radial-gradient(rgba(255,255,255,.17) 1px,transparent 1.4px);background-size:13px 13px;
+}
+body.merchant-page .balance-hero span,body.merchant-page .balance-hero small{color:#d0d0d0;font-size:14px}
+body.merchant-page .balance-hero>strong{font-size:clamp(48px,8vw,112px);font-weight:800;letter-spacing:-.05em;line-height:.9;margin:18px 0}
+
+/* ---------- Analytics ---------- */
+body.merchant-page .analytics-grid{gap:14px}
+body.merchant-page .analytics-grid .panel strong{font-size:44px;font-weight:800;letter-spacing:-.045em;line-height:1;margin:18px 0 8px}
+body.merchant-page .analytics-grid .panel small{font-size:12px;color:#555}
+body.merchant-page .link-analytics-head h3{font-family:var(--f-display);font-variation-settings:"wdth" 80;font-size:30px;font-weight:700;letter-spacing:-.035em}
+body.merchant-page .link-analytics-head p{font-size:13px;color:#555}
+body.merchant-page .analytics-range-presets{background:#fff;border:1px solid #000;border-radius:10px}
+body.merchant-page .analytics-range{font:700 12px var(--f-body);color:#000;padding:8px 12px;border-radius:7px}
+body.merchant-page .analytics-range.active{background:#000;color:#fff;box-shadow:none}
+body.merchant-page .link-analytics-metrics article{border:1px solid #000;border-radius:10px;background:#fff}
+body.merchant-page .link-analytics-metrics strong{font-size:34px;font-weight:800;letter-spacing:-.04em}
+body.merchant-page .link-analytics-metrics span{font-size:12px;color:#444;font-weight:600}
+body.merchant-page .link-analytics-metrics small{font-size:11px}
+body.merchant-page .link-analytics-table{border:1px solid #000;border-radius:10px}
+body.merchant-page .link-analytics-table-head{background:#000;color:#fff;font:600 12px var(--f-body);letter-spacing:0;text-transform:none}
+body.merchant-page .link-analytics-row{font-size:13px;border-top:1px solid #e2e2e2}
+body.merchant-page .link-analytics-row:hover{background:#f4f4f4}
+
+/* ---------- Developers / guide ---------- */
+body.merchant-page .guide-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+body.merchant-page .guide-steps article{border:1px solid #000;border-radius:var(--r-card);background:#fff;padding:22px;transition:background .18s,color .18s}
+body.merchant-page .guide-steps article:hover{background:#000;color:#fff}
+body.merchant-page .guide-steps article:hover p{color:#cfcfcf}
+body.merchant-page .guide-steps article b{
+  display:block;font-family:var(--f-display);font-variation-settings:"wdth" 78;font-size:64px;font-weight:800;line-height:.9;
+  color:transparent;-webkit-text-stroke:1.5px currentColor;margin-bottom:14px;
+}
+body.merchant-page .guide-steps article:hover b{-webkit-text-stroke-color:#fff}
+body.merchant-page .guide-steps h3{font-size:22px;font-weight:700;letter-spacing:-.03em;margin:0 0 6px}
+body.merchant-page .guide-steps p{font-size:13px;color:#555;margin:0}
+body.merchant-page .code-guide{border:1px solid #000;border-radius:var(--r-card);background:#000;box-shadow:8px 8px 0 #b5b5b5;margin-top:26px}
+body.merchant-page .code-guide .guide-header{padding:16px 20px;font:700 14px var(--f-body);border-bottom:1px dashed #555}
+body.merchant-page .code-guide>p{padding:16px 20px 0;color:#d4d4d4;font-size:13px;line-height:1.7}
+body.merchant-page .code-guide code{font-size:13px}
+body.merchant-page .code-guide p code{background:#1d1d1d;border:1px solid #444;border-radius:5px;padding:1px 6px}
+
+/* ---------- Wizard ---------- */
+body.merchant-page .wizard-progress button b{border:1px solid #000;background:#fff;color:#000;font-family:var(--f-display)}
+body.merchant-page .wizard-progress button.active b,
+body.merchant-page .wizard-progress button.complete b{background:#000;color:#fff}
+body.merchant-page .wizard-review>div{border-bottom:1px dashed #bdbdbd}
+
+/* ---------- Drawers ---------- */
+body.merchant-page .notification-drawer,
+body.merchant-page .payment-drawer{border-left:1px solid #000;box-shadow:-14px 0 0 rgba(0,0,0,.08);background:#fff}
+body.merchant-page .drawer-head{background:#000;color:#fff;border-bottom:0;padding:20px 22px}
+body.merchant-page .drawer-head strong{font-family:var(--f-display);font-variation-settings:"wdth" 82;font-size:22px;letter-spacing:-.02em}
+body.merchant-page .drawer-head button{color:#fff;width:34px;height:34px;border:1px solid #fff;border-radius:50%;font-size:20px;line-height:1}
+body.merchant-page .drawer-head button:hover{background:#fff;color:#000}
+body.merchant-page .drawer-payment-amount{font-size:64px;font-weight:800;letter-spacing:-.05em;line-height:.95}
+body.merchant-page .detail-grid div{border:1px dashed #b5b5b5;border-radius:10px;background:#fff}
+body.merchant-page .detail-grid span{font:600 11px var(--f-body);text-transform:lowercase;color:#666}
+body.merchant-page .detail-grid strong{font-size:13px;font-weight:700}
+body.merchant-page .drawer-note{border:1px solid #000;border-radius:10px;background:#fff}
+body.merchant-page .drawer-empty>span{display:inline-grid;place-items:center;width:64px;height:64px;border:1.5px dashed #000;border-radius:50%;font-size:26px}
+body.merchant-page .drawer-empty h3{font-family:var(--f-display);font-variation-settings:"wdth" 80;font-size:28px;letter-spacing:-.03em}
+
+/* ---------- Modals ---------- */
+body.merchant-page .merchant-modal .merchant-modal-backdrop{background:rgba(0,0,0,.62)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+body.merchant-page .merchant-modal .merchant-modal-card{
+  border:2px solid #000!important;border-radius:14px!important;background:#fff!important;box-shadow:8px 8px 0 #fff!important;
+}
+body.merchant-page .merchant-modal-icon,
+body.merchant-page .merchant-dialog-card .merchant-modal-icon.danger{background:#000!important;color:#fff!important;border-radius:10px;font-family:var(--f-display);font-weight:800}
+body.merchant-page .merchant-modal-card h3{font-size:34px;font-weight:800;letter-spacing:-.04em;line-height:.98}
+body.merchant-page .merchant-modal-card p{font-size:14px;color:#444;line-height:1.6}
+body.merchant-page .merchant-dialog-card .merchant-form{border:0;padding:0;background:transparent;box-shadow:none}
+body.merchant-page .merchant-dialog-card .merchant-modal-actions{border-top:1px dashed #b5b5b5}
+body.merchant-page .merchant-dialog-card .merchant-modal-actions .danger-action{background:#000;color:#fff}
+body.merchant-page .credential-list>div{border-bottom:1px dashed #bdbdbd}
+body.merchant-page .credential-list code,
+body.merchant-page .webhook-secret-card #webhookSecretValue{background:#f4f4f4;border:1px dashed #000;border-radius:8px;color:#000}
+body.merchant-page .webhook-secret-card .webhook-secret-warning{background:#fff;border:1px solid #000;color:#000;border-radius:10px}
+
+/* ---------- Toasts ---------- */
+body.merchant-page .merchant-toast-stack{background:transparent!important;padding:0!important;box-shadow:none!important;border:0!important;border-radius:0!important}
+body.merchant-page .merchant-toast{border:1px solid #000;border-radius:10px;background:#000;color:#fff;font:600 13px var(--f-body);box-shadow:5px 5px 0 #b5b5b5}
+body.merchant-page .merchant-toast.error{background:#fff;color:#000;border:2px solid #000;box-shadow:5px 5px 0 #000}
+body.merchant-page .merchant-toast.error button{background:#000;color:#fff}
+body.merchant-page .merchant-toast.error .merchant-toast-mark{background:#000;color:#fff}
+body.merchant-page .merchant-toast.success{background:#000;border-color:#000}
+body.merchant-page .merchant-toast-mark{background:#fff;color:#000}
+
+/* ---------- Empty states ---------- */
+body.merchant-page .empty-state.premium-empty,
+body.merchant-page .empty-card{border:1.5px dashed #000;border-radius:var(--r-card);background:#fff;padding:44px 24px}
+body.merchant-page .empty-state strong{font-size:24px;font-weight:700;letter-spacing:-.03em;color:#000;display:block;margin-top:8px}
+body.merchant-page .empty-state p{color:#555;font-size:13px;margin:6px auto 0}
+body.merchant-page .empty-illustration{color:#000}
+
+/* ---------- Skeleton ---------- */
+body.merchant-page .skeleton-card,body.merchant-page .skeleton-panel{border:1px solid #000;border-radius:var(--r-card)}
+
+/* ---------- Settings ---------- */
+body.merchant-page .profile-lines div{border-bottom:1px dashed #bdbdbd}
+body.merchant-page .profile-lines span{font-size:12px;color:#666}
+body.merchant-page .profile-lines strong{font-size:13px}
+body.merchant-page .toggle-row{font-size:13px}
+
+/* ---------- Desktop-only layout ---------- */
+@media(min-width:761px){
+  body.merchant-page .merchant-sidebar{top:68px;height:calc(100vh - 68px)}
+}
+@media(min-width:1051px){
+  body.merchant-page .merchant-layout{grid-template-columns:264px minmax(0,1fr);min-height:calc(100vh - 68px)}
+  body.merchant-page .merchant-main{padding:48px 56px 120px}
+  body.merchant-page .merchant-section{max-width:1240px}
+  body.merchant-page .money-grid{grid-template-columns:1.9fr 1fr 1fr 1fr;gap:14px}
+}
+
+/* ---------- Mobile ---------- */
+@media(max-width:760px){
+  body.merchant-page .merchant-header{border-bottom:1px solid #000!important}
+  body.merchant-page .merchant-header .brand{font-size:20px!important}
+  body.merchant-page .merchant-sidebar{border-right:1px solid #000;background:#fff!important}
+  body.merchant-page .merchant-mobile-bar>#mobileMoreNav{border:1px solid #000!important;box-shadow:4px 4px 0 #a8a8a8!important;border-radius:14px!important}
+  body.merchant-page .dashboard-welcome{padding-bottom:18px}
+  body.merchant-page .section-title-row h2,
+  body.merchant-page #section-applications .section-title-row h2{font-size:clamp(38px,12vw,54px)}
+  body.merchant-page .money-card{min-height:150px;padding:18px}
+  body.merchant-page .money-card.featured{min-height:210px;padding:20px 22px 0}
+  body.merchant-page .money-card.featured>strong{font-size:clamp(44px,15vw,68px)}
+  body.merchant-page .money-card.featured>small{margin:0 -22px;padding:0 22px}
+  body.merchant-page .health-grid{grid-template-columns:repeat(3,1fr)}
+  body.merchant-page .health-grid strong{font-size:32px}
+  body.merchant-page .guide-steps article b{font-size:52px}
+  body.merchant-page .workspace-tabs{width:100%}
+  body.merchant-page .merchant-modal .merchant-modal-card{box-shadow:none!important}
+}
+@media(max-width:420px){
+  body.merchant-page .health-grid{grid-template-columns:1fr}
+  body.merchant-page .health-grid div{border-right:0;border-bottom:1px solid #000}
+  body.merchant-page .health-grid div:last-child{border-bottom:0}
+}
+
+/* ---------- Touch + motion ---------- */
+@media(hover:none){
+  body.merchant-page :is(.customer-card,.link-card,.product-card,.method-card,.app-card,.donation-card,.subscription-card,.dev-card,.settings-card,.resource-card,.campaign-card):hover,
+  body.merchant-page .money-card:not(.featured):hover,
+  body.merchant-page .button:hover:not(:disabled){transform:none;box-shadow:none}
+}
+@media(prefers-reduced-motion:reduce){
+  body.merchant-page :is(.customer-card,.link-card,.product-card,.method-card,.app-card,.donation-card,.subscription-card,.dev-card,.settings-card,.resource-card,.campaign-card):hover,
+  body.merchant-page .money-card:hover,
+  body.merchant-page .button:hover,
+  body.merchant-page .small-action:hover,
+  body.merchant-page .quick-actions button:hover,
+  body.merchant-page .brand:hover .brand-mark{transform:none!important}
+}
