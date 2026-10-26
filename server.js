@@ -5675,6 +5675,37 @@ app.post(
    V1 CREATE PAYMENT
 ============================================================ */
 
+const BANTABA_FIXED_PRODUCT_SERVICE_ID = "c552274f-ae72-4b83-a76f-21111a21da54";
+const BANTABA_FIXED_PRODUCTS = [
+  { product_code: "bantaba-topup-pack-serekunda", name: "BANTABA Poor Child Pack", amount: 100, description: "BANTABA game Dalasi top-up — 15,000 Dalasi treasury credit." },
+  { product_code: "bantaba-topup-pack-kombo", name: "BANTABA I'm Managing Pack", amount: 300, description: "BANTABA game Dalasi top-up — 48,000 Dalasi treasury credit." },
+  { product_code: "bantaba-topup-pack-serrekunda-hustler", name: "BANTABA Serrekunda Hustler Pack", amount: 500, description: "BANTABA game Dalasi top-up — 85,000 Dalasi treasury credit." },
+  { product_code: "bantaba-topup-pack-banjul", name: "BANTABA Rich Child Pack", amount: 1000, description: "BANTABA game Dalasi top-up — 180,000 Dalasi treasury credit." },
+  { product_code: "bantaba-topup-pack-kombo-boss", name: "BANTABA Kombo Boss Pack", amount: 2000, description: "BANTABA game Dalasi top-up — 380,000 Dalasi treasury credit." },
+  { product_code: "bantaba-topup-pack-banjul-high-roller", name: "BANTABA Banjul High Roller Pack", amount: 3000, description: "BANTABA game Dalasi top-up — 585,000 Dalasi treasury credit." },
+  { product_code: "bantaba-topup-pack-odogwu", name: "BANTABA Odogwu Pack", amount: 5000, description: "BANTABA game Dalasi top-up — 1,000,000 Dalasi treasury credit." },
+  { product_code: "bantaba-supporter-coffee", name: "BANTABA Supporter Coffee", amount: 20, description: "One-time D20 contribution to the BANTABA developers. Includes a Supporter Star for 24 hours after verified payment." }
+];
+
+async function ensureBantabaFixedProducts(serviceId) {
+  if (serviceId !== BANTABA_FIXED_PRODUCT_SERVICE_ID) return;
+  const products = BANTABA_FIXED_PRODUCTS.map((item) => ({
+    service_id: serviceId,
+    product_code: item.product_code,
+    name: item.name,
+    description: item.description,
+    payment_type: "pay_now",
+    amount: item.amount,
+    currency: "GMD",
+    allow_custom_amount: false,
+    status: "active"
+  }));
+  const { error } = await supabase
+    .from("products")
+    .upsert(products, { onConflict: "service_id,product_code", ignoreDuplicates: true });
+  if (error) throw error;
+}
+
 async function handleV1CreatePayment(
     req,
     res
@@ -5735,6 +5766,8 @@ async function handleV1CreatePayment(
                 });
             }
 
+
+            await ensureBantabaFixedProducts(req.service.id);
 
             const {
                 data: product,
