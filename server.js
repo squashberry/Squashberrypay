@@ -984,6 +984,7 @@ async function enqueueWebhookEvent(eventType,payment,metadata={}){
       data:{
         payment_id:payment.id,
         payment_reference:payment.payment_reference,
+        customer_reference:payment.customer_reference||null,
         processing_page_id:payment.processing_page_id||null,
         amount:payment.amount,
         currency:payment.currency,
