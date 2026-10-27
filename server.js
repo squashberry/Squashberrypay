@@ -5586,15 +5586,12 @@ app.post(
             } = req.body;
 
 
-            if (
-                !external_user_id ||
-                !email
-            ) {
-
-                return res.status(400).json({
-                    error:
-                        "external_user_id and email are required."
-                });
+            if (!external_user_id) {
+                return res.status(400).json({ error: "external_user_id is required." });
+            }
+            const normalizedEmail = normalizeEmail(email);
+            if (email && !isValidEmail(normalizedEmail)) {
+                return res.status(400).json({ error: "Enter a valid email address." });
             }
 
 
@@ -5615,10 +5612,7 @@ app.post(
                             external_user_id
                         ),
 
-                    email:
-                        normalizeEmail(
-                            email
-                        )
+                    ...(normalizedEmail ? { email: normalizedEmail } : {})
 
                 }, {
 
@@ -6103,15 +6097,11 @@ app.post(
             ).trim();
             const email=normalizeEmail(req.body?.email);
 
-            if(
-                !externalUserId||
-                !email||
-                !isValidEmail(email)
-            ){
-                return res.status(400).json({
-                    error:
-                        "external_user_id and a valid email are required."
-                });
+            if (!externalUserId) {
+                return res.status(400).json({ error: "external_user_id is required." });
+            }
+            if (req.body?.email && !isValidEmail(email)) {
+                return res.status(400).json({ error: "Enter a valid email address." });
             }
 
             const {error:userError}=await supabase
@@ -6120,7 +6110,7 @@ app.post(
                     {
                         service_id:req.service.id,
                         external_user_id:externalUserId,
-                        email
+                        ...(email ? { email } : {})
                     },
                     {
                         onConflict:
