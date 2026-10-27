@@ -99,7 +99,7 @@ create table if not exists public.service_users (
 
     external_user_id text not null,
 
-    email text not null,
+    email text,
 
     created_at timestamptz not null default now(),
 
@@ -108,6 +108,10 @@ create table if not exists public.service_users (
         external_user_id
     )
 );
+
+-- Older installations created email as NOT NULL; keep this idempotent migration
+-- so external customers can be registered without an email address.
+alter table public.service_users alter column email drop not null;
 
 
 -- ============================================================
