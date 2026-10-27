@@ -1,0 +1,197 @@
+/* ==========================================================================
+   SQUASHBERRYPAY — GLOBAL DESIGN SYSTEM  (global.css)
+   Monochrome, precise, calm. One system for every page: tokens, type,
+   components, status language, motion + view transitions.
+   Selectors are boosted (body:not(#g)) so this wins over legacy stylesheets.
+   ========================================================================== */
+:root{
+  --bg:#f6f6f6; --card:#fff; --ink:#0a0a0a; --ink2:#3d3d3d; --mut:#6e6e6e; --fnt:#a1a1a1;
+  --ln:#e8e8e8; --ln2:#d9d9d9; --soft:#f3f3f3; --r:16px; --r2:10px;
+  --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.34,1.4,.64,1);
+  --sh1:0 1px 2px rgba(0,0,0,.05);
+  --sh2:0 1px 2px rgba(0,0,0,.04),0 12px 28px -14px rgba(0,0,0,.14);
+  --sh3:0 2px 4px rgba(0,0,0,.05),0 28px 56px -24px rgba(0,0,0,.35);
+  --f:Geist,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@property --p{syntax:"<number>";inherits:false;initial-value:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body:not(#g){font-family:var(--f);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body:not(#g) ::selection{background:#0a0a0a;color:#fff}
+body:not(#g) *{scrollbar-width:thin;scrollbar-color:#cfcfcf transparent}
+body:not(#g) :focus-visible{outline:2px solid #0a0a0a;outline-offset:2px;border-radius:8px}
+body:not(#g) :is(button,input,select,textarea){font-family:var(--f)}
+body:not(#g) :is(.fig,strong,dd,.kpi-label){font-variant-numeric:tabular-nums}
+
+/* ---------- Buttons ---------- */
+body:not(#g) .button{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;min-height:42px;padding:0 18px;border:1px solid var(--ln2);border-radius:var(--r2);background:#fff;color:var(--ink);font:500 14px/1 var(--f);letter-spacing:-.005em;box-shadow:var(--sh1);cursor:pointer;text-decoration:none;white-space:nowrap;transition:transform .2s var(--ease),box-shadow .25s var(--ease),background .2s,border-color .2s,color .2s}
+body:not(#g) .button.small{height:36px;min-height:36px;padding:0 14px;font-size:13px}
+body:not(#g) .button:hover:not(:disabled){transform:translateY(-1px);border-color:#bdbdbd;background:#fafafa;box-shadow:var(--sh2)}
+body:not(#g) .button:active:not(:disabled){transform:scale(.98);box-shadow:var(--sh1)}
+body:not(#g) .button:disabled{opacity:.5;cursor:wait}
+body:not(#g) .button.primary{background:linear-gradient(180deg,#262626,#0a0a0a);border-color:#0a0a0a;color:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.14)}
+body:not(#g) .button.primary:hover:not(:disabled){background:linear-gradient(180deg,#333,#111);border-color:#0a0a0a;box-shadow:0 10px 24px -8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.18)}
+body:not(#g) .button .ic{width:16px;height:16px}
+body:not(#g) .text-button{border:0;background:none;color:var(--ink2);font:500 14px var(--f);cursor:pointer}
+body:not(#g) .text-link{border:0;background:none;padding:2px 0;color:var(--ink);font:500 13px var(--f);cursor:pointer;background-image:linear-gradient(currentColor,currentColor);background-size:100% 1px;background-position:0 100%;background-repeat:no-repeat;transition:background-size .3s var(--ease),opacity .2s}
+body:not(#g) .text-link:hover{background-size:0 1px}
+body:not(#g) .small-action{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 12px;border:1px solid var(--ln2);border-radius:9px;background:#fff;color:var(--ink);font:500 13px/1.2 var(--f);text-decoration:none;cursor:pointer;transition:transform .2s var(--ease),background .2s,border-color .2s,box-shadow .2s}
+body:not(#g) .small-action:hover{background:#0a0a0a;border-color:#0a0a0a;color:#fff;transform:translateY(-1px);box-shadow:0 8px 18px -8px rgba(0,0,0,.45)}
+body:not(#g) .small-action:active{transform:scale(.97)}
+body:not(#g) .small-action.danger,body:not(#g) .app-card .app-card-actions .small-action.danger{color:var(--ink);border-color:var(--ln2);background:#fff}
+body:not(#g) .small-action.danger:hover{background:#0a0a0a;color:#fff}
+body:not(#g) .app-card .app-card-actions .small-action,body:not(#g) .app-card .app-card-actions .app-status-action:not(.danger){border:1px solid var(--ln2);border-radius:9px;background:#fff;color:var(--ink);font:500 13px/1.2 var(--f)}
+body:not(#g) .app-card .app-card-actions .small-action:hover{background:#0a0a0a;color:#fff;border-color:#0a0a0a}
+
+/* ---------- Inputs ---------- */
+body:not(#g) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea){min-height:44px;border:1px solid var(--ln2);border-radius:var(--r2);background:#fff;color:var(--ink);font:400 14px var(--f);padding:0 14px;outline:0;transition:border-color .2s,box-shadow .25s var(--ease)}
+body:not(#g) textarea{padding:12px 14px;min-height:96px}
+body:not(#g) :is(input,select,textarea):hover{border-color:#bdbdbd}
+body:not(#g) :is(input:not([type=checkbox]):not([type=radio]),select,textarea):focus{border-color:#0a0a0a;box-shadow:0 0 0 4px rgba(10,10,10,.07)}
+body:not(#g) ::placeholder{color:var(--fnt)}
+body:not(#g) input[type=checkbox],body:not(#g) input[type=radio]{accent-color:#0a0a0a}
+body:not(#g) .merchant-form label,body:not(#g) .dialog-input-label{color:var(--ink);font:500 13px var(--f)}
+body:not(#g) .merchant-form label small{color:var(--fnt);font-weight:400}
+body:not(#g) .checkbox-line{border:1px solid var(--ln);border-radius:var(--r2);background:#fff;font-weight:500!important}
+body:not(#g) .donation-settings{border:1px solid var(--ln);border-radius:14px;background:#fafafa;padding:18px}
+body:not(#g) .form-section-label{font:600 13px var(--f);color:var(--ink)}
+
+/* ---------- Surfaces ---------- */
+body:not(#g) :is(.panel,.table-card,.merchant-form,.capability-panel,.link-analytics-panel,.state-card){border:1px solid var(--ln);border-radius:var(--r);background:#fff;box-shadow:var(--sh1)}
+body:not(#g) :is(.customer-card,.link-card,.product-card,.method-card,.app-card,.donation-card,.subscription-card,.dev-card,.settings-card,.campaign-card,.resource-card){position:relative;overflow:hidden;border:1px solid var(--ln);border-radius:var(--r);background:#fff;box-shadow:var(--sh1);transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .25s}
+body:not(#g) :is(.customer-card,.link-card,.product-card,.method-card,.app-card,.donation-card,.subscription-card,.dev-card,.settings-card,.campaign-card):hover{transform:translateY(-2px);border-color:var(--ln2);box-shadow:var(--sh2)}
+body:not(#g) :is(.link-card,.product-card,.donation-card,.subscription-card,.dev-card,.customer-card,.app-card) h3{font:600 16px/1.25 var(--f);letter-spacing:-.02em;color:var(--ink)}
+body:not(#g) :is(.link-card,.product-card,.donation-card,.subscription-card,.dev-card,.customer-card,.app-card) p{color:var(--mut);font-size:13px}
+body:not(#g) :is(.customer-avatar,.link-symbol,.app-symbol,.method-icon,.payment-icon,.business-avatar,.capability-icon){background:linear-gradient(145deg,#2c2c2c,#0a0a0a);color:#fff;border-radius:10px;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+body:not(#g) .dev-card>span:first-child{background:linear-gradient(145deg,#2c2c2c,#0a0a0a);color:#fff;border-radius:10px}
+body:not(#g) .link-url,body:not(#g) .app-card .app-card-url{border:1px solid var(--ln);border-radius:10px;background:#fafafa;color:var(--ink2);font-size:12px}
+body:not(#g) .app-card .app-meta span,body:not(#g) .app-meta span{background:#f4f4f4;border:1px solid var(--ln);border-radius:999px;color:var(--ink2);font:500 12px var(--f)}
+body:not(#g) .app-card .app-meta span.app-webhook-state.is-configured{background:#0a0a0a;color:#fff;border-color:#0a0a0a}
+body:not(#g) .eyebrow{font:600 11px/1 var(--f);letter-spacing:.09em;color:var(--mut)}
+body:not(#g) .section-title-row{margin-bottom:28px;align-items:flex-end}
+body:not(#g) .section-title-row h2,body:not(#g) #section-applications .section-title-row h2{font:600 clamp(28px,3.2vw,42px)/1.05 var(--f);letter-spacing:-.04em;margin:12px 0 8px;color:var(--ink)}
+body:not(#g) .section-title-row p,body:not(#g) #section-applications .section-title-row p{color:var(--mut);font-size:15px;line-height:1.55;max-width:640px;margin:0}
+body:not(#g) .workspace-form-head h3,body:not(#g) .workspace-content-head h3{font:600 20px var(--f);letter-spacing:-.025em}
+body:not(#g) :is(.workspace-form-head,.workspace-content-head) p{color:var(--mut);font-size:14px}
+body:not(#g) .merchant-form.workspace-form-active{box-shadow:var(--sh2)}
+
+/* ---------- Status language (monochrome) ---------- */
+body:not(#g) :is(.status-badge,.status,.status-pill){display:inline-flex;align-items:center;gap:6px;width:max-content;min-height:24px;padding:3px 10px;border:1px solid var(--ln2);border-radius:999px;background:#fff;color:var(--ink2);font:500 12px/1 var(--f);letter-spacing:0;text-transform:capitalize}
+body:not(#g) :is(.status-badge,.status)::before{content:"";width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:currentColor}
+body:not(#g) :is(.status-badge.success,.app-card .status-badge.success,.status.completed,.status.active,.status.enabled){background:#0a0a0a;border-color:#0a0a0a;color:#fff}
+body:not(#g) :is(.status-badge.pending,.app-card .status-badge.pending,.status.pending,.status.awaiting_verification){background:#fff;color:var(--ink2)}
+body:not(#g) :is(.status-badge.pending,.app-card .status-badge.pending)::before{background:transparent;box-shadow:inset 0 0 0 1.5px currentColor;animation:blip 1.8s ease-in-out infinite}
+body:not(#g) :is(.status-badge.danger,.app-card .status-badge.danger,.status.rejected,.status.disabled){background:#f1f1f1;border-color:#cfcfcf;color:var(--ink)}
+body:not(#g) :is(.status-badge.danger,.app-card .status-badge.danger)::before{content:"×";width:auto;flex:none;background:none;font-size:14px;line-height:.7}
+body:not(#g) :is(.status-badge.neutral,.app-card .status-badge.neutral){background:#f6f6f6;border-color:var(--ln);color:var(--mut)}
+body:not(#g) .status-text{font:500 12px var(--f)}
+body:not(#g) .status-text.success{color:var(--ink)}body:not(#g) .status-text.pending{color:var(--fnt)}body:not(#g) .status-text.neutral{color:var(--mut)}
+body:not(#g) .status-text.danger{color:var(--mut);text-decoration:line-through}
+
+/* ---------- Tables ---------- */
+body:not(#g) .table-card{overflow:auto}
+body:not(#g) .table-head{background:#fafafa;color:var(--mut);padding:13px 20px;font:500 12px var(--f);letter-spacing:0;text-transform:none;border-bottom:1px solid var(--ln)}
+body:not(#g) .table-row{padding:16px 20px;border-top:1px solid #f0f0f0;font-size:14px;color:var(--ink);transition:background .2s,box-shadow .25s var(--ease)}
+body:not(#g) .table-row:hover{background:#fafafa;box-shadow:inset 3px 0 0 #0a0a0a;transform:none}
+body:not(#g) .table-row span:first-child small{color:var(--fnt);font-size:12px}
+body:not(#g) .toolbar input,body:not(#g) .toolbar select{height:44px}
+
+/* ---------- Segmented control (JS adds .seg + sliding thumb) ---------- */
+body:not(#g) :is(.workspace-tabs,.analytics-range-presets,.range-bar>div){display:inline-flex;gap:2px;padding:4px;border:0;border-radius:12px;background:#ececec;box-shadow:none;width:max-content;max-width:100%}
+body:not(#g) :is(.workspace-tab,.analytics-range,.range){position:relative;z-index:1;min-height:34px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:var(--mut);font:500 13px var(--f);cursor:pointer;transition:color .25s}
+body:not(#g) :is(.workspace-tab,.analytics-range,.range):hover:not(.active){color:var(--ink);transform:none;background:transparent}
+body:not(#g) :is(.workspace-tab,.analytics-range,.range).active{color:var(--ink);background:transparent;box-shadow:none}
+body:not(#g) :is(.workspace-tabs,.analytics-range-presets,.range-bar>div):not(.seg) :is(.workspace-tab,.analytics-range,.range).active{background:#fff;box-shadow:var(--sh1)}
+body:not(#g) .seg{position:relative}
+body:not(#g) .seg-thumb{position:absolute;left:0;top:0;z-index:0;border-radius:9px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08),0 4px 10px -4px rgba(0,0,0,.12);pointer-events:none;opacity:0;transition:transform .5s var(--ease),width .5s var(--ease),height .5s var(--ease),opacity .2s}
+
+/* ---------- Overlays ---------- */
+body:not(#g) .merchant-modal .merchant-modal-backdrop{background:rgba(10,10,10,.45)!important;-webkit-backdrop-filter:blur(8px)!important;backdrop-filter:blur(8px)!important;animation:fade .3s ease both}
+body:not(#g) .merchant-modal .merchant-modal-card{border:1px solid rgba(0,0,0,.06)!important;border-radius:22px!important;box-shadow:0 40px 100px -20px rgba(0,0,0,.4)!important;animation:modalIn .45s var(--ease) both}
+body:not(#g) .merchant-modal-card h3{font:600 24px/1.15 var(--f);letter-spacing:-.03em}
+body:not(#g) .merchant-modal-card p{color:var(--mut);font-size:14px;line-height:1.6}
+body:not(#g) :is(.merchant-modal-icon,.merchant-dialog-card .merchant-modal-icon.danger){background:linear-gradient(145deg,#2c2c2c,#0a0a0a)!important;color:#fff!important;border-radius:12px}
+body:not(#g) .merchant-dialog-card .merchant-modal-actions .danger-action{background:linear-gradient(180deg,#262626,#0a0a0a);color:#fff}
+body:not(#g) :is(.credential-list code,.webhook-secret-card #webhookSecretValue){background:#f6f6f6;border:1px solid var(--ln);border-radius:10px;color:var(--ink)}
+body:not(#g) .webhook-secret-card .webhook-secret-warning{background:#fafafa;border:1px solid var(--ln2);color:var(--ink2);border-radius:12px}
+body:not(#g) :is(.notification-drawer,.payment-drawer){border-left:1px solid var(--ln);box-shadow:-30px 0 80px -30px rgba(0,0,0,.25)}
+body:not(#g) :is(.notification-drawer,.payment-drawer):not([hidden]){animation:drawerIn .5s var(--ease) both}
+body:not(#g) .drawer-head{padding:20px 22px;border-bottom:1px solid var(--ln)}
+body:not(#g) .drawer-head strong{font:600 17px var(--f);letter-spacing:-.02em}
+body:not(#g) .drawer-head button{width:34px;height:34px;border-radius:50%;color:var(--ink2);font-size:22px;line-height:1;transition:background .2s}
+body:not(#g) .drawer-head button:hover{background:var(--soft)}
+body:not(#g) .drawer-payment-amount{font:500 52px/1 var(--f);letter-spacing:-.05em}
+body:not(#g) .detail-grid div{background:#fafafa;border:1px solid var(--ln);border-radius:12px}
+body:not(#g) .detail-grid span{font:500 12px var(--f);text-transform:none;color:var(--mut)}
+body:not(#g) .merchant-toast-stack{background:transparent!important;padding:0!important;box-shadow:none!important;border:0!important;border-radius:0!important}
+body:not(#g) .merchant-toast{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(10,10,10,.94);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:#fff;font:500 14px var(--f);box-shadow:0 20px 40px -12px rgba(0,0,0,.4)}
+body:not(#g) .merchant-toast.error{background:#fff;color:var(--ink);border:1px solid var(--ln2)}
+body:not(#g) .merchant-toast.error button{background:var(--soft);color:var(--ink)}
+body:not(#g) .merchant-toast.error .merchant-toast-mark{background:#0a0a0a;color:#fff}
+
+/* ---------- Empty + skeleton ---------- */
+body:not(#g) .empty-state.premium-empty,body:not(#g) .empty-card{border:1px dashed var(--ln2);border-radius:var(--r);background:#fcfcfc;padding:44px 24px}
+body:not(#g) .empty-state strong{font:600 17px var(--f);letter-spacing:-.02em;color:var(--ink);display:block;margin-top:8px}
+body:not(#g) .empty-state p{color:var(--mut);font-size:14px;margin:6px auto 0}
+body:not(#g) :is(.skeleton-line,.skeleton-box,.skeleton-card,.skeleton-panel){background:linear-gradient(100deg,#ececec 30%,#f6f6f6 50%,#ececec 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite;border:0;border-radius:20px}
+body:not(#g) .skeleton-card-featured{background:linear-gradient(100deg,#141414 30%,#262626 50%,#141414 70%);background-size:200% 100%}
+body:not(#g) :is(.skeleton-line,.skeleton-box)::after{display:none}
+
+/* ---------- Misc ---------- */
+body:not(#g) .guide-steps article{border:1px solid var(--ln);border-radius:var(--r);background:#fff;padding:22px;transition:transform .35s var(--ease),box-shadow .35s var(--ease)}
+body:not(#g) .guide-steps article:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
+body:not(#g) .guide-steps article b{font:500 40px/1 var(--f);letter-spacing:-.05em;color:#d4d4d4;display:block;margin-bottom:14px}
+body:not(#g) .guide-steps h3{font:600 17px var(--f);letter-spacing:-.02em}
+body:not(#g) .code-guide{border-radius:var(--r);background:#0a0a0a;box-shadow:var(--sh3)}
+body:not(#g) .progress-track,body:not(#g) .progress{height:8px;border:0;background:#ececec;border-radius:99px}
+body:not(#g) .progress-track i,body:not(#g) .progress i,body:not(#g) .bar-row>i b{background:linear-gradient(90deg,#3a3a3a,#0a0a0a);border-radius:99px;transition:width 1s var(--ease)}
+body:not(#g) .bar-row>i{height:8px;background:#ececec;border:0}
+body:not(#g) .wizard-progress button b{border:1px solid var(--ln2);background:#fff;color:var(--ink)}
+body:not(#g) .wizard-progress button.active b,body:not(#g) .wizard-progress button.complete b{background:#0a0a0a;color:#fff;border-color:#0a0a0a}
+body:not(#g) .state-card.success{background:#0a0a0a;color:#fff;border-color:#0a0a0a}
+body:not(#g) .state-card.success p{color:#bdbdbd}
+body:not(#g) .state-card.success .state-icon{background:#fff;color:#0a0a0a}
+body:not(#g) .state-card.warning{background:#fafafa;border-color:var(--ln2)}
+body:not(#g) .workspace-readiness{border:1px solid var(--ln2);border-radius:var(--r);background:#fff;box-shadow:var(--sh1)}
+body:not(#g) .readiness-chip{border:1px solid var(--ln);border-radius:12px;background:#fff;transition:transform .25s var(--ease),box-shadow .25s}
+body:not(#g) .readiness-chip:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+body:not(#g) .state-icon{background:#0a0a0a;color:#fff}
+
+/* ---------- Motion primitives ---------- */
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.spot{position:relative}
+.spot::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(360px circle at var(--sx,50%) var(--sy,-40%),var(--spot,rgba(0,0,0,.05)),transparent 62%);opacity:0;transition:opacity .4s}
+.spot:hover::after{opacity:1}
+.stagger>*{animation:rise .6s var(--ease) both;animation-delay:calc(var(--i,0)*45ms)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes drawerIn{from{opacity:.4;transform:translateX(40px)}to{opacity:1;transform:none}}
+@keyframes blip{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes vtOut{to{opacity:0;transform:translateY(-8px) scale(.995);filter:blur(5px)}}
+@keyframes vtIn{from{opacity:0;transform:translateY(14px) scale(.995);filter:blur(5px)}}
+
+/* ---------- Page morph transitions (View Transitions API) ---------- */
+@supports (view-transition-name:none){
+  body:not(#g) .merchant-section:not([hidden]){view-transition-name:page;animation:none}
+  body:not(#g) .merchant-section:not([hidden]) :is(.ov-head h1,.section-title-row h2){view-transition-name:page-title}
+  ::view-transition-group(root){animation-duration:.2s}
+  ::view-transition-old(page),::view-transition-new(page){mix-blend-mode:normal;animation-duration:.45s;animation-timing-function:cubic-bezier(.2,.8,.2,1)}
+  ::view-transition-old(page){animation-name:vtOut}
+  ::view-transition-new(page){animation-name:vtIn}
+  ::view-transition-group(page-title){animation-duration:.55s;animation-timing-function:cubic-bezier(.2,.8,.2,1)}
+  ::view-transition-group(vq-detail){animation-duration:.45s;animation-timing-function:cubic-bezier(.2,.8,.2,1)}
+}
+@supports not (view-transition-name:none){
+  body:not(#g) .merchant-section:not([hidden]){animation:rise .5s var(--ease) both}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
+}
+
+/* ---------- Beat legacy !important button colours ---------- */
+body:not(#g) .button.primary{background:linear-gradient(180deg,#262626,#0a0a0a)!important;color:#fff!important;border-color:#0a0a0a!important}
+body:not(#g) .button.primary:hover:not(:disabled){background:linear-gradient(180deg,#363636,#141414)!important}
+body:not(#g) .button.secondary,body:not(#g) .button.danger{background:#fff!important;color:#0a0a0a!important;border-color:#d9d9d9!important}
+body:not(#g) .button.secondary:hover:not(:disabled),body:not(#g) .button.danger:hover:not(:disabled){background:#fafafa!important;border-color:#bdbdbd!important}
